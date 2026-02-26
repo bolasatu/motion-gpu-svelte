@@ -12,7 +12,7 @@ fn frag(uv: vec2f) -> vec4f {
 }
 `;
 
-	const demoImages = ['/textures/photo-a.svg', '/textures/photo-b.svg'];
+	const demoImages = ['/textures/image-1.jpg', '/textures/image-2.jpg'];
 	const uniforms = {
 		uMix: 0
 	};
