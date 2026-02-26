@@ -1,4 +1,4 @@
-import { render } from '@testing-library/svelte';
+import { render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it } from 'vitest';
 import FragCanvas from './lib/FragCanvas.svelte';
 
@@ -14,13 +14,15 @@ describe('FragCanvas', () => {
 	});
 
 	it('shows a readable error when WebGPU is unavailable', async () => {
-		const { findByTestId } = render(FragCanvas, {
+		render(FragCanvas, {
 			props: {
 				fragmentWgsl
 			}
 		});
 
-		const error = await findByTestId('fragkit-error');
+		const error = await screen.findByTestId('fragkit-error');
+		expect(error.textContent).toContain('WebGPU unavailable');
 		expect(error.textContent).toContain('WebGPU is not available');
+		expect(error.textContent).toContain('Use a browser with WebGPU enabled');
 	});
 });

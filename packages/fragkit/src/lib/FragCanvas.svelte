@@ -7,6 +7,12 @@
 		type FragMaterial,
 		type MaterialDefines
 	} from './core/material';
+	import {
+		toFragkitErrorReport,
+		type FragkitErrorPhase,
+		type FragkitErrorReport
+	} from './core/error-report';
+	import Portal from './Portal.svelte';
 	import { currentWritable } from './current-writable';
 	import { createRenderer } from './core/renderer';
 	import { resolveTextureKeys } from './core/textures';
@@ -66,7 +72,18 @@
 	}: Props = $props();
 
 	let canvas: HTMLCanvasElement | undefined;
-	let errorMessage = $state<string | null>(null);
+	let errorReport = $state<FragkitErrorReport | null>(null);
+
+	const normalizeErrorText = (value: string): string => {
+		return value
+			.trim()
+			.replace(/[.:!]+$/g, '')
+			.toLowerCase();
+	};
+
+	const shouldShowErrorMessage = (report: FragkitErrorReport): boolean => {
+		return normalizeErrorText(report.message) !== normalizeErrorText(report.title);
+	};
 
 	const registry = createFrameRegistry();
 	provideFrameRegistry(registry);
@@ -104,8 +121,16 @@
 	});
 
 	onMount(() => {
+		const setError = (error: unknown, phase: FragkitErrorPhase): void => {
+			errorReport = toFragkitErrorReport(error, phase);
+		};
+
+		const clearError = (): void => {
+			errorReport = null;
+		};
+
 		if (!canvas) {
-			errorMessage = 'Canvas element is not available';
+			setError(new Error('Canvas element is not available'), 'initialization');
 			return () => registry.clear();
 		}
 
@@ -115,6 +140,7 @@
 		let isDisposed = false;
 		let previousTime = performance.now() / 1000;
 		let activeRendererSignature = '';
+		let failedRendererSignature: string | null = null;
 		let rendererRebuildPromise: Promise<void> | null = null;
 
 		const runtimeUniforms: UniformMap = {};
@@ -181,7 +207,15 @@
 				return;
 			}
 
-			const materialState = resolveActiveMaterial();
+			let materialState: ReturnType<typeof resolveActiveMaterial>;
+			try {
+				materialState = resolveActiveMaterial();
+			} catch (error) {
+				setError(error, 'initialization');
+				frameId = requestAnimationFrame(renderFrame);
+				return;
+			}
+
 			const rendererSignature = `${materialState.signature}|${outputColorSpace}|${clearColor.join(',')}`;
 			activeUniforms = materialState.uniforms;
 			activeTextures = materialState.textures;
@@ -193,6 +227,11 @@
 			resetRuntimeMaps();
 
 			if (!renderer || activeRendererSignature !== rendererSignature) {
+				if (failedRendererSignature === rendererSignature) {
+					frameId = requestAnimationFrame(renderFrame);
+					return;
+				}
+
 				if (!rendererRebuildPromise) {
 					rendererRebuildPromise = (async () => {
 						try {
@@ -217,8 +256,11 @@
 							renderer?.destroy();
 							renderer = nextRenderer;
 							activeRendererSignature = rendererSignature;
+							failedRendererSignature = null;
+							clearError();
 						} catch (error) {
-							errorMessage = error instanceof Error ? error.message : 'Unknown FragCanvas error';
+							failedRendererSignature = rendererSignature;
+							setError(error, 'initialization');
 						} finally {
 							rendererRebuildPromise = null;
 						}
@@ -236,36 +278,42 @@
 			const height = canvasElement.clientHeight || canvasElement.height;
 			size.set({ width, height });
 
-			registry.run({
-				time,
-				delta,
-				setUniform,
-				setTexture,
-				invalidate: registry.invalidate,
-				advance: registry.advance,
-				renderMode: registry.getRenderMode(),
-				autoRender: registry.getAutoRender(),
-				canvas: canvasElement
-			});
-
-			if (registry.shouldRender()) {
-				renderer.render({
+			try {
+				registry.run({
 					time,
 					delta,
-					uniforms: {
-						...activeUniforms,
-						...runtimeUniforms
-					},
-					textures: {
-						...Object.fromEntries(
-							textureKeys.map((key) => [key, activeTextures[key]?.source ?? null])
-						),
-						...runtimeTextures
-					}
+					setUniform,
+					setTexture,
+					invalidate: registry.invalidate,
+					advance: registry.advance,
+					renderMode: registry.getRenderMode(),
+					autoRender: registry.getAutoRender(),
+					canvas: canvasElement
 				});
-			}
 
-			registry.endFrame();
+				if (registry.shouldRender()) {
+					renderer.render({
+						time,
+						delta,
+						uniforms: {
+							...activeUniforms,
+							...runtimeUniforms
+						},
+						textures: {
+							...Object.fromEntries(
+								textureKeys.map((key) => [key, activeTextures[key]?.source ?? null])
+							),
+							...runtimeTextures
+						}
+					});
+				}
+
+				clearError();
+			} catch (error) {
+				setError(error, 'render');
+			} finally {
+				registry.endFrame();
+			}
 
 			frameId = requestAnimationFrame(renderFrame);
 		};
@@ -283,7 +331,7 @@
 				activeRendererSignature = '';
 				frameId = requestAnimationFrame(renderFrame);
 			} catch (error) {
-				errorMessage = error instanceof Error ? error.message : 'Unknown FragCanvas error';
+				setError(error, 'initialization');
 			}
 		})();
 
@@ -298,8 +346,37 @@
 
 <div class="fragkit-canvas-wrap">
 	<canvas bind:this={canvas} class={className} {style}></canvas>
-	{#if errorMessage}
-		<p class="fragkit-error" data-testid="fragkit-error">{errorMessage}</p>
+	{#if errorReport}
+		<Portal>
+			<div class="fragkit-error-overlay" role="presentation">
+				<div
+					class="fragkit-error-dialog"
+					role="alertdialog"
+					aria-live="assertive"
+					aria-modal="true"
+					data-testid="fragkit-error"
+				>
+					<p class="fragkit-error-phase">{errorReport.phase}</p>
+					<p class="fragkit-error-title">{errorReport.title}</p>
+					{#if shouldShowErrorMessage(errorReport)}
+						<p class="fragkit-error-message">{errorReport.message}</p>
+					{/if}
+					<p class="fragkit-error-hint">{errorReport.hint}</p>
+					{#if errorReport.details.length > 0}
+						<details class="fragkit-error-details" open>
+							<summary>Technical details</summary>
+							<pre>{errorReport.details.join('\n')}</pre>
+						</details>
+					{/if}
+					{#if errorReport.stack.length > 0}
+						<details class="fragkit-error-details">
+							<summary>Stack trace</summary>
+							<pre>{errorReport.stack.join('\n')}</pre>
+						</details>
+					{/if}
+				</div>
+			</div>
+		</Portal>
 	{/if}
 	{@render children?.()}
 </div>
@@ -318,16 +395,85 @@
 		height: 100%;
 	}
 
-	.fragkit-error {
-		position: absolute;
-		left: 0.75rem;
-		top: 0.75rem;
+	.fragkit-error-overlay {
+		position: fixed;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		padding: 1rem;
+		background: rgba(0, 0, 0, 0.7);
+		backdrop-filter: blur(6px);
+		z-index: 2147483647;
+	}
+
+	.fragkit-error-dialog {
+		width: min(52rem, 100%);
+		max-height: min(80vh, 44rem);
+		overflow: auto;
 		margin: 0;
-		padding: 0.5rem 0.75rem;
-		border-radius: 0.5rem;
-		font-size: 0.85rem;
-		line-height: 1.2;
-		background: rgba(20, 20, 20, 0.75);
-		color: #ffcece;
+		padding: 1rem 1.1rem;
+		border-radius: 0.85rem;
+		border: 1px solid rgba(255, 255, 255, 0.14);
+		font-size: 0.84rem;
+		line-height: 1.4;
+		background: rgba(12, 12, 12, 0.97);
+		box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+		color: #f2f2f2;
+	}
+
+	.fragkit-error-phase {
+		margin: 0;
+		font-size: 0.66rem;
+		letter-spacing: 0.11em;
+		text-transform: uppercase;
+		color: #b8b8b8;
+	}
+
+	.fragkit-error-title {
+		margin: 0.3rem 0 0;
+		font-size: 1rem;
+		font-weight: 600;
+		color: #f3f3f3;
+	}
+
+	.fragkit-error-message {
+		margin: 0.45rem 0 0;
+		font-weight: 500;
+		color: #ff6b6b;
+	}
+
+	.fragkit-error-hint {
+		margin: 0.55rem 0 0;
+		color: #d4d4d4;
+	}
+
+	.fragkit-error-details {
+		margin-top: 0.7rem;
+		padding-top: 0.65rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.12);
+	}
+
+	.fragkit-error-details summary {
+		cursor: pointer;
+		font-weight: 600;
+		color: #e5e5e5;
+	}
+
+	.fragkit-error-details pre {
+		margin: 0.45rem 0 0;
+		white-space: pre-wrap;
+		word-break: break-word;
+		font-size: 0.75rem;
+		line-height: 1.4;
+		color: #cccccc;
+		font-family:
+			ui-monospace,
+			SFMono-Regular,
+			Menlo,
+			Monaco,
+			Consolas,
+			Liberation Mono,
+			Courier New,
+			monospace;
 	}
 </style>
