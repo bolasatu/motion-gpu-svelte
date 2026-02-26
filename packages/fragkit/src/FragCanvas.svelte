@@ -3,7 +3,16 @@
 	import type { Snippet } from 'svelte';
 	import { currentWritable } from './current-writable';
 	import { createRenderer } from './core/renderer';
-	import type { RenderMode, Renderer, UniformMap, UniformValue } from './core/types';
+	import { resolveTextureKeys } from './core/textures';
+	import type {
+		RenderMode,
+		Renderer,
+		TextureDefinitionMap,
+		TextureMap,
+		TextureValue,
+		UniformMap,
+		UniformValue
+	} from './core/types';
 	import { provideFragkitContext } from './fragkit-context';
 	import { resolveUniformKeys } from './core/uniforms';
 	import { createFrameRegistry, provideFrameRegistry } from './frame-context';
@@ -11,6 +20,7 @@
 	interface Props {
 		fragmentWgsl: string;
 		uniforms?: UniformMap;
+		textures?: TextureDefinitionMap;
 		clearColor?: [number, number, number, number];
 		renderMode?: RenderMode;
 		autoRender?: boolean;
@@ -25,6 +35,7 @@
 	let {
 		fragmentWgsl,
 		uniforms = {},
+		textures = {},
 		clearColor = [0, 0, 0, 1],
 		renderMode = 'always',
 		autoRender = true,
@@ -86,6 +97,12 @@
 
 		const runtimeUniforms: UniformMap = {};
 		const uniformKeys = resolveUniformKeys(uniforms);
+		const runtimeTextures: TextureMap = {};
+		const textureKeys = resolveTextureKeys(textures);
+
+		for (const key of textureKeys) {
+			runtimeTextures[key] = textures[key]?.source ?? null;
+		}
 
 		const setUniform = (name: string, value: UniformValue): void => {
 			if (!uniformKeys.includes(name)) {
@@ -94,10 +111,11 @@
 			runtimeUniforms[name] = value;
 		};
 
-		const setTexture = (name: string): void => {
-			throw new Error(
-				`Unknown texture "${name}". Declare it in FragCanvas textures prop before using setTexture.`
-			);
+		const setTexture = (name: string, value: TextureValue): void => {
+			if (!textureKeys.includes(name)) {
+				throw new Error(`Unknown texture "${name}". Declare it in FragCanvas textures prop first.`);
+			}
+			runtimeTextures[name] = value;
 		};
 
 		const renderFrame = (timestamp: number): void => {
@@ -132,7 +150,10 @@
 						...uniforms,
 						...runtimeUniforms
 					},
-					textures: {}
+					textures: {
+						...Object.fromEntries(textureKeys.map((key) => [key, textures[key]?.source ?? null])),
+						...runtimeTextures
+					}
 				});
 			}
 
@@ -147,7 +168,8 @@
 					canvas: canvasElement,
 					fragmentWgsl,
 					uniformKeys,
-					textureKeys: [],
+					textureKeys,
+					textureDefinitions: textures,
 					clearColor,
 					getDpr: () => dprState.current
 				});

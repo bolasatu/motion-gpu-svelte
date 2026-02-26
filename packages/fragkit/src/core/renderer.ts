@@ -1,6 +1,34 @@
 import { buildShaderSource } from './shader';
+import { normalizeTextureDefinitions, resolveTextureSize, toTextureData } from './textures';
 import { packUniforms } from './uniforms';
-import type { Renderer, RendererOptions } from './types';
+import type { Renderer, RendererOptions, TextureSource, TextureValue } from './types';
+
+const FRAME_BINDING = 0;
+const UNIFORM_BINDING = 1;
+const FIRST_TEXTURE_BINDING = 2;
+
+interface RuntimeTextureBinding {
+	key: string;
+	samplerBinding: number;
+	textureBinding: number;
+	sampler: GPUSampler;
+	fallbackTexture: GPUTexture;
+	fallbackView: GPUTextureView;
+	texture: GPUTexture | null;
+	view: GPUTextureView;
+	source: TextureSource | null;
+	width: number | undefined;
+	height: number | undefined;
+	format: GPUTextureFormat;
+}
+
+function getTextureBindings(index: number): { samplerBinding: number; textureBinding: number } {
+	const samplerBinding = FIRST_TEXTURE_BINDING + index * 2;
+	return {
+		samplerBinding,
+		textureBinding: samplerBinding + 1
+	};
+}
 
 function resizeCanvas(
 	canvas: HTMLCanvasElement,
@@ -32,6 +60,57 @@ async function assertCompilation(module: GPUShaderModule): Promise<void> {
 	throw new Error(`WGSL compilation failed:\n${summary}`);
 }
 
+function createFallbackTexture(device: GPUDevice, format: GPUTextureFormat): GPUTexture {
+	const texture = device.createTexture({
+		size: { width: 1, height: 1, depthOrArrayLayers: 1 },
+		format,
+		usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+	});
+
+	const pixel = new Uint8Array([255, 255, 255, 255]);
+	device.queue.writeTexture(
+		{ texture },
+		pixel,
+		{ offset: 0, bytesPerRow: 4, rowsPerImage: 1 },
+		{ width: 1, height: 1, depthOrArrayLayers: 1 }
+	);
+
+	return texture;
+}
+
+function createBindGroupLayoutEntries(
+	textureBindings: RuntimeTextureBinding[]
+): GPUBindGroupLayoutEntry[] {
+	const entries: GPUBindGroupLayoutEntry[] = [
+		{
+			binding: FRAME_BINDING,
+			visibility: GPUShaderStage.FRAGMENT,
+			buffer: { type: 'uniform', minBindingSize: 16 }
+		},
+		{
+			binding: UNIFORM_BINDING,
+			visibility: GPUShaderStage.FRAGMENT,
+			buffer: { type: 'uniform' }
+		}
+	];
+
+	for (const binding of textureBindings) {
+		entries.push({
+			binding: binding.samplerBinding,
+			visibility: GPUShaderStage.FRAGMENT,
+			sampler: { type: 'filtering' }
+		});
+
+		entries.push({
+			binding: binding.textureBinding,
+			visibility: GPUShaderStage.FRAGMENT,
+			texture: { sampleType: 'float', viewDimension: '2d', multisampled: false }
+		});
+	}
+
+	return entries;
+}
+
 export async function createRenderer(options: RendererOptions): Promise<Renderer> {
 	if (!navigator.gpu) {
 		throw new Error('WebGPU is not available in this browser');
@@ -57,8 +136,47 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	const shaderModule = device.createShaderModule({ code: shaderSource });
 	await assertCompilation(shaderModule);
 
+	const normalizedTextureDefinitions = normalizeTextureDefinitions(
+		options.textureDefinitions,
+		options.textureKeys
+	);
+	const textureBindings = options.textureKeys.map((key, index): RuntimeTextureBinding => {
+		const config = normalizedTextureDefinitions[key];
+		const { samplerBinding, textureBinding } = getTextureBindings(index);
+		const sampler = device.createSampler({
+			magFilter: config.filter,
+			minFilter: config.filter,
+			addressModeU: config.addressModeU,
+			addressModeV: config.addressModeV
+		});
+		const fallbackTexture = createFallbackTexture(device, config.format);
+		const fallbackView = fallbackTexture.createView();
+
+		return {
+			key,
+			samplerBinding,
+			textureBinding,
+			sampler,
+			fallbackTexture,
+			fallbackView,
+			texture: null,
+			view: fallbackView,
+			source: null,
+			width: undefined,
+			height: undefined,
+			format: config.format
+		};
+	});
+
+	const bindGroupLayout = device.createBindGroupLayout({
+		entries: createBindGroupLayoutEntries(textureBindings)
+	});
+	const pipelineLayout = device.createPipelineLayout({
+		bindGroupLayouts: [bindGroupLayout]
+	});
+
 	const pipeline = device.createRenderPipeline({
-		layout: 'auto',
+		layout: pipelineLayout,
 		vertex: {
 			module: shaderModule,
 			entryPoint: 'fragkitVertex'
@@ -83,15 +201,87 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
 	});
 
-	const bindGroup = device.createBindGroup({
-		layout: pipeline.getBindGroupLayout(0),
-		entries: [
-			{ binding: 0, resource: { buffer: frameBuffer } },
-			{ binding: 1, resource: { buffer: uniformBuffer } }
-		]
-	});
+	const createBindGroup = (): GPUBindGroup => {
+		const entries: GPUBindGroupEntry[] = [
+			{ binding: FRAME_BINDING, resource: { buffer: frameBuffer } },
+			{ binding: UNIFORM_BINDING, resource: { buffer: uniformBuffer } }
+		];
 
-	const render: Renderer['render'] = ({ time, delta, uniforms }) => {
+		for (const binding of textureBindings) {
+			entries.push({
+				binding: binding.samplerBinding,
+				resource: binding.sampler
+			});
+			entries.push({
+				binding: binding.textureBinding,
+				resource: binding.view
+			});
+		}
+
+		return device.createBindGroup({
+			layout: bindGroupLayout,
+			entries
+		});
+	};
+
+	const updateTextureBinding = (binding: RuntimeTextureBinding, value: TextureValue): boolean => {
+		const nextData = toTextureData(value);
+
+		if (!nextData) {
+			if (binding.source === null && binding.texture === null) {
+				return false;
+			}
+
+			binding.texture?.destroy();
+			binding.texture = null;
+			binding.view = binding.fallbackView;
+			binding.source = null;
+			binding.width = undefined;
+			binding.height = undefined;
+			return true;
+		}
+
+		const source = nextData.source;
+		if (
+			binding.source === source &&
+			binding.width === nextData.width &&
+			binding.height === nextData.height
+		) {
+			return false;
+		}
+
+		const { width, height } = resolveTextureSize(nextData);
+		const texture = device.createTexture({
+			size: { width, height, depthOrArrayLayers: 1 },
+			format: binding.format,
+			usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+		});
+
+		device.queue.copyExternalImageToTexture(
+			{
+				source
+			},
+			{ texture },
+			{ width, height, depthOrArrayLayers: 1 }
+		);
+
+		binding.texture?.destroy();
+		binding.texture = texture;
+		binding.view = texture.createView();
+		binding.source = source;
+		binding.width = nextData.width;
+		binding.height = nextData.height;
+		return true;
+	};
+
+	for (const binding of textureBindings) {
+		const defaultSource = normalizedTextureDefinitions[binding.key]?.source ?? null;
+		updateTextureBinding(binding, defaultSource);
+	}
+
+	let bindGroup = createBindGroup();
+
+	const render: Renderer['render'] = ({ time, delta, uniforms, textures }) => {
 		const { width, height } = resizeCanvas(options.canvas, options.getDpr());
 
 		context.configure({
@@ -117,6 +307,19 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			uniformData.byteOffset,
 			uniformData.byteLength
 		);
+
+		let bindGroupDirty = false;
+		for (const binding of textureBindings) {
+			const nextTexture =
+				textures[binding.key] ?? normalizedTextureDefinitions[binding.key]?.source ?? null;
+			if (updateTextureBinding(binding, nextTexture)) {
+				bindGroupDirty = true;
+			}
+		}
+
+		if (bindGroupDirty) {
+			bindGroup = createBindGroup();
+		}
 
 		const commandEncoder = device.createCommandEncoder();
 		const pass = commandEncoder.beginRenderPass({
@@ -148,6 +351,10 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		destroy: () => {
 			frameBuffer.destroy();
 			uniformBuffer.destroy();
+			for (const binding of textureBindings) {
+				binding.texture?.destroy();
+				binding.fallbackTexture.destroy();
+			}
 		}
 	};
 }

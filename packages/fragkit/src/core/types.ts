@@ -17,6 +17,7 @@ export type TextureValue = TextureData | TextureSource | null;
 
 export interface TextureDefinition {
 	source?: TextureValue;
+	colorSpace?: 'srgb' | 'linear';
 	filter?: GPUFilterMode;
 	addressModeU?: GPUAddressMode;
 	addressModeV?: GPUAddressMode;
@@ -44,6 +45,7 @@ export interface RendererOptions {
 	fragmentWgsl: string;
 	uniformKeys: string[];
 	textureKeys: string[];
+	textureDefinitions: TextureDefinitionMap;
 	clearColor: [number, number, number, number];
 	getDpr: () => number;
 }
