@@ -2,8 +2,11 @@ import { buildShaderSource } from './shader';
 import { packUniforms } from './uniforms';
 import type { Renderer, RendererOptions } from './types';
 
-function resizeCanvas(canvas: HTMLCanvasElement): { width: number; height: number } {
-	const dpr = Math.max(1, window.devicePixelRatio || 1);
+function resizeCanvas(
+	canvas: HTMLCanvasElement,
+	dprInput: number
+): { width: number; height: number } {
+	const dpr = Math.max(1, dprInput || 1);
 	const width = Math.max(1, Math.floor((canvas.clientWidth || canvas.width || 1) * dpr));
 	const height = Math.max(1, Math.floor((canvas.clientHeight || canvas.height || 1) * dpr));
 
@@ -85,7 +88,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	});
 
 	const render: Renderer['render'] = ({ time, delta, uniforms }) => {
-		const { width, height } = resizeCanvas(options.canvas);
+		const { width, height } = resizeCanvas(options.canvas, options.getDpr());
 
 		context.configure({
 			device,

@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
+	import { currentWritable } from './current-writable';
 	import { createRenderer } from './core/renderer';
 	import type { RenderMode, Renderer, UniformMap, UniformValue } from './core/types';
+	import { provideFragkitContext } from './fragkit-context';
 	import { resolveUniformKeys } from './core/uniforms';
 	import { createFrameRegistry, provideFrameRegistry } from './frame-context';
 
@@ -12,10 +14,13 @@
 		clearColor?: [number, number, number, number];
 		renderMode?: RenderMode;
 		autoRender?: boolean;
+		dpr?: number;
 		class?: string;
 		style?: string;
 		children?: Snippet;
 	}
+
+	const initialDpr = typeof window === 'undefined' ? 1 : (window.devicePixelRatio ?? 1);
 
 	let {
 		fragmentWgsl,
@@ -23,26 +28,57 @@
 		clearColor = [0, 0, 0, 1],
 		renderMode = 'always',
 		autoRender = true,
+		dpr = initialDpr,
 		class: className = '',
 		style = '',
 		children
 	}: Props = $props();
 
-	let canvas: HTMLCanvasElement;
+	let canvas: HTMLCanvasElement | undefined;
 	let errorMessage = $state<string | null>(null);
 
 	const registry = createFrameRegistry();
 	provideFrameRegistry(registry);
+	const size = currentWritable({ width: 0, height: 0 });
+	const dprState = currentWritable(initialDpr);
+	const renderModeState = currentWritable<RenderMode>('always', registry.setRenderMode);
+	const autoRenderState = currentWritable<boolean>(true, registry.setAutoRender);
 
-	$effect(() => {
-		registry.setRenderMode(renderMode);
+	provideFragkitContext({
+		get canvas() {
+			return canvas;
+		},
+		size,
+		dpr: dprState,
+		renderMode: renderModeState,
+		autoRender: autoRenderState,
+		invalidate: registry.invalidate,
+		advance: registry.advance,
+		scheduler: {
+			createStage: registry.createStage,
+			getStage: registry.getStage
+		}
 	});
 
 	$effect(() => {
-		registry.setAutoRender(autoRender);
+		renderModeState.set(renderMode);
+	});
+
+	$effect(() => {
+		autoRenderState.set(autoRender);
+	});
+
+	$effect(() => {
+		dprState.set(dpr);
 	});
 
 	onMount(() => {
+		if (!canvas) {
+			errorMessage = 'Canvas element is not available';
+			return () => registry.clear();
+		}
+
+		const canvasElement = canvas;
 		let frameId = 0;
 		let renderer: Renderer | null = null;
 		let isDisposed = false;
@@ -66,6 +102,9 @@
 			const time = timestamp / 1000;
 			const delta = Math.max(0, time - previousTime);
 			previousTime = time;
+			const width = canvasElement.clientWidth || canvasElement.width;
+			const height = canvasElement.clientHeight || canvasElement.height;
+			size.set({ width, height });
 
 			registry.run({
 				time,
@@ -75,7 +114,7 @@
 				advance: registry.advance,
 				renderMode: registry.getRenderMode(),
 				autoRender: registry.getAutoRender(),
-				canvas
+				canvas: canvasElement
 			});
 
 			if (registry.shouldRender()) {
@@ -97,10 +136,11 @@
 		(async () => {
 			try {
 				renderer = await createRenderer({
-					canvas,
+					canvas: canvasElement,
 					fragmentWgsl,
 					uniformKeys,
-					clearColor
+					clearColor,
+					getDpr: () => dprState.current
 				});
 				frameId = requestAnimationFrame(renderFrame);
 			} catch (error) {

@@ -24,6 +24,7 @@ export interface RendererOptions {
 	fragmentWgsl: string;
 	uniformKeys: string[];
 	clearColor: [number, number, number, number];
+	getDpr: () => number;
 }
 
 export interface Renderer {
