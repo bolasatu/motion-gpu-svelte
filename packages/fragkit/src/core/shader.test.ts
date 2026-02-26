@@ -39,4 +39,22 @@ describe('buildShaderSource', () => {
 		expect(shader).toContain('@group(0) @binding(4) var uTexture2Sampler: sampler;');
 		expect(shader).toContain('@group(0) @binding(5) var uTexture2: texture_2d<f32>;');
 	});
+
+	it('can inject linear to srgb conversion for output color', () => {
+		const shader = buildShaderSource(
+			'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
+			['uMix'],
+			[],
+			{ convertLinearToSrgb: true }
+		);
+
+		expect(shader).toContain('fn fragkitLinearToSrgb(linearColor: vec3f) -> vec3f');
+		expect(shader).toContain(
+			'let fragkitLinear = vec4f(fragColor.rgb + fragkitKeepAlive * 0.0, fragColor.a);'
+		);
+		expect(shader).toContain(
+			'let fragkitSrgb = fragkitLinearToSrgb(max(fragkitLinear.rgb, vec3f(0.0)));'
+		);
+		expect(shader).toContain('return vec4f(fragkitSrgb, fragkitLinear.a);');
+	});
 });

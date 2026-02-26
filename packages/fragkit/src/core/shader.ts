@@ -41,14 +41,51 @@ function buildTextureBindings(textureKeys: string[]): string {
 	return declarations.join('\n');
 }
 
+function buildColorTransformHelpers(enableSrgbTransform: boolean): string {
+	if (!enableSrgbTransform) {
+		return '';
+	}
+
+	return `
+fn fragkitLinearToSrgb(linearColor: vec3f) -> vec3f {
+	let cutoff = vec3f(0.0031308);
+	let lower = linearColor * 12.92;
+	let higher = vec3f(1.055) * pow(linearColor, vec3f(1.0 / 2.4)) - vec3f(0.055);
+	return select(lower, higher, linearColor > cutoff);
+}
+`;
+}
+
+function buildFragmentOutput(keepAliveUniform: string, enableSrgbTransform: boolean): string {
+	if (enableSrgbTransform) {
+		return `
+	let fragColor = frag(in.uv);
+	let fragkitKeepAlive = fragkitUniforms.${keepAliveUniform}.x;
+	let fragkitLinear = vec4f(fragColor.rgb + fragkitKeepAlive * 0.0, fragColor.a);
+	let fragkitSrgb = fragkitLinearToSrgb(max(fragkitLinear.rgb, vec3f(0.0)));
+	return vec4f(fragkitSrgb, fragkitLinear.a);
+`;
+	}
+
+	return `
+	let fragColor = frag(in.uv);
+	let fragkitKeepAlive = fragkitUniforms.${keepAliveUniform}.x;
+	return vec4f(fragColor.rgb + fragkitKeepAlive * 0.0, fragColor.a);
+`;
+}
+
 export function buildShaderSource(
 	fragmentWgsl: string,
 	uniformKeys: string[],
-	textureKeys: string[] = []
+	textureKeys: string[] = [],
+	options?: { convertLinearToSrgb?: boolean }
 ): string {
 	const uniformFields = buildUniformStruct(uniformKeys);
 	const keepAliveUniform = getKeepAliveUniform(uniformKeys);
 	const textureBindings = buildTextureBindings(textureKeys);
+	const enableSrgbTransform = options?.convertLinearToSrgb ?? false;
+	const colorTransformHelpers = buildColorTransformHelpers(enableSrgbTransform);
+	const fragmentOutput = buildFragmentOutput(keepAliveUniform, enableSrgbTransform);
 
 	return `
 struct FragkitFrame {
@@ -64,6 +101,7 @@ struct FragkitUniforms {
 @group(0) @binding(0) var<uniform> fragkitFrame: FragkitFrame;
 @group(0) @binding(1) var<uniform> fragkitUniforms: FragkitUniforms;
 ${textureBindings}
+${colorTransformHelpers}
 
 struct FragkitVertexOut {
 	@builtin(position) position: vec4f,
@@ -89,9 +127,7 @@ ${fragmentWgsl}
 
 @fragment
 fn fragkitFragment(in: FragkitVertexOut) -> @location(0) vec4f {
-	let fragColor = frag(in.uv);
-	let fragkitKeepAlive = fragkitUniforms.${keepAliveUniform}.x;
-	return vec4f(fragColor.rgb + fragkitKeepAlive * 0.0, fragColor.a);
+	${fragmentOutput}
 }
 `;
 }

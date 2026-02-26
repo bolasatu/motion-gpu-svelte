@@ -5,6 +5,7 @@ export interface NormalizedTextureDefinition {
 	source: TextureValue;
 	colorSpace: 'srgb' | 'linear';
 	format: GPUTextureFormat;
+	flipY: boolean;
 	filter: GPUFilterMode;
 	addressModeU: GPUAddressMode;
 	addressModeV: GPUAddressMode;
@@ -28,6 +29,7 @@ export function normalizeTextureDefinition(
 		source: definition?.source ?? null,
 		colorSpace: definition?.colorSpace ?? 'srgb',
 		format: definition?.colorSpace === 'linear' ? 'rgba8unorm' : 'rgba8unorm-srgb',
+		flipY: definition?.flipY ?? true,
 		filter: definition?.filter ?? DEFAULT_TEXTURE_FILTER,
 		addressModeU: definition?.addressModeU ?? DEFAULT_TEXTURE_ADDRESS_MODE,
 		addressModeV: definition?.addressModeV ?? DEFAULT_TEXTURE_ADDRESS_MODE

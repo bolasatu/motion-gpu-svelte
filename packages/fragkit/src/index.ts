@@ -4,6 +4,7 @@ export { useFrame } from './frame-context';
 export { useTexture } from './use-texture';
 export type {
 	FrameState,
+	OutputColorSpace,
 	RenderMode,
 	TextureData,
 	TextureDefinition,

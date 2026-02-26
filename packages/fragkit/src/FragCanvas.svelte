@@ -5,6 +5,7 @@
 	import { createRenderer } from './core/renderer';
 	import { resolveTextureKeys } from './core/textures';
 	import type {
+		OutputColorSpace,
 		RenderMode,
 		Renderer,
 		TextureDefinitionMap,
@@ -22,6 +23,7 @@
 		uniforms?: UniformMap;
 		textures?: TextureDefinitionMap;
 		clearColor?: [number, number, number, number];
+		outputColorSpace?: OutputColorSpace;
 		renderMode?: RenderMode;
 		autoRender?: boolean;
 		dpr?: number;
@@ -37,6 +39,7 @@
 		uniforms = {},
 		textures = {},
 		clearColor = [0, 0, 0, 1],
+		outputColorSpace = 'srgb',
 		renderMode = 'always',
 		autoRender = true,
 		dpr = initialDpr,
@@ -170,6 +173,7 @@
 					uniformKeys,
 					textureKeys,
 					textureDefinitions: textures,
+					outputColorSpace,
 					clearColor,
 					getDpr: () => dprState.current
 				});

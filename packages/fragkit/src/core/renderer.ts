@@ -20,6 +20,7 @@ interface RuntimeTextureBinding {
 	width: number | undefined;
 	height: number | undefined;
 	format: GPUTextureFormat;
+	flipY: boolean;
 }
 
 function getTextureBindings(index: number): { samplerBinding: number; textureBinding: number } {
@@ -64,7 +65,8 @@ function createFallbackTexture(device: GPUDevice, format: GPUTextureFormat): GPU
 	const texture = device.createTexture({
 		size: { width: 1, height: 1, depthOrArrayLayers: 1 },
 		format,
-		usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+		usage:
+			GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
 	});
 
 	const pixel = new Uint8Array([255, 255, 255, 255]);
@@ -111,6 +113,17 @@ function createBindGroupLayoutEntries(
 	return entries;
 }
 
+function shouldConvertLinearToSrgb(
+	outputColorSpace: 'srgb' | 'linear',
+	canvasFormat: GPUTextureFormat
+): boolean {
+	if (outputColorSpace !== 'srgb') {
+		return false;
+	}
+
+	return !canvasFormat.endsWith('-srgb');
+}
+
 export async function createRenderer(options: RendererOptions): Promise<Renderer> {
 	if (!navigator.gpu) {
 		throw new Error('WebGPU is not available in this browser');
@@ -128,10 +141,12 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	}
 
 	const format = navigator.gpu.getPreferredCanvasFormat();
+	const convertLinearToSrgb = shouldConvertLinearToSrgb(options.outputColorSpace, format);
 	const shaderSource = buildShaderSource(
 		options.fragmentWgsl,
 		options.uniformKeys,
-		options.textureKeys
+		options.textureKeys,
+		{ convertLinearToSrgb }
 	);
 	const shaderModule = device.createShaderModule({ code: shaderSource });
 	await assertCompilation(shaderModule);
@@ -164,7 +179,8 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			source: null,
 			width: undefined,
 			height: undefined,
-			format: config.format
+			format: config.format,
+			flipY: config.flipY
 		};
 	});
 
@@ -254,12 +270,16 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		const texture = device.createTexture({
 			size: { width, height, depthOrArrayLayers: 1 },
 			format: binding.format,
-			usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST
+			usage:
+				GPUTextureUsage.TEXTURE_BINDING |
+				GPUTextureUsage.COPY_DST |
+				GPUTextureUsage.RENDER_ATTACHMENT
 		});
 
 		device.queue.copyExternalImageToTexture(
 			{
-				source
+				source,
+				flipY: binding.flipY
 			},
 			{ texture },
 			{ width, height, depthOrArrayLayers: 1 }

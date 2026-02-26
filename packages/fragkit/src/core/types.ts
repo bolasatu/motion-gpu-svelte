@@ -18,6 +18,7 @@ export type TextureValue = TextureData | TextureSource | null;
 export interface TextureDefinition {
 	source?: TextureValue;
 	colorSpace?: 'srgb' | 'linear';
+	flipY?: boolean;
 	filter?: GPUFilterMode;
 	addressModeU?: GPUAddressMode;
 	addressModeV?: GPUAddressMode;
@@ -25,6 +26,7 @@ export interface TextureDefinition {
 
 export type TextureDefinitionMap = Record<string, TextureDefinition>;
 export type TextureMap = Record<string, TextureValue>;
+export type OutputColorSpace = 'srgb' | 'linear';
 
 export type RenderMode = 'always' | 'on-demand' | 'manual';
 
@@ -46,6 +48,7 @@ export interface RendererOptions {
 	uniformKeys: string[];
 	textureKeys: string[];
 	textureDefinitions: TextureDefinitionMap;
+	outputColorSpace: OutputColorSpace;
 	clearColor: [number, number, number, number];
 	getDpr: () => number;
 }

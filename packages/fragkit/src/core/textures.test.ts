@@ -21,6 +21,7 @@ describe('textures', () => {
 			source: null,
 			colorSpace: 'srgb',
 			format: 'rgba8unorm-srgb',
+			flipY: true,
 			filter: 'linear',
 			addressModeU: 'clamp-to-edge',
 			addressModeV: 'clamp-to-edge'
@@ -30,7 +31,7 @@ describe('textures', () => {
 	it('normalizes texture maps by key', () => {
 		const normalized = normalizeTextureDefinitions(
 			{
-				uTexture1: { filter: 'nearest' },
+				uTexture1: { filter: 'nearest', flipY: false },
 				uTexture2: { addressModeU: 'repeat', addressModeV: 'mirror-repeat' }
 			},
 			['uTexture1', 'uTexture2']
@@ -39,6 +40,7 @@ describe('textures', () => {
 		expect(normalized.uTexture1).toMatchObject({
 			colorSpace: 'srgb',
 			format: 'rgba8unorm-srgb',
+			flipY: false,
 			filter: 'nearest',
 			addressModeU: 'clamp-to-edge',
 			addressModeV: 'clamp-to-edge'
@@ -46,6 +48,7 @@ describe('textures', () => {
 		expect(normalized.uTexture2).toMatchObject({
 			colorSpace: 'srgb',
 			format: 'rgba8unorm-srgb',
+			flipY: true,
 			filter: 'linear',
 			addressModeU: 'repeat',
 			addressModeV: 'mirror-repeat'
