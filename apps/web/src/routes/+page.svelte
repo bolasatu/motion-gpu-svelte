@@ -27,6 +27,8 @@ fn frag(uv: vec2f) -> vec4f {
 		phase: 0,
 		intensity: 0
 	};
+
+	const demoDpr = 2;
 </script>
 
 <main
@@ -41,7 +43,7 @@ fn frag(uv: vec2f) -> vec4f {
 	<div
 		class="aspect-16/10 w-[64vw] overflow-hidden rounded-xl border border-black/10 bg-white shadow-lg"
 	>
-		<FragCanvas {fragmentWgsl} {uniforms} class="h-full w-full">
+		<FragCanvas {fragmentWgsl} {uniforms} dpr={demoDpr} class="h-full w-full">
 			<UniformAnimator />
 		</FragCanvas>
 	</div>
