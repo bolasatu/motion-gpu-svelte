@@ -1,6 +1,6 @@
 import { render } from '@testing-library/svelte';
 import { afterEach, describe, expect, it } from 'vitest';
-import FragCanvas from './FragCanvas.svelte';
+import FragCanvas from './lib/FragCanvas.svelte';
 
 const fragmentWgsl = `
 fn frag(uv: vec2f) -> vec4f {

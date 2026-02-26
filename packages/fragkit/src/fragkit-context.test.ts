@@ -1,6 +1,6 @@
 import { render, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { FragkitContext } from './fragkit-context';
+import type { FragkitContext } from './lib/fragkit-context';
 import FragkitOutside from './test-fixtures/FragkitOutside.svelte';
 import FragkitWithProbe from './test-fixtures/FragkitWithProbe.svelte';
 

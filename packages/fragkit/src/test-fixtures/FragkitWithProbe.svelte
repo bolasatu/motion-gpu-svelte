@@ -1,5 +1,5 @@
 <script lang="ts">
-	import FragCanvas from '../FragCanvas.svelte';
+	import FragCanvas from '../lib/FragCanvas.svelte';
 	import FragkitProbe from './FragkitProbe.svelte';
 
 	interface Props {

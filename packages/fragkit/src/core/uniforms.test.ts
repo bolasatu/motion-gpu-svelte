@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { packUniforms, resolveUniformKeys, toVec4 } from './uniforms';
+import { packUniforms, resolveUniformKeys, toVec4 } from '../lib/core/uniforms';
 
 describe('uniform helpers', () => {
 	it('packs scalar and vectors to vec4', () => {

@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearTextureBlobCache, loadTextureFromUrl, loadTexturesFromUrls } from './texture-loader';
+import {
+	clearTextureBlobCache,
+	loadTextureFromUrl,
+	loadTexturesFromUrls
+} from '../lib/core/texture-loader';
 
 function createMockBlob(): Blob {
 	return new Blob([new Uint8Array([255, 0, 0, 255])], { type: 'image/png' });

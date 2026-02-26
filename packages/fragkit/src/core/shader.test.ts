@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildShaderSource } from './shader';
+import { buildShaderSource } from '../lib/core/shader';
 
 describe('buildShaderSource', () => {
 	it('injects user uniforms and frag wrapper', () => {

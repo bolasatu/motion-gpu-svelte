@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useFragkit } from '../fragkit-context';
+	import { useFragkit } from '../lib/fragkit-context';
 
 	useFragkit();
 </script>

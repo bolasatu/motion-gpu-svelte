@@ -1,7 +1,7 @@
 import { render, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearTextureBlobCache } from './core/texture-loader';
-import type { UseTextureResult } from './use-texture';
+import { clearTextureBlobCache } from './lib/core/texture-loader';
+import type { UseTextureResult } from './lib/use-texture';
 import TextureHookProbe from './test-fixtures/TextureHookProbe.svelte';
 
 interface MockBitmap {

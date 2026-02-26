@@ -2,21 +2,20 @@
 	"name": "fragkit",
 	"version": "0.1.0",
 	"type": "module",
-	"svelte": "./src/index.ts",
+	"svelte": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
-			"svelte": "./src/index.ts",
+			"svelte": "./dist/index.js",
 			"default": "./dist/index.js"
 		}
 	},
 	"files": [
-		"dist",
-		"src"
+		"dist"
 	],
 	"scripts": {
-		"build": "svelte-package -i src -o dist",
+		"build": "svelte-package -i src/lib -o dist",
 		"check": "svelte-check --tsconfig ./tsconfig.json && publint",
 		"test": "vitest run",
 		"test:watch": "vitest",

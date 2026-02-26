@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { useTexture, type UseTextureResult } from '../use-texture';
+	import { useTexture, type UseTextureResult } from '../lib/use-texture';
 
 	interface Props {
 		urls: string[];
