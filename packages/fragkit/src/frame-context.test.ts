@@ -7,6 +7,7 @@ function createState(registry: ReturnType<typeof createFrameRegistry>) {
 		time: 1,
 		delta: 0.016,
 		setUniform: vi.fn(),
+		setTexture: vi.fn(),
 		invalidate: registry.invalidate,
 		advance: registry.advance,
 		renderMode: registry.getRenderMode(),

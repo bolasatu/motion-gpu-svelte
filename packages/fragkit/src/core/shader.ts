@@ -23,9 +23,32 @@ function getKeepAliveUniform(uniformKeys: string[]): string {
 	return uniformKeys[0] as string;
 }
 
-export function buildShaderSource(fragmentWgsl: string, uniformKeys: string[]): string {
+function buildTextureBindings(textureKeys: string[]): string {
+	if (textureKeys.length === 0) {
+		return '';
+	}
+
+	const declarations: string[] = [];
+
+	for (let index = 0; index < textureKeys.length; index += 1) {
+		const key = textureKeys[index];
+		assertUniformName(key);
+		const binding = 2 + index * 2;
+		declarations.push(`@group(0) @binding(${binding}) var ${key}Sampler: sampler;`);
+		declarations.push(`@group(0) @binding(${binding + 1}) var ${key}: texture_2d<f32>;`);
+	}
+
+	return declarations.join('\n');
+}
+
+export function buildShaderSource(
+	fragmentWgsl: string,
+	uniformKeys: string[],
+	textureKeys: string[] = []
+): string {
 	const uniformFields = buildUniformStruct(uniformKeys);
 	const keepAliveUniform = getKeepAliveUniform(uniformKeys);
+	const textureBindings = buildTextureBindings(textureKeys);
 
 	return `
 struct FragkitFrame {
@@ -40,6 +63,7 @@ struct FragkitUniforms {
 
 @group(0) @binding(0) var<uniform> fragkitFrame: FragkitFrame;
 @group(0) @binding(1) var<uniform> fragkitUniforms: FragkitUniforms;
+${textureBindings}
 
 struct FragkitVertexOut {
 	@builtin(position) position: vec4f,

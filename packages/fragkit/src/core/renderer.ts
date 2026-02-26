@@ -49,7 +49,11 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	}
 
 	const format = navigator.gpu.getPreferredCanvasFormat();
-	const shaderSource = buildShaderSource(options.fragmentWgsl, options.uniformKeys);
+	const shaderSource = buildShaderSource(
+		options.fragmentWgsl,
+		options.uniformKeys,
+		options.textureKeys
+	);
 	const shaderModule = device.createShaderModule({ code: shaderSource });
 	await assertCompilation(shaderModule);
 

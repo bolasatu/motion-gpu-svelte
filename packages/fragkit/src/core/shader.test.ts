@@ -5,11 +5,14 @@ describe('buildShaderSource', () => {
 	it('injects user uniforms and frag wrapper', () => {
 		const shader = buildShaderSource(
 			'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
-			['intensity', 'tint']
+			['intensity', 'tint'],
+			['uTexture1']
 		);
 
 		expect(shader).toContain('intensity: vec4f');
 		expect(shader).toContain('tint: vec4f');
+		expect(shader).toContain('@group(0) @binding(2) var uTexture1Sampler: sampler;');
+		expect(shader).toContain('@group(0) @binding(3) var uTexture1: texture_2d<f32>;');
 		expect(shader).toContain('let fragColor = frag(in.uv);');
 		expect(shader).toContain('let fragkitKeepAlive = fragkitUniforms.intensity.x;');
 		expect(shader).toContain('return vec4f(fragColor.rgb + fragkitKeepAlive * 0.0, fragColor.a);');
@@ -22,5 +25,18 @@ describe('buildShaderSource', () => {
 		);
 		expect(shader).toContain('fragkit_unused: vec4f');
 		expect(shader).toContain('let fragkitKeepAlive = fragkitUniforms.fragkit_unused.x;');
+	});
+
+	it('assigns deterministic bindings for multiple textures', () => {
+		const shader = buildShaderSource(
+			'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
+			[],
+			['uTexture1', 'uTexture2']
+		);
+
+		expect(shader).toContain('@group(0) @binding(2) var uTexture1Sampler: sampler;');
+		expect(shader).toContain('@group(0) @binding(3) var uTexture1: texture_2d<f32>;');
+		expect(shader).toContain('@group(0) @binding(4) var uTexture2Sampler: sampler;');
+		expect(shader).toContain('@group(0) @binding(5) var uTexture2: texture_2d<f32>;');
 	});
 });

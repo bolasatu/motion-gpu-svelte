@@ -94,6 +94,12 @@
 			runtimeUniforms[name] = value;
 		};
 
+		const setTexture = (name: string): void => {
+			throw new Error(
+				`Unknown texture "${name}". Declare it in FragCanvas textures prop before using setTexture.`
+			);
+		};
+
 		const renderFrame = (timestamp: number): void => {
 			if (isDisposed || !renderer) {
 				return;
@@ -110,6 +116,7 @@
 				time,
 				delta,
 				setUniform,
+				setTexture,
 				invalidate: registry.invalidate,
 				advance: registry.advance,
 				renderMode: registry.getRenderMode(),
@@ -124,7 +131,8 @@
 					uniforms: {
 						...uniforms,
 						...runtimeUniforms
-					}
+					},
+					textures: {}
 				});
 			}
 
@@ -139,6 +147,7 @@
 					canvas: canvasElement,
 					fragmentWgsl,
 					uniformKeys,
+					textureKeys: [],
 					clearColor,
 					getDpr: () => dprState.current
 				});
