@@ -113,6 +113,27 @@ describe('frame registry', () => {
 		expect(execution).toEqual(['early', 'late']);
 	});
 
+	it('updates existing stage dependencies and callback when createStage is called again', () => {
+		const registry = createFrameRegistry();
+		const execution: string[] = [];
+
+		registry.createStage('early');
+		registry.createStage('late');
+		registry.register('early-task', () => execution.push('early'), { stage: 'early' });
+		registry.register('late-task', () => execution.push('late'), { stage: 'late' });
+
+		registry.run(createState(registry));
+		expect(execution).toEqual(['early', 'late']);
+
+		execution.length = 0;
+		const updatedCallback = vi.fn((_state, runTasks: () => void) => runTasks());
+		registry.createStage('early', { after: 'late', callback: updatedCallback });
+
+		registry.run(createState(registry));
+		expect(updatedCallback).toHaveBeenCalledTimes(1);
+		expect(execution).toEqual(['late', 'early']);
+	});
+
 	it('supports running gate and start/stop controls', () => {
 		const registry = createFrameRegistry();
 		let gate = true;

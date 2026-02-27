@@ -10,7 +10,6 @@
 	import Portal from './Portal.svelte';
 	import { currentWritable } from './current-writable';
 	import { createRenderer } from './core/renderer';
-	import { resolveTextureKeys } from './core/textures';
 	import type {
 		OutputColorSpace,
 		RenderPass,
@@ -38,6 +37,8 @@
 		adapterOptions?: GPURequestAdapterOptions;
 		deviceDescriptor?: GPUDeviceDescriptor;
 		dpr?: number;
+		showErrorOverlay?: boolean;
+		onError?: (report: FragkitErrorReport) => void;
 		class?: string;
 		style?: string;
 		children?: Snippet;
@@ -57,6 +58,8 @@
 		adapterOptions = undefined,
 		deviceDescriptor = undefined,
 		dpr = initialDpr,
+		showErrorOverlay = true,
+		onError = undefined,
 		class: className = '',
 		style = '',
 		children
@@ -74,6 +77,10 @@
 
 	const shouldShowErrorMessage = (report: FragkitErrorReport): boolean => {
 		return normalizeErrorText(report.message) !== normalizeErrorText(report.title);
+	};
+
+	const getRendererRetryDelayMs = (attempt: number): number => {
+		return Math.min(8000, 250 * 2 ** Math.max(0, attempt - 1));
 	};
 
 	const registry = createFrameRegistry({ maxDelta: 0.1 });
@@ -125,7 +132,9 @@
 
 	onMount(() => {
 		const setError = (error: unknown, phase: FragkitErrorPhase): void => {
-			errorReport = toFragkitErrorReport(error, phase);
+			const report = toFragkitErrorReport(error, phase);
+			errorReport = report;
+			onError?.(report);
 		};
 
 		const clearError = (): void => {
@@ -144,6 +153,8 @@
 		let previousTime = performance.now() / 1000;
 		let activeRendererSignature = '';
 		let failedRendererSignature: string | null = null;
+		let failedRendererAttempts = 0;
+		let nextRendererRetryAt = 0;
 		let rendererRebuildPromise: Promise<void> | null = null;
 
 		const runtimeUniforms: Record<string, UniformValue> = {};
@@ -151,8 +162,10 @@
 		let activeUniforms: Record<string, UniformValue> = {};
 		let activeTextures: Record<string, { source?: TextureValue }> = {};
 		let uniformKeys: string[] = [];
+		let uniformKeySet = new Set<string>();
 		let uniformTypes = new Map<string, UniformType>();
 		let textureKeys: string[] = [];
+		let textureKeySet = new Set<string>();
 
 		const resetRuntimeMaps = (): void => {
 			const validUniforms = new Set(uniformKeys);
@@ -171,15 +184,11 @@
 		};
 
 		const resolveActiveMaterial = () => {
-			const resolved = resolveMaterial(material);
-
-			resolveTextureKeys(resolved.textures);
-
-			return resolved;
+			return resolveMaterial(material);
 		};
 
 		const setUniform = (name: string, value: UniformValue): void => {
-			if (!uniformKeys.includes(name)) {
+			if (!uniformKeySet.has(name)) {
 				throw new Error(`Unknown uniform "${name}". Declare it in material.uniforms first.`);
 			}
 			const expectedType = uniformTypes.get(name);
@@ -191,7 +200,7 @@
 		};
 
 		const setTexture = (name: string, value: TextureValue): void => {
-			if (!textureKeys.includes(name)) {
+			if (!textureKeySet.has(name)) {
 				throw new Error(`Unknown texture "${name}". Declare it in material.textures first.`);
 			}
 			runtimeTextures[name] = value;
@@ -219,10 +228,21 @@
 				materialState.uniformLayout.entries.map((entry) => [entry.name, entry.type])
 			);
 			textureKeys = materialState.textureKeys;
+			uniformKeySet = new Set(uniformKeys);
+			textureKeySet = new Set(textureKeys);
 			resetRuntimeMaps();
 
+			if (failedRendererSignature && failedRendererSignature !== rendererSignature) {
+				failedRendererSignature = null;
+				failedRendererAttempts = 0;
+				nextRendererRetryAt = 0;
+			}
+
 			if (!renderer || activeRendererSignature !== rendererSignature) {
-				if (failedRendererSignature === rendererSignature) {
+				if (
+					failedRendererSignature === rendererSignature &&
+					performance.now() < nextRendererRetryAt
+				) {
 					frameId = requestAnimationFrame(renderFrame);
 					return;
 				}
@@ -254,9 +274,14 @@
 							renderer = nextRenderer;
 							activeRendererSignature = rendererSignature;
 							failedRendererSignature = null;
+							failedRendererAttempts = 0;
+							nextRendererRetryAt = 0;
 							clearError();
 						} catch (error) {
 							failedRendererSignature = rendererSignature;
+							failedRendererAttempts += 1;
+							nextRendererRetryAt =
+								performance.now() + getRendererRetryDelayMs(failedRendererAttempts);
 							setError(error, 'initialization');
 						} finally {
 							rendererRebuildPromise = null;
@@ -326,6 +351,8 @@
 					initialMaterial.uniformLayout.entries.map((entry) => [entry.name, entry.type])
 				);
 				textureKeys = initialMaterial.textureKeys;
+				uniformKeySet = new Set(uniformKeys);
+				textureKeySet = new Set(textureKeys);
 				activeRendererSignature = '';
 				frameId = requestAnimationFrame(renderFrame);
 			} catch (error) {
@@ -344,7 +371,7 @@
 
 <div class="fragkit-canvas-wrap">
 	<canvas bind:this={canvas} class={className} {style}></canvas>
-	{#if errorReport}
+	{#if showErrorOverlay && errorReport}
 		<Portal>
 			<div class="fragkit-error-overlay" role="presentation">
 				<div

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { FragCanvas, createMaterial } from 'fragkit';
+	import { FragCanvas, defineMaterial } from 'fragkit';
 
-	const material = createMaterial({
+	const material = defineMaterial({
 		fragment: `
 fn frag(uv: vec2f) -> vec4f {
 	let r = fragkitFrame.resolution;

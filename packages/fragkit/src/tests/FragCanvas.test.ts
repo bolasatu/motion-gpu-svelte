@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, render, screen, waitFor } from '@testing-library/svelte';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import FragCanvas from '../lib/FragCanvas.svelte';
-import { createMaterial } from '../lib/core/material';
+import { defineMaterial } from '../lib/core/material';
 
-const material = createMaterial({
+const material = defineMaterial({
 	fragment: `
 fn frag(uv: vec2f) -> vec4f {
 	return vec4f(uv.x, uv.y, 0.5, 1.0);
@@ -13,6 +13,7 @@ fn frag(uv: vec2f) -> vec4f {
 
 describe('FragCanvas', () => {
 	afterEach(() => {
+		cleanup();
 		Reflect.deleteProperty(navigator, 'gpu');
 	});
 
@@ -29,5 +30,43 @@ describe('FragCanvas', () => {
 		expect(error.textContent).toContain('WebGPU unavailable');
 		expect(error.textContent).toContain('WebGPU is not available');
 		expect(error.textContent).toContain('Use a browser with WebGPU enabled');
+	});
+
+	it('calls onError callback with normalized report data', async () => {
+		const onError = vi.fn();
+		render(FragCanvas, {
+			props: {
+				material,
+				onError
+			}
+		});
+
+		const error = await screen.findByTestId('fragkit-error');
+		expect(error).toBeDefined();
+		await waitFor(() => {
+			expect(onError).toHaveBeenCalled();
+		});
+		expect(onError).toHaveBeenCalledWith(
+			expect.objectContaining({
+				title: 'WebGPU unavailable',
+				phase: 'initialization'
+			})
+		);
+	});
+
+	it('can disable the built-in error overlay while still reporting errors', async () => {
+		const onError = vi.fn();
+		render(FragCanvas, {
+			props: {
+				material,
+				showErrorOverlay: false,
+				onError
+			}
+		});
+
+		await waitFor(() => {
+			expect(onError).toHaveBeenCalled();
+		});
+		expect(screen.queryByTestId('fragkit-error')).toBeNull();
 	});
 });

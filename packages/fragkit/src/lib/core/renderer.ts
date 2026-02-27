@@ -645,6 +645,9 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	let bindGroup = createBindGroup();
 	let sceneTarget: RuntimeRenderTarget | null = null;
 	let renderTargetSignature = '';
+	let contextConfigured = false;
+	let configuredWidth = 0;
+	let configuredHeight = 0;
 	const runtimeRenderTargets = new Map<string, RuntimeRenderTarget>();
 
 	/**
@@ -793,11 +796,16 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 
 		const { width, height } = resizeCanvas(options.canvas, options.getDpr());
 
-		context.configure({
-			device,
-			format,
-			alphaMode: 'premultiplied'
-		});
+		if (!contextConfigured || configuredWidth !== width || configuredHeight !== height) {
+			context.configure({
+				device,
+				format,
+				alphaMode: 'premultiplied'
+			});
+			contextConfigured = true;
+			configuredWidth = width;
+			configuredHeight = height;
+		}
 
 		const frameData = new Float32Array([time, delta, width, height]);
 		device.queue.writeBuffer(

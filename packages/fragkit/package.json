@@ -9,6 +9,11 @@
 			"types": "./dist/index.d.ts",
 			"svelte": "./dist/index.js",
 			"default": "./dist/index.js"
+		},
+		"./advanced": {
+			"types": "./dist/advanced.d.ts",
+			"svelte": "./dist/advanced.js",
+			"default": "./dist/advanced.js"
 		}
 	},
 	"files": [

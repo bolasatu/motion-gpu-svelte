@@ -410,6 +410,12 @@ export function createFrameRegistry(options?: {
 		const stageKey = toStageKey(stageReference);
 		const existing = stages.get(stageKey);
 		if (existing) {
+			if (stageOptions?.before !== undefined) {
+				existing.before = new Set(stageOptions.before.map((entry) => toStageKey(entry)));
+			}
+			if (stageOptions?.after !== undefined) {
+				existing.after = new Set(stageOptions.after.map((entry) => toStageKey(entry)));
+			}
 			if (stageOptions?.callback) {
 				existing.callback = stageOptions.callback;
 			}
@@ -659,8 +665,8 @@ export function createFrameRegistry(options?: {
 		},
 		createStage(key, options) {
 			const stage = ensureStage(key, {
-				before: asArray(options?.before),
-				after: asArray(options?.after),
+				before: options?.before ? asArray(options.before) : undefined,
+				after: options?.after ? asArray(options.after) : undefined,
 				callback: options?.callback
 			});
 			return { key: stage.key };

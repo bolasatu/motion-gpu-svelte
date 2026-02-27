@@ -2,20 +2,25 @@ import { describe, expect, it } from 'vitest';
 import {
 	applyMaterialDefines,
 	buildDefinesBlock,
-	createMaterial,
+	defineMaterial,
 	resolveMaterial
 } from '../../lib/core/material';
 
 describe('material', () => {
-	it('creates material snapshots', () => {
-		const input = createMaterial({
+	it('creates immutable material snapshots with normalized defaults', () => {
+		const input = defineMaterial({
 			fragment: 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
 			uniforms: { uMix: 0.5 },
 			defines: { USE_MIX: true }
 		});
 
 		expect(input.uniforms).toEqual({ uMix: 0.5 });
+		expect(input.textures).toEqual({});
 		expect(input.defines).toEqual({ USE_MIX: true });
+		expect(Object.isFrozen(input)).toBe(true);
+		expect(Object.isFrozen(input.uniforms)).toBe(true);
+		expect(Object.isFrozen(input.textures)).toBe(true);
+		expect(Object.isFrozen(input.defines)).toBe(true);
 	});
 
 	it('builds and applies define blocks', () => {
@@ -40,7 +45,7 @@ describe('material', () => {
 
 	it('resolves material and tracks signature', () => {
 		const resolved = resolveMaterial(
-			createMaterial({
+			defineMaterial({
 				fragment: 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
 				uniforms: { b: 1, a: 0 },
 				textures: { z: {}, x: {} }
@@ -55,13 +60,13 @@ describe('material', () => {
 	it('changes signature when defines change', () => {
 		const baseFragment = 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }';
 		const a = resolveMaterial(
-			createMaterial({
+			defineMaterial({
 				fragment: baseFragment,
 				defines: { USE_GRAIN: true }
 			})
 		);
 		const b = resolveMaterial(
-			createMaterial({
+			defineMaterial({
 				fragment: baseFragment,
 				defines: { USE_GRAIN: false }
 			})
@@ -73,7 +78,7 @@ describe('material', () => {
 	it('changes signature when texture sampler config changes', () => {
 		const baseFragment = 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }';
 		const a = resolveMaterial(
-			createMaterial({
+			defineMaterial({
 				fragment: baseFragment,
 				textures: {
 					uMain: { filter: 'linear', addressModeU: 'clamp-to-edge' }
@@ -81,7 +86,7 @@ describe('material', () => {
 			})
 		);
 		const b = resolveMaterial(
-			createMaterial({
+			defineMaterial({
 				fragment: baseFragment,
 				textures: {
 					uMain: { filter: 'nearest', addressModeU: 'repeat' }
@@ -90,5 +95,44 @@ describe('material', () => {
 		);
 
 		expect(a.signature).not.toEqual(b.signature);
+	});
+
+	it('rejects invalid fragment contracts and define values', () => {
+		expect(() =>
+			defineMaterial({
+				fragment: 'fn nope() -> vec4f { return vec4f(0.0); }'
+			})
+		).toThrow(/fn frag\(uv: vec2f\) -> vec4f/);
+
+		expect(() =>
+			defineMaterial({
+				fragment: 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
+				defines: { BROKEN: Number.NaN }
+			})
+		).toThrow(/Define numbers must be finite/);
+	});
+
+	it('reuses resolved material snapshot for immutable material instances', () => {
+		const material = defineMaterial({
+			fragment: 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
+			uniforms: { uMix: 0.25 }
+		});
+
+		const first = resolveMaterial(material);
+		const second = resolveMaterial(material);
+		expect(first).toBe(second);
+	});
+
+	it('throws when resolving non-normalized material objects', () => {
+		const rawMaterial = {
+			fragment: 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
+			uniforms: {},
+			textures: {},
+			defines: {}
+		};
+
+		expect(() => resolveMaterial(rawMaterial as Parameters<typeof resolveMaterial>[0])).toThrow(
+			/defineMaterial/
+		);
 	});
 });
