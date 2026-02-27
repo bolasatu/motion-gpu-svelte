@@ -1,0 +1,146 @@
+# Examples
+
+## 1. Time-based gradient
+
+```svelte
+<!-- App.svelte -->
+<script lang="ts">
+  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
+  import Runtime from './Runtime.svelte';
+
+  const material = defineMaterial({
+    fragment: `
+fn frag(uv: vec2f) -> vec4f {
+  let c = 0.5 + 0.5 * sin(uTime + uv.x * 10.0);
+  return vec4f(c, uv.y, 1.0 - c, 1.0);
+}
+`,
+    uniforms: {
+      uTime: { type: 'f32', value: 0 }
+    }
+  });
+</script>
+
+<FragCanvas {material}>
+  <Runtime />
+</FragCanvas>
+```
+
+```svelte
+<!-- Runtime.svelte -->
+<script lang="ts">
+  import { useFrame } from '@motion-core/motion-gpu';
+
+  useFrame((state) => state.setUniform('uTime', state.time));
+</script>
+```
+
+## 2. On-demand rendering with explicit invalidation
+
+```svelte
+<!-- App.svelte -->
+<script lang="ts">
+  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
+  import Controls from './Controls.svelte';
+
+  const material = defineMaterial({
+    fragment: `
+fn frag(uv: vec2f) -> vec4f {
+  return vec4f(uv, 0.0, 1.0);
+}
+`
+  });
+</script>
+
+<FragCanvas {material}>
+  <Controls />
+</FragCanvas>
+```
+
+```svelte
+<!-- Controls.svelte -->
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { useMotionGPU } from '@motion-core/motion-gpu';
+
+  const gpu = useMotionGPU();
+
+  onMount(() => {
+    gpu.renderMode.set('on-demand');
+  });
+</script>
+
+<button onclick={() => gpu.invalidate('ui-change')}>
+  Redraw
+</button>
+```
+
+## 3. Load textures with `useTexture`
+
+```svelte
+<!-- App.svelte -->
+<script lang="ts">
+  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
+  import Runtime from './Runtime.svelte';
+
+  const material = defineMaterial({
+    fragment: `
+fn frag(uv: vec2f) -> vec4f {
+  return textureSample(uMain, uMainSampler, uv);
+}
+`,
+    textures: {
+      uMain: { filter: 'linear', update: 'once' }
+    }
+  });
+</script>
+
+<FragCanvas {material}>
+  <Runtime />
+</FragCanvas>
+```
+
+```svelte
+<!-- Runtime.svelte -->
+<script lang="ts">
+  import { useFrame, useTexture } from '@motion-core/motion-gpu';
+
+  const loaded = useTexture(['/assets/tex.png']);
+
+  useFrame((state) => {
+    const first = loaded.textures.current?.[0];
+    state.setTexture('uMain', first ? { source: first.source } : null);
+  });
+</script>
+```
+
+## 4. Post-processing with `ShaderPass`
+
+```ts
+import { ShaderPass } from '@motion-core/motion-gpu';
+
+const tonePass = new ShaderPass({
+  fragment: `
+fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
+  let vignette = smoothstep(1.0, 0.2, distance(uv, vec2f(0.5, 0.5)));
+  return vec4f(inputColor.rgb * vignette, inputColor.a);
+}
+`
+});
+```
+
+Then pass it to `<FragCanvas passes={[tonePass]} />`.
+
+## 5. Advanced shared plugin state
+
+```ts
+import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
+
+// initialize once
+useMotionGPUUserContext('plugin:orbit', () => ({ enabled: true, speed: 1 }), {
+  existing: 'skip'
+});
+
+// read later
+const orbit = useMotionGPUUserContext<{ enabled: boolean; speed: number }>('plugin:orbit');
+```
