@@ -19,7 +19,9 @@ describe('FragCanvas', () => {
 	it('shows a readable error when WebGPU is unavailable', async () => {
 		render(FragCanvas, {
 			props: {
-				material
+				material,
+				adapterOptions: { powerPreference: 'high-performance' },
+				deviceDescriptor: { label: 'fragkit-test-device' }
 			}
 		});
 

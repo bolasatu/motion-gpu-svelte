@@ -114,6 +114,8 @@ export interface RendererOptions {
 	outputColorSpace: OutputColorSpace;
 	clearColor: [number, number, number, number];
 	getDpr: () => number;
+	adapterOptions?: GPURequestAdapterOptions;
+	deviceDescriptor?: GPUDeviceDescriptor;
 }
 
 export interface Renderer {

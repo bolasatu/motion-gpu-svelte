@@ -18,6 +18,9 @@
 | `outputColorSpace` | `'srgb' \| 'linear'` | `'srgb'` | May inject linear->sRGB conversion in shader wrapper. |
 | `renderMode` | `'always' \| 'on-demand' \| 'manual'` | `'always'` | Frame output policy. |
 | `autoRender` | `boolean` | `true` | Global render gate. If `false`, no rendering occurs. |
+| `maxDelta` | `number` | `0.1` | Maximum frame delta in seconds passed to hooks and renderer. |
+| `adapterOptions` | `GPURequestAdapterOptions` | `undefined` | Optional options forwarded to `navigator.gpu.requestAdapter(...)`. |
+| `deviceDescriptor` | `GPUDeviceDescriptor` | `undefined` | Optional descriptor forwarded to `adapter.requestDevice(...)`. |
 | `dpr` | `number` | `window.devicePixelRatio` (or `1` in SSR) | Used every frame for canvas backing resolution. |
 | `class` | `string` | `''` | Applied to `<canvas>` element. |
 | `style` | `string` | `''` | Applied to `<canvas>` element. |
@@ -66,6 +69,14 @@ This is intentionally user-readable and includes common WebGPU failure hints.
 
 WebGPU initialization occurs in `onMount`, so server rendering does not execute GPU setup.
 If canvas binding fails on mount, component reports initialization error.
+
+## Advanced GPU Initialization
+
+Use `adapterOptions` and `deviceDescriptor` when you need explicit adapter/device constraints:
+
+- power preference tuning
+- required WebGPU features
+- required WebGPU limits
 
 ## Example
 

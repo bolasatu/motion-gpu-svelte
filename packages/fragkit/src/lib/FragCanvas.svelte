@@ -35,6 +35,8 @@
 		renderMode?: RenderMode;
 		autoRender?: boolean;
 		maxDelta?: number;
+		adapterOptions?: GPURequestAdapterOptions;
+		deviceDescriptor?: GPUDeviceDescriptor;
 		dpr?: number;
 		class?: string;
 		style?: string;
@@ -52,6 +54,8 @@
 		renderMode = 'always',
 		autoRender = true,
 		maxDelta = 0.1,
+		adapterOptions = undefined,
+		deviceDescriptor = undefined,
 		dpr = initialDpr,
 		class: className = '',
 		style = '',
@@ -236,7 +240,9 @@
 								getPasses: () => passes,
 								outputColorSpace,
 								clearColor,
-								getDpr: () => dprState.current
+								getDpr: () => dprState.current,
+								adapterOptions,
+								deviceDescriptor
 							});
 
 							if (isDisposed) {

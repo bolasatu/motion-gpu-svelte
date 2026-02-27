@@ -7,6 +7,7 @@ The package root export (`fragkit`) currently contains:
 - `FragCanvas` (Svelte component)
 - `createMaterial(input: FragMaterial): FragMaterial`
 - `useFragkit(): FragkitContext`
+- `useFragkitUserContext(...)`
 - `useFrame(...)`
 - `useTexture(...)`
 

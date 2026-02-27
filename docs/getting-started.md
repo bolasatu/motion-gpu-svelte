@@ -91,6 +91,18 @@ See [Hooks Reference](./reference/hooks.md).
 
 You can control this via `FragCanvas` props or the context returned by `useFragkit()`.
 
+## Optional WebGPU Init Controls
+
+If needed, pass low-level WebGPU initialization options:
+
+```svelte
+<FragCanvas
+  {material}
+  adapterOptions={{ powerPreference: 'high-performance' }}
+  deviceDescriptor={{ label: 'fragkit-main-device' }}
+/>
+```
+
 ## Next
 
 - [FragCanvas API](./reference/frag-canvas.md)

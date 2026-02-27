@@ -11,13 +11,19 @@ interface FragkitContext {
   canvas: HTMLCanvasElement | undefined;
   size: CurrentReadable<{ width: number; height: number }>;
   dpr: CurrentWritable<number>;
+  maxDelta: CurrentWritable<number>;
   renderMode: CurrentWritable<'always' | 'on-demand' | 'manual'>;
   autoRender: CurrentWritable<boolean>;
+  user: CurrentWritable<Record<string | symbol, unknown>>;
   invalidate: () => void;
   advance: () => void;
   scheduler: {
     createStage: (...)
     getStage: (...)
+    setDiagnosticsEnabled: (...)
+    getDiagnosticsEnabled: (...)
+    getLastRunTimings: (...)
+    getSchedule: (...)
   };
 }
 ```
@@ -27,7 +33,30 @@ interface FragkitContext {
 - Throws outside `<FragCanvas>`.
 - `size.current` is updated each frame from canvas dimensions.
 - `renderMode` and `autoRender` stores are writable; changes are reflected in frame scheduler.
+- `maxDelta` is writable and clamps frame delta passed to callbacks/rendering.
 - `invalidate()` and `advance()` proxy frame registry controls.
+- `user` is a namespaced store for plugin/runtime extension data.
+
+## `useFragkitUserContext(...)`
+
+Namespaced user/plugin context helper scoped to the current `FragCanvas`.
+
+### Signatures
+
+```ts
+useFragkitUserContext() // full user context store
+useFragkitUserContext(namespace) // readable scoped namespace
+useFragkitUserContext(namespace, value, options?) // set namespace value
+```
+
+### Set options
+
+- `existing: 'skip' | 'merge' | 'replace'` (default: `skip`)
+
+### Notes
+
+- Use this for plugin/module communication without prop drilling.
+- Throws when used outside `<FragCanvas>`.
 
 ## `useFrame(...)`
 

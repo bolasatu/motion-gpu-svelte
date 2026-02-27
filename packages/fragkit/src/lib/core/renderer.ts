@@ -328,12 +328,12 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		throw new Error('WebGPU is not available in this browser');
 	}
 
-	const adapter = await navigator.gpu.requestAdapter();
+	const adapter = await navigator.gpu.requestAdapter(options.adapterOptions);
 	if (!adapter) {
 		throw new Error('Unable to acquire WebGPU adapter');
 	}
 
-	const device = await adapter.requestDevice();
+	const device = await adapter.requestDevice(options.deviceDescriptor);
 	let isDestroyed = false;
 	let deviceLostMessage: string | null = null;
 	let uncapturedErrorMessage: string | null = null;
