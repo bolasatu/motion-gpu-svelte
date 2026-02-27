@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	buildRenderTargetSignature,
 	resolveRenderTargetDefinitions
-} from '../lib/core/render-targets';
+} from '../../lib/core/render-targets';
 
 describe('render targets', () => {
 	it('resolves sorted target definitions with defaults', () => {

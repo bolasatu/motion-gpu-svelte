@@ -4,7 +4,7 @@ import {
 	buildDefinesBlock,
 	createMaterial,
 	resolveMaterial
-} from '../lib/core/material';
+} from '../../lib/core/material';
 
 describe('material', () => {
 	it('creates material snapshots', () => {

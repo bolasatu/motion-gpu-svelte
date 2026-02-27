@@ -1,8 +1,8 @@
 import { render, waitFor } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
-import type { CurrentReadable } from './lib/current-writable';
-import FragkitUserOutside from './test-fixtures/FragkitUserOutside.svelte';
-import FragkitWithUserProbe from './test-fixtures/FragkitWithUserProbe.svelte';
+import type { CurrentReadable } from '../lib/current-writable';
+import FragkitUserOutside from './fixtures/FragkitUserOutside.svelte';
+import FragkitWithUserProbe from './fixtures/FragkitWithUserProbe.svelte';
 
 describe('useFragkitUserContext', () => {
 	it('throws when used outside <FragCanvas>', () => {

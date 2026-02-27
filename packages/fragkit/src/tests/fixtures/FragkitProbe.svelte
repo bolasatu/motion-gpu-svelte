@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { useFragkit } from '../lib/fragkit-context';
+	import { useFragkit } from '../../lib/fragkit-context';
 
 	interface Props {
 		onProbe: (value: ReturnType<typeof useFragkit>) => void;

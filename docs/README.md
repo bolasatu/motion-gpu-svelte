@@ -4,8 +4,8 @@ This documentation covers the `fragkit` package in this repository (`packages/fr
 It is based on the current source and tests in:
 
 - `packages/fragkit/src/lib/*`
-- `packages/fragkit/src/core/*.test.ts`
-- `packages/fragkit/src/*.test.ts`
+- `packages/fragkit/src/tests/core/*.test.ts`
+- `packages/fragkit/src/tests/*.test.ts`
 
 ## Documentation Map
 

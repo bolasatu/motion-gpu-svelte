@@ -5,7 +5,7 @@ import {
 	packUniformsInto,
 	packUniforms,
 	resolveUniformLayout
-} from '../lib/core/uniforms';
+} from '../../lib/core/uniforms';
 
 describe('uniform helpers', () => {
 	it('infers uniform types from scalar, tuple and typed values', () => {

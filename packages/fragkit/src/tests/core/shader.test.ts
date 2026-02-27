@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildShaderSource } from '../lib/core/shader';
-import { resolveUniformLayout } from '../lib/core/uniforms';
+import { buildShaderSource } from '../../lib/core/shader';
+import { resolveUniformLayout } from '../../lib/core/uniforms';
 
 describe('buildShaderSource', () => {
 	it('injects user uniforms and frag wrapper', () => {

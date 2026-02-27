@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toFragkitErrorReport } from '../lib/core/error-report';
+import { toFragkitErrorReport } from '../../lib/core/error-report';
 
 describe('error report', () => {
 	it('classifies WebGPU unavailable errors', () => {

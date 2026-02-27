@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it } from 'vitest';
-import FragCanvas from './lib/FragCanvas.svelte';
-import { createMaterial } from './lib/core/material';
+import FragCanvas from '../lib/FragCanvas.svelte';
+import { createMaterial } from '../lib/core/material';
 
 const material = createMaterial({
 	fragment: `

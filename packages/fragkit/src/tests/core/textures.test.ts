@@ -7,7 +7,7 @@ import {
 	resolveTextureKeys,
 	resolveTextureSize,
 	toTextureData
-} from '../lib/core/textures';
+} from '../../lib/core/textures';
 
 describe('textures', () => {
 	it('resolves sorted texture keys and validates names', () => {
