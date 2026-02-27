@@ -1,19 +1,40 @@
 import { assertUniformName } from './uniforms';
 import type { RenderTargetDefinitionMap } from './types';
 
+/**
+ * Concrete render target configuration resolved for current canvas size.
+ */
 export interface ResolvedRenderTargetDefinition {
+	/**
+	 * Render target key.
+	 */
 	key: string;
+	/**
+	 * Resolved width in pixels.
+	 */
 	width: number;
+	/**
+	 * Resolved height in pixels.
+	 */
 	height: number;
+	/**
+	 * Resolved format.
+	 */
 	format: GPUTextureFormat;
 }
 
+/**
+ * Asserts positive finite numeric input for render target options.
+ */
 function assertPositiveFinite(name: string, value: number): void {
 	if (!Number.isFinite(value) || value <= 0) {
 		throw new Error(`${name} must be a finite number greater than 0`);
 	}
 }
 
+/**
+ * Resolves a render target dimension from explicit value or scaled canvas size.
+ */
 function resolveDimension(
 	explicitValue: number | undefined,
 	canvasDimension: number,
@@ -27,6 +48,15 @@ function resolveDimension(
 	return Math.max(1, Math.floor(canvasDimension * scale));
 }
 
+/**
+ * Resolves all render target definitions for a specific canvas size.
+ *
+ * @param definitions - Declarative definitions.
+ * @param canvasWidth - Current canvas width in pixels.
+ * @param canvasHeight - Current canvas height in pixels.
+ * @param defaultFormat - Fallback texture format.
+ * @returns Sorted concrete render target definitions.
+ */
 export function resolveRenderTargetDefinitions(
 	definitions: RenderTargetDefinitionMap | undefined,
 	canvasWidth: number,
@@ -60,6 +90,12 @@ export function resolveRenderTargetDefinitions(
 	return resolved;
 }
 
+/**
+ * Builds a deterministic signature used to detect render target topology changes.
+ *
+ * @param resolvedDefinitions - Concrete target definitions.
+ * @returns Stable signature string.
+ */
 export function buildRenderTargetSignature(
 	resolvedDefinitions: ResolvedRenderTargetDefinition[]
 ): string {

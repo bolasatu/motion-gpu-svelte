@@ -1,8 +1,14 @@
 import { assertUniformName } from './uniforms';
 import type { UniformLayout } from './types';
 
+/**
+ * Fallback uniform field used when no custom uniforms are provided.
+ */
 const DEFAULT_UNIFORM_FIELD = 'fragkit_unused: vec4f,';
 
+/**
+ * Builds WGSL struct fields for user uniforms.
+ */
 function buildUniformStruct(layout: UniformLayout): string {
 	if (layout.entries.length === 0) {
 		return DEFAULT_UNIFORM_FIELD;
@@ -16,6 +22,9 @@ function buildUniformStruct(layout: UniformLayout): string {
 		.join('\n\t');
 }
 
+/**
+ * Builds a numeric expression that references one uniform value to keep bindings alive.
+ */
 function getKeepAliveExpression(layout: UniformLayout): string {
 	if (layout.entries.length === 0) {
 		return 'fragkitUniforms.fragkit_unused.x';
@@ -37,6 +46,9 @@ function getKeepAliveExpression(layout: UniformLayout): string {
 	return `fragkitUniforms.${firstEntry.name}.x`;
 }
 
+/**
+ * Builds texture sampler/texture binding declarations.
+ */
 function buildTextureBindings(textureKeys: string[]): string {
 	if (textureKeys.length === 0) {
 		return '';
@@ -55,6 +67,9 @@ function buildTextureBindings(textureKeys: string[]): string {
 	return declarations.join('\n');
 }
 
+/**
+ * Optionally returns helper WGSL for linear-to-sRGB conversion.
+ */
 function buildColorTransformHelpers(enableSrgbTransform: boolean): string {
 	if (!enableSrgbTransform) {
 		return '';
@@ -70,6 +85,9 @@ fn fragkitLinearToSrgb(linearColor: vec3f) -> vec3f {
 `;
 }
 
+/**
+ * Builds fragment output code with optional color-space conversion.
+ */
 function buildFragmentOutput(keepAliveExpression: string, enableSrgbTransform: boolean): string {
 	if (enableSrgbTransform) {
 		return `
@@ -88,6 +106,15 @@ function buildFragmentOutput(keepAliveExpression: string, enableSrgbTransform: b
 `;
 }
 
+/**
+ * Assembles complete WGSL shader source used by the fullscreen renderer pipeline.
+ *
+ * @param fragmentWgsl - User fragment shader code containing `frag(uv: vec2f) -> vec4f`.
+ * @param uniformLayout - Resolved uniform layout.
+ * @param textureKeys - Sorted texture keys.
+ * @param options - Shader build options.
+ * @returns Complete WGSL source for vertex + fragment stages.
+ */
 export function buildShaderSource(
 	fragmentWgsl: string,
 	uniformLayout: UniformLayout,

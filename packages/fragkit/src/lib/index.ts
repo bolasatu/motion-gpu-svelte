@@ -1,3 +1,8 @@
+/**
+ * Public Fragkit package entrypoint.
+ *
+ * Exposes the `FragCanvas` component, runtime hooks and all public type contracts.
+ */
 export { default as FragCanvas } from './FragCanvas.svelte';
 export { createMaterial } from './core/material';
 export { useFragkit } from './fragkit-context';

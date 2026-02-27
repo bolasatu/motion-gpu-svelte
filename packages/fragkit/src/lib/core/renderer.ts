@@ -17,10 +17,24 @@ import type {
 	TextureValue
 } from './types';
 
+/**
+ * Binding index for frame uniforms (`time`, `delta`, `resolution`).
+ */
 const FRAME_BINDING = 0;
+
+/**
+ * Binding index for material uniform buffer.
+ */
 const UNIFORM_BINDING = 1;
+
+/**
+ * First binding index used for texture sampler/texture pairs.
+ */
 const FIRST_TEXTURE_BINDING = 2;
 
+/**
+ * Runtime texture binding state associated with a single texture key.
+ */
 interface RuntimeTextureBinding {
 	key: string;
 	samplerBinding: number;
@@ -40,6 +54,9 @@ interface RuntimeTextureBinding {
 	premultipliedAlpha: boolean;
 }
 
+/**
+ * Runtime render target allocation metadata.
+ */
 interface RuntimeRenderTarget {
 	texture: GPUTexture;
 	view: GPUTextureView;
@@ -48,6 +65,9 @@ interface RuntimeRenderTarget {
 	format: GPUTextureFormat;
 }
 
+/**
+ * Returns sampler/texture binding slots for a texture index.
+ */
 function getTextureBindings(index: number): { samplerBinding: number; textureBinding: number } {
 	const samplerBinding = FIRST_TEXTURE_BINDING + index * 2;
 	return {
@@ -56,6 +76,9 @@ function getTextureBindings(index: number): { samplerBinding: number; textureBin
 	};
 }
 
+/**
+ * Resizes canvas backing store to match client size and DPR.
+ */
 function resizeCanvas(
 	canvas: HTMLCanvasElement,
 	dprInput: number
@@ -72,6 +95,9 @@ function resizeCanvas(
 	return { width, height };
 }
 
+/**
+ * Throws when a shader module contains WGSL compilation errors.
+ */
 async function assertCompilation(module: GPUShaderModule): Promise<void> {
 	const info = await module.getCompilationInfo();
 	const errors = info.messages.filter((message: GPUCompilationMessage) => message.type === 'error');
@@ -86,6 +112,9 @@ async function assertCompilation(module: GPUShaderModule): Promise<void> {
 	throw new Error(`WGSL compilation failed:\n${summary}`);
 }
 
+/**
+ * Creates a 1x1 white fallback texture used before user textures become available.
+ */
 function createFallbackTexture(device: GPUDevice, format: GPUTextureFormat): GPUTexture {
 	const texture = device.createTexture({
 		size: { width: 1, height: 1, depthOrArrayLayers: 1 },
@@ -105,6 +134,9 @@ function createFallbackTexture(device: GPUDevice, format: GPUTextureFormat): GPU
 	return texture;
 }
 
+/**
+ * Creates an offscreen canvas used for CPU mipmap generation.
+ */
 function createMipmapCanvas(width: number, height: number): OffscreenCanvas | HTMLCanvasElement {
 	if (typeof OffscreenCanvas !== 'undefined') {
 		return new OffscreenCanvas(width, height);
@@ -116,6 +148,9 @@ function createMipmapCanvas(width: number, height: number): OffscreenCanvas | HT
 	return canvas;
 }
 
+/**
+ * Creates typed descriptor for `copyExternalImageToTexture`.
+ */
 function createExternalCopySource(
 	source: CanvasImageSource,
 	options: { flipY?: boolean; premultipliedAlpha?: boolean }
@@ -129,6 +164,9 @@ function createExternalCopySource(
 	return descriptor as GPUCopyExternalImageSourceInfo;
 }
 
+/**
+ * Uploads source content to a GPU texture and optionally generates mip chain on CPU.
+ */
 function uploadTexture(
 	device: GPUDevice,
 	texture: GPUTexture,
@@ -190,6 +228,9 @@ function uploadTexture(
 	}
 }
 
+/**
+ * Creates bind group layout entries for frame/uniform buffers plus texture bindings.
+ */
 function createBindGroupLayoutEntries(
 	textureBindings: RuntimeTextureBinding[]
 ): GPUBindGroupLayoutEntry[] {
@@ -223,6 +264,9 @@ function createBindGroupLayoutEntries(
 	return entries;
 }
 
+/**
+ * Computes dirty float ranges between two uniform snapshots.
+ */
 function findDirtyFloatRanges(
 	previous: Float32Array,
 	next: Float32Array
@@ -251,6 +295,9 @@ function findDirtyFloatRanges(
 	return ranges;
 }
 
+/**
+ * Determines whether shader output should perform linear-to-sRGB conversion.
+ */
 function shouldConvertLinearToSrgb(
 	outputColorSpace: 'srgb' | 'linear',
 	canvasFormat: GPUTextureFormat
@@ -262,6 +309,9 @@ function shouldConvertLinearToSrgb(
 	return !canvasFormat.endsWith('-srgb');
 }
 
+/**
+ * WGSL shader used to blit an offscreen texture to the canvas.
+ */
 function createFullscreenBlitShader(): string {
 	return `
 struct FragkitVertexOut {
@@ -294,6 +344,9 @@ fn fragkitBlitFragment(in: FragkitVertexOut) -> @location(0) vec4f {
 `;
 }
 
+/**
+ * Allocates a render target texture with usage flags suitable for passes/blits.
+ */
 function createRenderTexture(
 	device: GPUDevice,
 	width: number,
@@ -319,10 +372,20 @@ function createRenderTexture(
 	};
 }
 
+/**
+ * Destroys a render target texture if present.
+ */
 function destroyRenderTexture(target: RuntimeRenderTarget | null): void {
 	target?.texture.destroy();
 }
 
+/**
+ * Creates the WebGPU renderer used by `FragCanvas`.
+ *
+ * @param options - Renderer creation options resolved from material/context state.
+ * @returns Renderer instance with `render` and `destroy`.
+ * @throws {Error} On WebGPU unavailability, shader compilation issues, or runtime setup failures.
+ */
 export async function createRenderer(options: RendererOptions): Promise<Renderer> {
 	if (!navigator.gpu) {
 		throw new Error('WebGPU is not available in this browser');
@@ -488,6 +551,9 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	const uniformPrevious = new Float32Array(options.uniformLayout.byteLength / 4);
 	let hasUniformSnapshot = false;
 
+	/**
+	 * Rebuilds bind group using current texture views.
+	 */
 	const createBindGroup = (): GPUBindGroup => {
 		const entries: GPUBindGroupEntry[] = [
 			{ binding: FRAME_BINDING, resource: { buffer: frameBuffer } },
@@ -511,6 +577,11 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		});
 	};
 
+	/**
+	 * Synchronizes one runtime texture binding with incoming texture value.
+	 *
+	 * @returns `true` when bind group must be rebuilt.
+	 */
 	const updateTextureBinding = (binding: RuntimeTextureBinding, value: TextureValue): boolean => {
 		const nextData = toTextureData(value);
 
@@ -576,14 +647,23 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	let renderTargetSignature = '';
 	const runtimeRenderTargets = new Map<string, RuntimeRenderTarget>();
 
+	/**
+	 * Resolves active post-processing pass list for current frame.
+	 */
 	const resolvePasses = (): RenderPass[] => {
 		return options.getPasses?.() ?? options.passes ?? [];
 	};
 
+	/**
+	 * Resolves active render target declarations for current frame.
+	 */
 	const resolveRenderTargets = () => {
 		return options.getRenderTargets?.() ?? options.renderTargets;
 	};
 
+	/**
+	 * Ensures offscreen scene target matches current canvas size/format.
+	 */
 	const ensureSceneTarget = (width: number, height: number): RuntimeRenderTarget => {
 		if (
 			sceneTarget &&
@@ -599,6 +679,9 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		return sceneTarget;
 	};
 
+	/**
+	 * Creates/updates runtime render targets and returns immutable pass snapshot.
+	 */
 	const syncRenderTargets = (
 		canvasWidth: number,
 		canvasHeight: number
@@ -656,6 +739,9 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		return snapshot;
 	};
 
+	/**
+	 * Blits a texture view to the current canvas texture.
+	 */
 	const blitToCanvas = (
 		commandEncoder: GPUCommandEncoder,
 		sourceView: GPUTextureView,
@@ -691,6 +777,9 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		pass.end();
 	};
 
+	/**
+	 * Executes a full frame render.
+	 */
 	const render: Renderer['render'] = ({ time, delta, uniforms, textures }) => {
 		if (deviceLostMessage) {
 			throw new Error(deviceLostMessage);

@@ -1,15 +1,45 @@
+/**
+ * Runtime phase in which an error occurred.
+ */
 export type FragkitErrorPhase = 'initialization' | 'render';
 
+/**
+ * Structured error payload used by UI diagnostics.
+ */
 export interface FragkitErrorReport {
+	/**
+	 * Short category title.
+	 */
 	title: string;
+	/**
+	 * Primary human-readable message.
+	 */
 	message: string;
+	/**
+	 * Suggested remediation hint.
+	 */
 	hint: string;
+	/**
+	 * Additional parsed details (for example WGSL line errors).
+	 */
 	details: string[];
+	/**
+	 * Stack trace lines when available.
+	 */
 	stack: string[];
+	/**
+	 * Original unmodified message.
+	 */
 	rawMessage: string;
+	/**
+	 * Runtime phase where the error occurred.
+	 */
 	phase: FragkitErrorPhase;
 }
 
+/**
+ * Splits multi-line values into trimmed non-empty lines.
+ */
 function splitLines(value: string): string[] {
 	return value
 		.split('\n')
@@ -17,6 +47,9 @@ function splitLines(value: string): string[] {
 		.filter((line) => line.length > 0);
 }
 
+/**
+ * Maps known WebGPU/WGSL error patterns to a user-facing title and hint.
+ */
 function classifyErrorMessage(message: string): Pick<FragkitErrorReport, 'title' | 'hint'> {
 	if (message.includes('WebGPU is not available in this browser')) {
 		return {
@@ -80,6 +113,13 @@ function classifyErrorMessage(message: string): Pick<FragkitErrorReport, 'title'
 	};
 }
 
+/**
+ * Converts unknown errors to a consistent, display-ready error report.
+ *
+ * @param error - Unknown thrown value.
+ * @param phase - Phase during which error occurred.
+ * @returns Normalized error report.
+ */
 export function toFragkitErrorReport(error: unknown, phase: FragkitErrorPhase): FragkitErrorReport {
 	const rawMessage =
 		error instanceof Error

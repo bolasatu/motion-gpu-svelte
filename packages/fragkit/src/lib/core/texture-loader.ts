@@ -1,22 +1,62 @@
+/**
+ * Options controlling URL-based texture loading and decode behavior.
+ */
 export interface TextureLoadOptions {
+	/**
+	 * Desired decode color space.
+	 */
 	colorSpace?: 'srgb' | 'linear';
+	/**
+	 * Fetch options forwarded to `fetch`.
+	 */
 	requestInit?: RequestInit;
 }
 
+/**
+ * Loaded texture payload returned by URL loaders.
+ */
 export interface LoadedTexture {
+	/**
+	 * Source URL.
+	 */
 	url: string;
+	/**
+	 * Decoded bitmap source.
+	 */
 	source: ImageBitmap;
+	/**
+	 * Bitmap width in pixels.
+	 */
 	width: number;
+	/**
+	 * Bitmap height in pixels.
+	 */
 	height: number;
+	/**
+	 * Releases bitmap resources.
+	 */
 	dispose: () => void;
 }
 
+/**
+ * In-memory blob cache keyed by request cache mode and URL.
+ */
 const blobCache = new Map<string, Promise<Blob>>();
 
+/**
+ * Clears the internal texture blob cache.
+ */
 export function clearTextureBlobCache(): void {
 	blobCache.clear();
 }
 
+/**
+ * Fetches and caches texture blobs. Failed fetches are removed from cache.
+ *
+ * @param url - Texture URL.
+ * @param requestInit - Optional request init.
+ * @returns Texture blob.
+ */
 async function fetchTextureBlob(url: string, requestInit?: RequestInit): Promise<Blob> {
 	const key = `${requestInit?.cache ?? 'default'}:${url}`;
 	const cached = blobCache.get(key);
@@ -40,6 +80,14 @@ async function fetchTextureBlob(url: string, requestInit?: RequestInit): Promise
 	return request;
 }
 
+/**
+ * Loads a single texture from URL and converts it to an `ImageBitmap`.
+ *
+ * @param url - Texture URL.
+ * @param options - Loading options.
+ * @returns Loaded texture object.
+ * @throws {Error} When runtime does not support `createImageBitmap` or request fails.
+ */
 export async function loadTextureFromUrl(
 	url: string,
 	options: TextureLoadOptions = {}
@@ -65,6 +113,13 @@ export async function loadTextureFromUrl(
 	};
 }
 
+/**
+ * Loads many textures in parallel from URLs.
+ *
+ * @param urls - Texture URLs.
+ * @param options - Shared loading options.
+ * @returns Promise resolving to loaded textures in input order.
+ */
 export function loadTexturesFromUrls(
 	urls: string[],
 	options: TextureLoadOptions = {}

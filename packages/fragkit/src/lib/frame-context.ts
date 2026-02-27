@@ -2,36 +2,97 @@ import { getContext, onDestroy, setContext } from 'svelte';
 import { writable, type Readable } from 'svelte/store';
 import type { FrameState, RenderMode } from './core/types';
 
+/**
+ * Per-frame callback executed by the frame scheduler.
+ */
 export type FrameCallback = (state: FrameState) => void;
+
+/**
+ * Stable key type used to identify frame tasks and stages.
+ */
 export type FrameKey = string | symbol;
 
+/**
+ * Public metadata describing a registered frame task.
+ */
 export interface FrameTask {
 	key: FrameKey;
 	stage: FrameKey;
 }
 
+/**
+ * Public metadata describing a frame stage.
+ */
 export interface FrameStage {
 	key: FrameKey;
 }
 
+/**
+ * Stage callback allowing custom orchestration around task execution.
+ */
 export type FrameStageCallback = (state: FrameState, runTasks: () => void) => void;
 
+/**
+ * Options controlling task registration and scheduling behavior.
+ */
 export interface UseFrameOptions {
+	/**
+	 * Whether task starts in active state.
+	 *
+	 * @default true
+	 */
 	autoStart?: boolean;
+	/**
+	 * Whether task execution invalidates frame automatically.
+	 *
+	 * @default true
+	 */
 	autoInvalidate?: boolean;
+	/**
+	 * Stage to register task in.
+	 *
+	 * If omitted, main stage is used unless inferred from task dependencies.
+	 */
 	stage?: FrameKey | FrameStage;
+	/**
+	 * Task dependencies that should run after this task.
+	 */
 	before?: (FrameKey | FrameTask) | (FrameKey | FrameTask)[];
+	/**
+	 * Task dependencies that should run before this task.
+	 */
 	after?: (FrameKey | FrameTask) | (FrameKey | FrameTask)[];
+	/**
+	 * Dynamic predicate controlling whether the task is currently active.
+	 */
 	running?: () => boolean;
 }
 
+/**
+ * Handle returned by `useFrame` registration.
+ */
 export interface UseFrameResult {
+	/**
+	 * Registered task metadata.
+	 */
 	task: FrameTask;
+	/**
+	 * Starts task execution.
+	 */
 	start: () => void;
+	/**
+	 * Stops task execution.
+	 */
 	stop: () => void;
+	/**
+	 * Readable flag representing effective running state.
+	 */
 	started: Readable<boolean>;
 }
 
+/**
+ * Snapshot of the resolved stage/task execution order.
+ */
 export interface FrameScheduleSnapshot {
 	stages: Array<{
 		key: string;
@@ -39,6 +100,9 @@ export interface FrameScheduleSnapshot {
 	}>;
 }
 
+/**
+ * Optional scheduler diagnostics payload captured for the last run.
+ */
 export interface FrameRunTimings {
 	total: number;
 	stages: Record<
@@ -50,10 +114,16 @@ export interface FrameRunTimings {
 	>;
 }
 
+/**
+ * Internal registration payload including unsubscribe callback.
+ */
 interface RegisteredFrameTask extends UseFrameResult {
 	unsubscribe: () => void;
 }
 
+/**
+ * Internal mutable task descriptor used by scheduler runtime.
+ */
 interface InternalTask {
 	task: FrameTask;
 	callback: FrameCallback;
@@ -68,6 +138,9 @@ interface InternalTask {
 	running?: () => boolean;
 }
 
+/**
+ * Internal mutable stage descriptor used by scheduler runtime.
+ */
 interface InternalStage {
 	key: FrameKey;
 	order: number;
@@ -78,10 +151,24 @@ interface InternalStage {
 	tasks: Map<FrameKey, InternalTask>;
 }
 
+/**
+ * Svelte context key for the active frame registry.
+ */
 const FRAME_CONTEXT_KEY = Symbol('fragkit.frame-context');
+
+/**
+ * Default stage key used when task stage is not explicitly specified.
+ */
 const MAIN_STAGE_KEY = Symbol('fragkit-main-stage');
+
+/**
+ * Default stage callback that runs tasks immediately.
+ */
 const DEFAULT_STAGE_CALLBACK: FrameStageCallback = (_state, runTasks) => runTasks();
 
+/**
+ * Normalizes scalar-or-array options to array form.
+ */
 function asArray<T>(value: T | T[] | undefined): T[] {
 	if (!value) {
 		return [];
@@ -90,6 +177,9 @@ function asArray<T>(value: T | T[] | undefined): T[] {
 	return Array.isArray(value) ? value : [value];
 }
 
+/**
+ * Extracts task key from either direct key or task reference.
+ */
 function toTaskKey(reference: FrameKey | FrameTask): FrameKey {
 	if (typeof reference === 'string' || typeof reference === 'symbol') {
 		return reference;
@@ -98,6 +188,9 @@ function toTaskKey(reference: FrameKey | FrameTask): FrameKey {
 	return reference.key;
 }
 
+/**
+ * Extracts stage key from either direct key or stage reference.
+ */
 function toStageKey(reference: FrameKey | FrameStage): FrameKey {
 	if (typeof reference === 'string' || typeof reference === 'symbol') {
 		return reference;
@@ -106,6 +199,9 @@ function toStageKey(reference: FrameKey | FrameStage): FrameKey {
 	return reference.key;
 }
 
+/**
+ * Topologically sorts items by `before`/`after` dependencies with stable order fallback.
+ */
 function sortByDependencies<T extends { key: FrameKey; order: number }>(
 	items: T[],
 	getBefore: (item: T) => Iterable<FrameKey>,
@@ -178,27 +274,81 @@ function sortByDependencies<T extends { key: FrameKey; order: number }>(
 	return ordered;
 }
 
+/**
+ * Runtime registry that stores frame tasks/stages and drives render scheduling.
+ */
 export interface FrameRegistry {
+	/**
+	 * Registers a frame callback in the scheduler.
+	 */
 	register: (
 		keyOrCallback: FrameKey | FrameCallback,
 		callbackOrOptions?: FrameCallback | UseFrameOptions,
 		maybeOptions?: UseFrameOptions
 	) => RegisteredFrameTask;
+	/**
+	 * Executes one scheduler run.
+	 */
 	run: (state: FrameState) => void;
+	/**
+	 * Marks frame as invalidated for `on-demand` mode.
+	 */
 	invalidate: () => void;
+	/**
+	 * Requests a single render in `manual` mode.
+	 */
 	advance: () => void;
+	/**
+	 * Returns whether renderer should submit a frame now.
+	 */
 	shouldRender: () => boolean;
+	/**
+	 * Resets one-frame invalidation/advance flags.
+	 */
 	endFrame: () => void;
+	/**
+	 * Sets render scheduling mode.
+	 */
 	setRenderMode: (mode: RenderMode) => void;
+	/**
+	 * Enables or disables automatic rendering entirely.
+	 */
 	setAutoRender: (enabled: boolean) => void;
+	/**
+	 * Sets maximum allowed delta passed to frame tasks.
+	 */
 	setMaxDelta: (value: number) => void;
+	/**
+	 * Enables/disables diagnostics capture.
+	 */
 	setDiagnosticsEnabled: (enabled: boolean) => void;
+	/**
+	 * Returns current render mode.
+	 */
 	getRenderMode: () => RenderMode;
+	/**
+	 * Returns whether automatic rendering is enabled.
+	 */
 	getAutoRender: () => boolean;
+	/**
+	 * Returns current max delta clamp.
+	 */
 	getMaxDelta: () => number;
+	/**
+	 * Returns diagnostics toggle state.
+	 */
 	getDiagnosticsEnabled: () => boolean;
+	/**
+	 * Returns last run timings snapshot when diagnostics are enabled.
+	 */
 	getLastRunTimings: () => FrameRunTimings | null;
+	/**
+	 * Returns dependency-sorted schedule snapshot.
+	 */
 	getSchedule: () => FrameScheduleSnapshot;
+	/**
+	 * Creates or updates a stage.
+	 */
 	createStage: (
 		key: FrameKey,
 		options?: {
@@ -207,10 +357,22 @@ export interface FrameRegistry {
 			callback?: FrameStageCallback;
 		}
 	) => FrameStage;
+	/**
+	 * Reads stage metadata by key.
+	 */
 	getStage: (key: FrameKey) => FrameStage | undefined;
+	/**
+	 * Removes all tasks from all stages.
+	 */
 	clear: () => void;
 }
 
+/**
+ * Creates a frame registry used by `FragCanvas` and `useFrame`.
+ *
+ * @param options - Initial scheduler options.
+ * @returns Mutable frame registry instance.
+ */
 export function createFrameRegistry(options?: {
 	renderMode?: RenderMode;
 	autoRender?: boolean;
@@ -518,16 +680,35 @@ export function createFrameRegistry(options?: {
 	};
 }
 
+/**
+ * Provides a frame registry through Svelte context.
+ *
+ * @param registry - Registry to provide.
+ */
 export function provideFrameRegistry(registry: FrameRegistry): void {
 	setContext(FRAME_CONTEXT_KEY, registry);
 }
 
+/**
+ * Registers a frame callback using an auto-generated task key.
+ */
 export function useFrame(callback: FrameCallback, options?: UseFrameOptions): UseFrameResult;
+
+/**
+ * Registers a frame callback with an explicit task key.
+ */
 export function useFrame(
 	key: FrameKey,
 	callback: FrameCallback,
 	options?: UseFrameOptions
 ): UseFrameResult;
+
+/**
+ * Registers a callback in the active frame registry and auto-unsubscribes on destroy.
+ *
+ * @returns Frame task handle for start/stop control.
+ * @throws {Error} When used outside `<FragCanvas>`.
+ */
 export function useFrame(
 	keyOrCallback: FrameKey | FrameCallback,
 	callbackOrOptions?: FrameCallback | UseFrameOptions,

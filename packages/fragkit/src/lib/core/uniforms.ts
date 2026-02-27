@@ -7,14 +7,26 @@ import type {
 	UniformValue
 } from './types';
 
+/**
+ * Internal representation of explicitly typed uniform input.
+ */
 type UniformTypedInput = Extract<UniformValue, { type: UniformType; value: unknown }>;
 
+/**
+ * Valid WGSL identifier pattern used for uniform and texture keys.
+ */
 const IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
+/**
+ * Rounds a value up to the nearest multiple of `alignment`.
+ */
 function roundUp(value: number, alignment: number): number {
 	return Math.ceil(value / alignment) * alignment;
 }
 
+/**
+ * Returns WGSL std140-like alignment and size metadata for a uniform type.
+ */
 function getTypeLayout(type: UniformType): { alignment: number; size: number } {
 	switch (type) {
 		case 'f32':
@@ -32,10 +44,16 @@ function getTypeLayout(type: UniformType): { alignment: number; size: number } {
 	}
 }
 
+/**
+ * Type guard for explicitly typed uniform objects.
+ */
 function isTypedUniformValue(value: UniformValue): value is UniformTypedInput {
 	return typeof value === 'object' && value !== null && 'type' in value && 'value' in value;
 }
 
+/**
+ * Validates numeric tuple input with a fixed length.
+ */
 function isTuple(value: unknown, size: number): value is number[] {
 	return (
 		Array.isArray(value) &&
@@ -44,6 +62,9 @@ function isTuple(value: unknown, size: number): value is number[] {
 	);
 }
 
+/**
+ * Type guard for accepted 4x4 matrix uniform values.
+ */
 function isMat4Value(value: unknown): value is UniformMat4Value {
 	if (value instanceof Float32Array) {
 		return value.length === 16;
@@ -56,12 +77,25 @@ function isMat4Value(value: unknown): value is UniformMat4Value {
 	);
 }
 
+/**
+ * Asserts that a name can be safely used as a WGSL identifier.
+ *
+ * @param name - Candidate uniform/texture name.
+ * @throws {Error} When the identifier is invalid.
+ */
 export function assertUniformName(name: string): void {
 	if (!IDENTIFIER_PATTERN.test(name)) {
 		throw new Error(`Invalid uniform name: ${name}`);
 	}
 }
 
+/**
+ * Infers the WGSL type tag from a runtime uniform value.
+ *
+ * @param value - Uniform input value.
+ * @returns Inferred uniform type.
+ * @throws {Error} When the value does not match any supported shape.
+ */
 export function inferUniformType(value: UniformValue): UniformType {
 	if (isTypedUniformValue(value)) {
 		return value.type;
@@ -86,6 +120,13 @@ export function inferUniformType(value: UniformValue): UniformType {
 	throw new Error('Uniform value must resolve to f32, vec2f, vec3f, vec4f or mat4x4f');
 }
 
+/**
+ * Validates that a uniform value matches an explicit uniform type declaration.
+ *
+ * @param type - Declared WGSL type.
+ * @param value - Runtime value to validate.
+ * @throws {Error} When the value shape is incompatible with the declared type.
+ */
 export function assertUniformValueForType(type: UniformType, value: UniformValue): void {
 	const input = isTypedUniformValue(value) ? value.value : value;
 
@@ -122,6 +163,12 @@ export function assertUniformValueForType(type: UniformType, value: UniformValue
 	}
 }
 
+/**
+ * Resolves a deterministic packed uniform buffer layout from a uniform map.
+ *
+ * @param uniforms - Input uniform definitions.
+ * @returns Sorted layout with byte offsets and final buffer byte length.
+ */
 export function resolveUniformLayout(uniforms: UniformMap): UniformLayout {
 	const names = Object.keys(uniforms).sort();
 	let offset = 0;
@@ -150,6 +197,9 @@ export function resolveUniformLayout(uniforms: UniformMap): UniformLayout {
 	return { entries, byName, byteLength };
 }
 
+/**
+ * Converts a validated uniform value to a plain number array for packing.
+ */
 function toNumberArray(type: UniformType, value: UniformValue): number[] {
 	const input = isTypedUniformValue(value) ? value.value : value;
 	assertUniformValueForType(type, value);
@@ -165,12 +215,27 @@ function toNumberArray(type: UniformType, value: UniformValue): number[] {
 	return [...(input as number[])];
 }
 
+/**
+ * Packs uniforms into a newly allocated `Float32Array`.
+ *
+ * @param uniforms - Uniform values to pack.
+ * @param layout - Target layout definition.
+ * @returns Packed float buffer sized to `layout.byteLength`.
+ */
 export function packUniforms(uniforms: UniformMap, layout: UniformLayout): Float32Array {
 	const data = new Float32Array(layout.byteLength / 4);
 	packUniformsInto(uniforms, layout, data);
 	return data;
 }
 
+/**
+ * Packs uniforms into an existing output buffer and zeroes missing values.
+ *
+ * @param uniforms - Uniform values to pack.
+ * @param layout - Target layout metadata.
+ * @param data - Destination float buffer.
+ * @throws {Error} When `data` size does not match the required layout size.
+ */
 export function packUniformsInto(
 	uniforms: UniformMap,
 	layout: UniformLayout,
