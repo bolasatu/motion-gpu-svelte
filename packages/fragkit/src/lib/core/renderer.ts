@@ -1,6 +1,6 @@
 import { buildRenderTargetSignature, resolveRenderTargetDefinitions } from './render-targets';
 import { planRenderGraph } from './render-graph';
-import { buildShaderSource } from './shader';
+import { buildShaderSourceWithMap, formatShaderSourceLocation, type ShaderLineMap } from './shader';
 import {
 	getTextureMipLevelCount,
 	isVideoTextureSource,
@@ -100,7 +100,10 @@ function resizeCanvas(
 /**
  * Throws when a shader module contains WGSL compilation errors.
  */
-async function assertCompilation(module: GPUShaderModule): Promise<void> {
+async function assertCompilation(
+	module: GPUShaderModule,
+	options?: { lineMap?: ShaderLineMap }
+): Promise<void> {
 	const info = await module.getCompilationInfo();
 	const errors = info.messages.filter((message: GPUCompilationMessage) => message.type === 'error');
 
@@ -109,7 +112,13 @@ async function assertCompilation(module: GPUShaderModule): Promise<void> {
 	}
 
 	const summary = errors
-		.map((message: GPUCompilationMessage) => `line ${message.lineNum}: ${message.message}`)
+		.map((message: GPUCompilationMessage) => {
+			const sourceLocation = formatShaderSourceLocation(
+				options?.lineMap?.[message.lineNum] ?? null
+			);
+			const locationSuffix = sourceLocation ? ` -> ${sourceLocation}` : '';
+			return `line ${message.lineNum}${locationSuffix}: ${message.message}`;
+		})
 		.join('\n');
 	throw new Error(`WGSL compilation failed:\n${summary}`);
 }
@@ -435,14 +444,17 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 
 	const format = navigator.gpu.getPreferredCanvasFormat();
 	const convertLinearToSrgb = shouldConvertLinearToSrgb(options.outputColorSpace, format);
-	const shaderSource = buildShaderSource(
+	const builtShader = buildShaderSourceWithMap(
 		options.fragmentWgsl,
 		options.uniformLayout,
 		options.textureKeys,
-		{ convertLinearToSrgb }
+		{
+			convertLinearToSrgb,
+			fragmentLineMap: options.fragmentLineMap
+		}
 	);
-	const shaderModule = device.createShaderModule({ code: shaderSource });
-	await assertCompilation(shaderModule);
+	const shaderModule = device.createShaderModule({ code: builtShader.code });
+	await assertCompilation(shaderModule, { lineMap: builtShader.lineMap });
 
 	const normalizedTextureDefinitions = normalizeTextureDefinitions(
 		options.textureDefinitions,
@@ -791,7 +803,8 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	const blitToCanvas = (
 		commandEncoder: GPUCommandEncoder,
 		sourceView: GPUTextureView,
-		canvasView: GPUTextureView
+		canvasView: GPUTextureView,
+		clearColor: [number, number, number, number]
 	): void => {
 		const bindGroup = device.createBindGroup({
 			layout: blitBindGroupLayout,
@@ -806,10 +819,10 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				{
 					view: canvasView,
 					clearValue: {
-						r: options.clearColor[0],
-						g: options.clearColor[1],
-						b: options.clearColor[2],
-						a: options.clearColor[3]
+						r: clearColor[0],
+						g: clearColor[1],
+						b: clearColor[2],
+						a: clearColor[3]
 					},
 					loadOp: 'clear',
 					storeOp: 'store'
@@ -904,8 +917,9 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 
 		const commandEncoder = device.createCommandEncoder();
 		const passes = resolvePasses();
+		const clearColor = options.getClearColor();
 		syncPassLifecycle(passes, width, height);
-		const graphPlan = planRenderGraph(passes, options.clearColor);
+		const graphPlan = planRenderGraph(passes, clearColor);
 		const canvasTexture = context.getCurrentTexture();
 		const canvasSurface: RenderTarget = {
 			texture: canvasTexture,
@@ -930,10 +944,10 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				{
 					view: sceneOutput.view,
 					clearValue: {
-						r: options.clearColor[0],
-						g: options.clearColor[1],
-						b: options.clearColor[2],
-						a: options.clearColor[3]
+						r: clearColor[0],
+						g: clearColor[1],
+						b: clearColor[2],
+						a: clearColor[3]
 					},
 					loadOp: 'clear',
 					storeOp: 'store'
@@ -1004,7 +1018,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 
 			if (graphPlan.finalOutput !== 'canvas') {
 				const finalSurface = graphPlan.finalOutput === 'source' ? slots.source : slots.target;
-				blitToCanvas(commandEncoder, finalSurface.view, slots.canvas.view);
+				blitToCanvas(commandEncoder, finalSurface.view, slots.canvas.view, clearColor);
 			}
 		}
 

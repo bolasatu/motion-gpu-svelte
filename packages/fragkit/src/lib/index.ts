@@ -37,8 +37,10 @@ export type { LoadedTexture, TextureLoadOptions } from './core/texture-loader';
 export type {
 	FragMaterial,
 	FragMaterialInput,
+	MaterialIncludes,
 	MaterialDefineValue,
-	MaterialDefines
+	MaterialDefines,
+	TypedMaterialDefineValue
 } from './core/material';
 export type { FragkitContext } from './fragkit-context';
 export type { UseFrameOptions, UseFrameResult } from './frame-context';

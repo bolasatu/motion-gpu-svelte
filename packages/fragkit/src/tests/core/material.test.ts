@@ -27,12 +27,12 @@ describe('material', () => {
 		const block = buildDefinesBlock({
 			USE_FOG: true,
 			INTENSITY: 2,
-			MODE: 'vec2f(1.0, 2.0)'
+			ITERATIONS: { type: 'i32', value: 4 }
 		});
 
 		expect(block).toContain('const USE_FOG: bool = true;');
 		expect(block).toContain('const INTENSITY: f32 = 2.0;');
-		expect(block).toContain('const MODE = vec2f(1.0, 2.0);');
+		expect(block).toContain('const ITERATIONS: i32 = 4;');
 
 		const withDefines = applyMaterialDefines(
 			'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
@@ -110,6 +110,59 @@ describe('material', () => {
 				defines: { BROKEN: Number.NaN }
 			})
 		).toThrow(/Define numbers must be finite/);
+
+		expect(() =>
+			defineMaterial({
+				fragment: 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
+				defines: { BROKEN: { type: 'u32', value: -1 } }
+			})
+		).toThrow(/u32 define must be >= 0/);
+	});
+
+	it('expands includes and preserves source mapping metadata', () => {
+		const resolved = resolveMaterial(
+			defineMaterial({
+				fragment: `
+#include <colorize>
+fn frag(uv: vec2f) -> vec4f {
+	return colorize(uv);
+}
+`,
+				includes: {
+					colorize: `
+fn colorize(uv: vec2f) -> vec4f {
+	return vec4f(uv, 0.0, 1.0);
+}
+`
+				}
+			})
+		);
+
+		expect(resolved.fragmentWgsl).toContain('fn colorize(uv: vec2f) -> vec4f');
+		expect(resolved.fragmentWgsl).toContain('fn frag(uv: vec2f) -> vec4f');
+		const includeLine = resolved.fragmentLineMap.find((entry) => entry?.kind === 'include');
+		expect(includeLine).toMatchObject({
+			kind: 'include',
+			include: 'colorize'
+		});
+	});
+
+	it('rejects unknown or circular include references', () => {
+		expect(() =>
+			defineMaterial({
+				fragment: '#include <missing>\nfn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }'
+			})
+		).toThrow(/Unknown include "missing"/);
+
+		expect(() =>
+			defineMaterial({
+				fragment: '#include <a>\nfn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
+				includes: {
+					a: '#include <b>',
+					b: '#include <a>'
+				}
+			})
+		).toThrow(/Circular include detected/);
 	});
 
 	it('reuses resolved material snapshot for immutable material instances', () => {

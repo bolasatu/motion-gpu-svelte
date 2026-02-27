@@ -5,6 +5,14 @@ import {
 	inferUniformType,
 	resolveUniformLayout
 } from './uniforms';
+import {
+	normalizeDefines,
+	normalizeIncludes,
+	preprocessMaterialFragment,
+	toDefineLine,
+	type MaterialLineMap,
+	type PreprocessedMaterialFragment
+} from './material-preprocess';
 import type {
 	TextureData,
 	TextureDefinition,
@@ -16,14 +24,33 @@ import type {
 } from './types';
 
 /**
+ * Typed compile-time define declaration.
+ */
+export interface TypedMaterialDefineValue {
+	/**
+	 * WGSL scalar type.
+	 */
+	type: 'bool' | 'f32' | 'i32' | 'u32';
+	/**
+	 * Literal value for the selected WGSL type.
+	 */
+	value: boolean | number;
+}
+
+/**
  * Allowed value types for WGSL `const` define injection.
  */
-export type MaterialDefineValue = string | number | boolean;
+export type MaterialDefineValue = boolean | number | TypedMaterialDefineValue;
 
 /**
  * Define map keyed by uniform-compatible identifier names.
  */
 export type MaterialDefines = Record<string, MaterialDefineValue>;
+
+/**
+ * Include map keyed by include identifier used in `#include <name>` directives.
+ */
+export type MaterialIncludes = Record<string, string>;
 
 /**
  * External material input accepted by {@link defineMaterial}.
@@ -45,6 +72,10 @@ export interface FragMaterialInput {
 	 * Optional compile-time define constants injected into WGSL.
 	 */
 	defines?: MaterialDefines;
+	/**
+	 * Optional WGSL include chunks used by `#include <name>` directives.
+	 */
+	includes?: MaterialIncludes;
 }
 
 /**
@@ -67,6 +98,10 @@ export interface FragMaterial {
 	 * Optional compile-time define constants injected into WGSL.
 	 */
 	readonly defines: Readonly<MaterialDefines>;
+	/**
+	 * Optional WGSL include chunks used by `#include <name>` directives.
+	 */
+	readonly includes: Readonly<MaterialIncludes>;
 }
 
 /**
@@ -77,6 +112,10 @@ export interface ResolvedMaterial {
 	 * Final fragment WGSL after define injection.
 	 */
 	fragmentWgsl: string;
+	/**
+	 * 1-based map from generated fragment lines to user source lines.
+	 */
+	fragmentLineMap: MaterialLineMap;
 	/**
 	 * Cloned uniforms.
 	 */
@@ -108,12 +147,19 @@ const FRAGMENT_CONTRACT_PATTERN = /\bfn\s+frag\s*\(\s*uv\s*:\s*vec2f\s*\)\s*->\s
  * Cache of resolved material snapshots keyed by immutable material instance.
  */
 const resolvedMaterialCache = new WeakMap<FragMaterial, ResolvedMaterial>();
+const preprocessedFragmentCache = new WeakMap<FragMaterial, PreprocessedMaterialFragment>();
 
 /**
  * Asserts that material has been normalized by {@link defineMaterial}.
  */
 function assertDefinedMaterial(material: FragMaterial): void {
-	if (!Object.isFrozen(material) || !material.uniforms || !material.textures || !material.defines) {
+	if (
+		!Object.isFrozen(material) ||
+		!material.uniforms ||
+		!material.textures ||
+		!material.defines ||
+		!material.includes
+	) {
 		throw new Error(
 			'Invalid material instance. Create materials with defineMaterial(...) before passing them to <FragCanvas>.'
 		);
@@ -231,17 +277,14 @@ function resolveTextures(textures: TextureDefinitionMap | undefined): TextureDef
  * Clones and validates define declarations.
  */
 function resolveDefines(defines: MaterialDefines | undefined): MaterialDefines {
-	const resolved: MaterialDefines = {};
+	return normalizeDefines(defines);
+}
 
-	for (const [name, value] of Object.entries(defines ?? {})) {
-		assertUniformName(name);
-		if (typeof value === 'number' && !Number.isFinite(value)) {
-			throw new Error(`Invalid define value for "${name}". Define numbers must be finite.`);
-		}
-		resolved[name] = value;
-	}
-
-	return resolved;
+/**
+ * Clones and validates include declarations.
+ */
+function resolveIncludes(includes: MaterialIncludes | undefined): MaterialIncludes {
+	return normalizeIncludes(includes);
 }
 
 /**
@@ -275,41 +318,18 @@ function buildTextureConfigSignature(
 }
 
 /**
- * Converts a define entry to a WGSL `const` declaration line.
- *
- * @param key - Define identifier.
- * @param value - Define value.
- * @returns WGSL declaration line.
- */
-function toDefineLine(key: string, value: MaterialDefineValue): string {
-	if (typeof value === 'boolean') {
-		return `const ${key}: bool = ${value ? 'true' : 'false'};`;
-	}
-
-	if (typeof value === 'number') {
-		if (!Number.isFinite(value)) {
-			throw new Error(`Invalid define value for "${key}". Define numbers must be finite.`);
-		}
-
-		const valueLiteral = Number.isInteger(value) ? `${value}.0` : `${value}`;
-		return `const ${key}: f32 = ${valueLiteral};`;
-	}
-
-	return `const ${key} = ${value};`;
-}
-
-/**
  * Creates a stable WGSL define block from the provided map.
  *
  * @param defines - Optional material defines.
  * @returns Joined WGSL const declarations ordered by key.
  */
 export function buildDefinesBlock(defines: MaterialDefines | undefined): string {
-	if (!defines || Object.keys(defines).length === 0) {
+	const normalizedDefines = normalizeDefines(defines);
+	if (Object.keys(normalizedDefines).length === 0) {
 		return '';
 	}
 
-	return Object.entries(defines)
+	return Object.entries(normalizedDefines)
 		.sort(([a], [b]) => a.localeCompare(b))
 		.map(([key, value]) => {
 			assertUniformName(key);
@@ -348,13 +368,24 @@ export function defineMaterial(input: FragMaterialInput): FragMaterial {
 	const uniforms = Object.freeze(resolveUniforms(input.uniforms));
 	const textures = Object.freeze(resolveTextures(input.textures));
 	const defines = Object.freeze(resolveDefines(input.defines));
+	const includes = Object.freeze(resolveIncludes(input.includes));
 
-	return Object.freeze({
+	const preprocessed = preprocessMaterialFragment({
+		fragment,
+		defines: defines as MaterialDefines,
+		includes: includes as MaterialIncludes
+	});
+
+	const material = Object.freeze({
 		fragment,
 		uniforms,
 		textures,
-		defines
+		defines,
+		includes
 	});
+
+	preprocessedFragmentCache.set(material, preprocessed);
+	return material;
 }
 
 /**
@@ -375,7 +406,14 @@ export function resolveMaterial(material: FragMaterial): ResolvedMaterial {
 	const textures = material.textures as TextureDefinitionMap;
 	const uniformLayout = resolveUniformLayout(uniforms);
 	const textureKeys = Object.keys(textures).sort();
-	const fragmentWgsl = applyMaterialDefines(material.fragment, material.defines as MaterialDefines);
+	const preprocessed =
+		preprocessedFragmentCache.get(material) ??
+		preprocessMaterialFragment({
+			fragment: material.fragment,
+			defines: material.defines as MaterialDefines,
+			includes: material.includes as MaterialIncludes
+		});
+	const fragmentWgsl = preprocessed.fragment;
 	const textureConfig = buildTextureConfigSignature(textures, textureKeys);
 
 	const signature = JSON.stringify({
@@ -387,6 +425,7 @@ export function resolveMaterial(material: FragMaterial): ResolvedMaterial {
 
 	const resolved: ResolvedMaterial = {
 		fragmentWgsl,
+		fragmentLineMap: preprocessed.lineMap,
 		uniforms,
 		textures,
 		uniformLayout,

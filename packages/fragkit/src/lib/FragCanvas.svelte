@@ -10,6 +10,7 @@
 	import Portal from './Portal.svelte';
 	import { currentWritable } from './current-writable';
 	import { createRenderer } from './core/renderer';
+	import { buildRendererPipelineSignature } from './core/recompile-policy';
 	import type {
 		OutputColorSpace,
 		RenderPass,
@@ -220,7 +221,10 @@
 				return;
 			}
 
-			const rendererSignature = `${materialState.signature}|${outputColorSpace}|${clearColor.join(',')}`;
+			const rendererSignature = buildRendererPipelineSignature({
+				materialSignature: materialState.signature,
+				outputColorSpace
+			});
 			activeUniforms = materialState.uniforms;
 			activeTextures = materialState.textures;
 			uniformKeys = materialState.uniformLayout.entries.map((entry) => entry.name);
@@ -253,13 +257,14 @@
 							const nextRenderer = await createRenderer({
 								canvas: canvasElement,
 								fragmentWgsl: materialState.fragmentWgsl,
+								fragmentLineMap: materialState.fragmentLineMap,
 								uniformLayout: materialState.uniformLayout,
 								textureKeys: materialState.textureKeys,
 								textureDefinitions: materialState.textures,
 								getRenderTargets: () => renderTargets,
 								getPasses: () => passes,
 								outputColorSpace,
-								clearColor,
+								getClearColor: () => clearColor,
 								getDpr: () => dprState.current,
 								adapterOptions,
 								deviceDescriptor

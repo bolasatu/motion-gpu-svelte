@@ -1,4 +1,5 @@
 import { assertUniformName } from './uniforms';
+import type { MaterialLineMap, MaterialSourceLocation } from './material-preprocess';
 import type { UniformLayout } from './types';
 
 /**
@@ -107,6 +108,25 @@ function buildFragmentOutput(keepAliveExpression: string, enableSrgbTransform: b
 }
 
 /**
+ * 1-based map from generated WGSL lines to original material source lines.
+ */
+export type ShaderLineMap = Array<MaterialSourceLocation | null>;
+
+/**
+ * Result of shader source generation with line mapping metadata.
+ */
+export interface BuiltShaderSource {
+	/**
+	 * Full WGSL source code.
+	 */
+	code: string;
+	/**
+	 * 1-based generated-line map to material source locations.
+	 */
+	lineMap: ShaderLineMap;
+}
+
+/**
  * Assembles complete WGSL shader source used by the fullscreen renderer pipeline.
  *
  * @param fragmentWgsl - User fragment shader code containing `frag(uv: vec2f) -> vec4f`.
@@ -171,4 +191,61 @@ fn fragkitFragment(in: FragkitVertexOut) -> @location(0) vec4f {
 	${fragmentOutput}
 }
 `;
+}
+
+/**
+ * Assembles complete WGSL shader source with material-source line mapping metadata.
+ */
+export function buildShaderSourceWithMap(
+	fragmentWgsl: string,
+	uniformLayout: UniformLayout,
+	textureKeys: string[] = [],
+	options?: { convertLinearToSrgb?: boolean; fragmentLineMap?: MaterialLineMap }
+): BuiltShaderSource {
+	const code = buildShaderSource(fragmentWgsl, uniformLayout, textureKeys, options);
+	const fragmentStartIndex = code.indexOf(fragmentWgsl);
+	const lineCount = code.split('\n').length;
+	const lineMap: ShaderLineMap = new Array(lineCount + 1).fill(null);
+
+	if (fragmentStartIndex === -1) {
+		return {
+			code,
+			lineMap
+		};
+	}
+
+	const fragmentStartLine = code.slice(0, fragmentStartIndex).split('\n').length;
+	const fragmentLineCount = fragmentWgsl.split('\n').length;
+
+	for (let line = 0; line < fragmentLineCount; line += 1) {
+		const generatedLine = fragmentStartLine + line;
+		lineMap[generatedLine] = options?.fragmentLineMap?.[line + 1] ?? {
+			kind: 'fragment',
+			line: line + 1
+		};
+	}
+
+	return {
+		code,
+		lineMap
+	};
+}
+
+/**
+ * Converts source location metadata to user-facing diagnostics label.
+ */
+export function formatShaderSourceLocation(location: MaterialSourceLocation | null): string | null {
+	if (!location) {
+		return null;
+	}
+
+	if (location.kind === 'fragment') {
+		return `user fragment line ${location.line}`;
+	}
+
+	if (location.kind === 'include') {
+		return `include "${location.include}" line ${location.line}`;
+	}
+
+	return `define "${location.define}"`;
 }

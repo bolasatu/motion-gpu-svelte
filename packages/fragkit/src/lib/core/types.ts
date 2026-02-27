@@ -411,6 +411,15 @@ export interface RendererOptions {
 	 */
 	fragmentWgsl: string;
 	/**
+	 * 1-based source map for preprocessed fragment lines.
+	 */
+	fragmentLineMap: Array<{
+		kind: 'fragment' | 'include' | 'define';
+		line: number;
+		include?: string;
+		define?: string;
+	} | null>;
+	/**
 	 * Resolved uniform layout.
 	 */
 	uniformLayout: UniformLayout;
@@ -443,9 +452,9 @@ export interface RendererOptions {
 	 */
 	outputColorSpace: OutputColorSpace;
 	/**
-	 * Clear color used for scene and blit passes.
+	 * Function returning current clear color.
 	 */
-	clearColor: [number, number, number, number];
+	getClearColor: () => [number, number, number, number];
 	/**
 	 * Function returning current DPR multiplier.
 	 */

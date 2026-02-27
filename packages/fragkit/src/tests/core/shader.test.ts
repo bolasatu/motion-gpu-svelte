@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildShaderSource } from '../../lib/core/shader';
+import {
+	buildShaderSource,
+	buildShaderSourceWithMap,
+	formatShaderSourceLocation
+} from '../../lib/core/shader';
 import { resolveUniformLayout } from '../../lib/core/uniforms';
 
 describe('buildShaderSource', () => {
@@ -20,6 +24,7 @@ describe('buildShaderSource', () => {
 		expect(shader).toContain('let fragColor = frag(in.uv);');
 		expect(shader).toContain('let fragkitKeepAlive = fragkitUniforms.intensity.x;');
 		expect(shader).toContain('return vec4f(fragColor.rgb + fragkitKeepAlive * 0.0, fragColor.a);');
+		expect(shader).toMatchSnapshot();
 	});
 
 	it('keeps valid WGSL when there are no custom uniforms', () => {
@@ -60,6 +65,7 @@ describe('buildShaderSource', () => {
 			'let fragkitSrgb = fragkitLinearToSrgb(max(fragkitLinear.rgb, vec3f(0.0)));'
 		);
 		expect(shader).toContain('return vec4f(fragkitSrgb, fragkitLinear.a);');
+		expect(shader).toMatchSnapshot();
 	});
 
 	it('supports mat4 and scalar keep-alive access patterns', () => {
@@ -78,5 +84,39 @@ describe('buildShaderSource', () => {
 		expect(matShader).toContain('let fragkitKeepAlive = fragkitUniforms.uTransform[0].x;');
 		expect(scalarShader).toContain('uScalar: f32');
 		expect(scalarShader).toContain('let fragkitKeepAlive = fragkitUniforms.uScalar;');
+	});
+
+	it('maps generated shader lines back to material source locations', () => {
+		const built = buildShaderSourceWithMap(
+			[
+				'const USE_TONE: bool = true;',
+				'',
+				'fn frag(uv: vec2f) -> vec4f {',
+				'\treturn vec4f(uv, 0.0, 1.0);',
+				'}'
+			].join('\n'),
+			resolveUniformLayout({}),
+			[],
+			{
+				fragmentLineMap: [
+					null,
+					{ kind: 'define', line: 1, define: 'USE_TONE' },
+					null,
+					{ kind: 'fragment', line: 1 },
+					{ kind: 'fragment', line: 2 },
+					{ kind: 'fragment', line: 3 }
+				]
+			}
+		);
+
+		const mappedLines = built.lineMap
+			.map((location, index) => ({ index, location }))
+			.filter((entry) => entry.location !== null);
+
+		expect(mappedLines.length).toBe(5);
+		expect(formatShaderSourceLocation(mappedLines[0].location)).toContain('define "USE_TONE"');
+		expect(formatShaderSourceLocation(mappedLines[mappedLines.length - 1].location)).toContain(
+			'user fragment line 3'
+		);
 	});
 });
