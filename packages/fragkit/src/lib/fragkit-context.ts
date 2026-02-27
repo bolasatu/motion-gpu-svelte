@@ -15,6 +15,8 @@ export type FragkitScheduler = Pick<
 	| 'getSchedule'
 >;
 export type { FrameRunTimings, FrameScheduleSnapshot };
+export type FragkitUserNamespace = string | symbol;
+export type FragkitUserContext = CurrentWritable<Record<FragkitUserNamespace, unknown>>;
 
 export interface FragkitContext {
 	canvas: HTMLCanvasElement | undefined;
@@ -23,6 +25,7 @@ export interface FragkitContext {
 	maxDelta: CurrentWritable<number>;
 	renderMode: CurrentWritable<RenderMode>;
 	autoRender: CurrentWritable<boolean>;
+	user: FragkitUserContext;
 	invalidate: () => void;
 	advance: () => void;
 	scheduler: FragkitScheduler;

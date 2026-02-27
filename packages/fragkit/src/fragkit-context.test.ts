@@ -38,6 +38,10 @@ describe('useFragkit', () => {
 		context.maxDelta.set(0.05);
 		expect(context.maxDelta.current).toBe(0.05);
 
+		expect(context.user.current).toEqual({});
+		context.user.set({ plugin: { enabled: true } });
+		expect(context.user.current).toEqual({ plugin: { enabled: true } });
+
 		const createdStage = context.scheduler.createStage('post');
 		expect(createdStage.key).toBe('post');
 		expect(context.scheduler.getStage('post')?.key).toBe('post');

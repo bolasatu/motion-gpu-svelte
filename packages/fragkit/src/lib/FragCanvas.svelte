@@ -79,6 +79,7 @@
 	const maxDeltaState = currentWritable<number>(0.1, registry.setMaxDelta);
 	const renderModeState = currentWritable<RenderMode>('always', registry.setRenderMode);
 	const autoRenderState = currentWritable<boolean>(true, registry.setAutoRender);
+	const userState = currentWritable<Record<string | symbol, unknown>>({});
 
 	provideFragkitContext({
 		get canvas() {
@@ -89,6 +90,7 @@
 		maxDelta: maxDeltaState,
 		renderMode: renderModeState,
 		autoRender: autoRenderState,
+		user: userState,
 		invalidate: registry.invalidate,
 		advance: registry.advance,
 		scheduler: {

@@ -1,6 +1,7 @@
 export { default as FragCanvas } from './FragCanvas.svelte';
 export { createMaterial } from './core/material';
 export { useFragkit } from './fragkit-context';
+export { useFragkitUserContext } from './use-fragkit-user-context';
 export { useFrame } from './frame-context';
 export { useTexture } from './use-texture';
 export type {
@@ -28,7 +29,7 @@ export type {
 } from './core/types';
 export type { LoadedTexture, TextureLoadOptions } from './core/texture-loader';
 export type { FragMaterial, MaterialDefineValue, MaterialDefines } from './core/material';
-export type { FragkitContext } from './fragkit-context';
+export type { FragkitContext, FragkitUserContext, FragkitUserNamespace } from './fragkit-context';
 export type {
 	FrameKey,
 	FrameRunTimings,
@@ -40,3 +41,4 @@ export type {
 	UseFrameResult
 } from './frame-context';
 export type { TextureUrlInput, UseTextureResult } from './use-texture';
+export type { SetFragkitUserContextOptions } from './use-fragkit-user-context';
