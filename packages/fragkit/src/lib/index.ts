@@ -5,6 +5,7 @@
  */
 export { default as FragCanvas } from './FragCanvas.svelte';
 export { defineMaterial } from './core/material';
+export { BlitPass, CopyPass, ShaderPass } from './passes';
 export { useFragkit } from './fragkit-context';
 export { useFrame } from './frame-context';
 export { useTexture } from './use-texture';
@@ -12,7 +13,12 @@ export type {
 	FrameState,
 	OutputColorSpace,
 	RenderPass,
+	RenderPassContext,
+	RenderPassFlags,
+	RenderPassInputSlot,
+	RenderPassOutputSlot,
 	RenderMode,
+	RenderTarget,
 	RenderTargetDefinition,
 	RenderTargetDefinitionMap,
 	TextureData,

@@ -5,7 +5,10 @@ import * as api from '../lib/index';
 describe('public api contract', () => {
 	it('exports only the core runtime symbols from root entrypoint', () => {
 		expect(Object.keys(api).sort()).toEqual([
+			'BlitPass',
+			'CopyPass',
 			'FragCanvas',
+			'ShaderPass',
 			'defineMaterial',
 			'useFragkit',
 			'useFrame',
@@ -15,7 +18,10 @@ describe('public api contract', () => {
 
 	it('exposes extended runtime symbols from advanced entrypoint', () => {
 		expect(Object.keys(advanced).sort()).toEqual([
+			'BlitPass',
+			'CopyPass',
 			'FragCanvas',
+			'ShaderPass',
 			'defineMaterial',
 			'useFragkit',
 			'useFragkitUserContext',

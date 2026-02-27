@@ -227,9 +227,37 @@ export interface RenderTarget {
 export type RenderTargetDefinitionMap = Record<string, RenderTargetDefinition>;
 
 /**
- * Execution context passed to custom render passes.
+ * Built-in render graph source slots.
  */
-export interface RenderPassContext {
+export type RenderPassInputSlot = 'source' | 'target';
+
+/**
+ * Built-in render graph output slots.
+ */
+export type RenderPassOutputSlot = 'source' | 'target' | 'canvas';
+
+/**
+ * Per-pass render flags controlling attachment behavior.
+ */
+export interface RenderPassFlags {
+	/**
+	 * Clears output attachment before drawing.
+	 */
+	clear?: boolean;
+	/**
+	 * Clear color used when {@link clear} is enabled.
+	 */
+	clearColor?: [number, number, number, number];
+	/**
+	 * Stores output attachment contents after rendering.
+	 */
+	preserve?: boolean;
+}
+
+/**
+ * Execution context passed to formal render passes.
+ */
+export interface RenderPassContext extends Required<RenderPassFlags> {
 	/**
 	 * Active GPU device.
 	 */
@@ -239,13 +267,25 @@ export interface RenderPassContext {
 	 */
 	commandEncoder: GPUCommandEncoder;
 	/**
-	 * Current source view (output of scene or previous pass).
+	 * Current source slot surface.
 	 */
-	sourceView: GPUTextureView;
+	source: RenderTarget;
 	/**
-	 * Canvas target view for final output.
+	 * Current ping-pong target slot surface.
 	 */
-	canvasView: GPUTextureView;
+	target: RenderTarget;
+	/**
+	 * Current frame canvas surface.
+	 */
+	canvas: RenderTarget;
+	/**
+	 * Resolved pass input surface.
+	 */
+	input: RenderTarget;
+	/**
+	 * Resolved pass output surface.
+	 */
+	output: RenderTarget;
 	/**
 	 * Runtime render targets snapshot.
 	 */
@@ -266,12 +306,50 @@ export interface RenderPassContext {
 	 * Frame height in pixels.
 	 */
 	height: number;
+	/**
+	 * Begins a color render pass targeting current output (or provided view).
+	 */
+	beginRenderPass: (options?: {
+		view?: GPUTextureView;
+		clear?: boolean;
+		clearColor?: [number, number, number, number];
+		preserve?: boolean;
+	}) => GPURenderPassEncoder;
 }
 
 /**
- * Custom render pass callback that can optionally return a new source view for the next stage.
+ * Formal render pass contract used by Fragkit render graph.
  */
-export type RenderPass = (context: RenderPassContext) => GPUTextureView | void;
+export interface RenderPass extends RenderPassFlags {
+	/**
+	 * Enables/disables this pass without removing it from graph.
+	 */
+	enabled?: boolean;
+	/**
+	 * Triggers source/target ping-pong swap after render.
+	 */
+	needsSwap?: boolean;
+	/**
+	 * Input slot used by this pass.
+	 */
+	input?: RenderPassInputSlot;
+	/**
+	 * Output slot written by this pass.
+	 */
+	output?: RenderPassOutputSlot;
+	/**
+	 * Called on resize events (canvas size * DPR changes).
+	 */
+	setSize?: (width: number, height: number) => void;
+	/**
+	 * Executes pass commands for current frame.
+	 */
+	render: (context: RenderPassContext) => void;
+	/**
+	 * Releases pass-owned resources.
+	 */
+	dispose?: () => void;
+}
 
 /**
  * Frame submission strategy for the scheduler.

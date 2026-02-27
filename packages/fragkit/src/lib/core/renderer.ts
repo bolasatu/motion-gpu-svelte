@@ -1,4 +1,5 @@
 import { buildRenderTargetSignature, resolveRenderTargetDefinitions } from './render-targets';
+import { planRenderGraph } from './render-graph';
 import { buildShaderSource } from './shader';
 import {
 	getTextureMipLevelCount,
@@ -10,6 +11,7 @@ import {
 import { packUniformsInto } from './uniforms';
 import type {
 	RenderPass,
+	RenderPassInputSlot,
 	RenderTarget,
 	Renderer,
 	RendererOptions,
@@ -643,15 +645,19 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	}
 
 	let bindGroup = createBindGroup();
-	let sceneTarget: RuntimeRenderTarget | null = null;
+	let sourceSlotTarget: RuntimeRenderTarget | null = null;
+	let targetSlotTarget: RuntimeRenderTarget | null = null;
 	let renderTargetSignature = '';
 	let contextConfigured = false;
 	let configuredWidth = 0;
 	let configuredHeight = 0;
 	const runtimeRenderTargets = new Map<string, RuntimeRenderTarget>();
+	let activePasses: RenderPass[] = [];
+	let passWidth = 0;
+	let passHeight = 0;
 
 	/**
-	 * Resolves active post-processing pass list for current frame.
+	 * Resolves active render pass list for current frame.
 	 */
 	const resolvePasses = (): RenderPass[] => {
 		return options.getPasses?.() ?? options.passes ?? [];
@@ -665,21 +671,58 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	};
 
 	/**
-	 * Ensures offscreen scene target matches current canvas size/format.
+	 * Synchronizes pass lifecycle callbacks and resize notifications.
 	 */
-	const ensureSceneTarget = (width: number, height: number): RuntimeRenderTarget => {
-		if (
-			sceneTarget &&
-			sceneTarget.width === width &&
-			sceneTarget.height === height &&
-			sceneTarget.format === format
-		) {
-			return sceneTarget;
+	const syncPassLifecycle = (passes: RenderPass[], width: number, height: number): void => {
+		const uniquePasses = Array.from(new Set(passes));
+		const previousSet = new Set(activePasses);
+		const nextSet = new Set(uniquePasses);
+		const resized = passWidth !== width || passHeight !== height;
+
+		for (const pass of activePasses) {
+			if (!nextSet.has(pass)) {
+				pass.dispose?.();
+			}
 		}
 
-		destroyRenderTexture(sceneTarget);
-		sceneTarget = createRenderTexture(device, width, height, format);
-		return sceneTarget;
+		for (const pass of uniquePasses) {
+			if (resized || !previousSet.has(pass)) {
+				pass.setSize?.(width, height);
+			}
+		}
+
+		activePasses = uniquePasses;
+		passWidth = width;
+		passHeight = height;
+	};
+
+	/**
+	 * Ensures internal ping-pong slot texture matches current canvas size/format.
+	 */
+	const ensureSlotTarget = (
+		slot: RenderPassInputSlot,
+		width: number,
+		height: number
+	): RuntimeRenderTarget => {
+		const current = slot === 'source' ? sourceSlotTarget : targetSlotTarget;
+		if (
+			current &&
+			current.width === width &&
+			current.height === height &&
+			current.format === format
+		) {
+			return current;
+		}
+
+		destroyRenderTexture(current);
+		const next = createRenderTexture(device, width, height, format);
+		if (slot === 'source') {
+			sourceSlotTarget = next;
+		} else {
+			targetSlotTarget = next;
+		}
+
+		return next;
 	};
 
 	/**
@@ -860,16 +903,32 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		}
 
 		const commandEncoder = device.createCommandEncoder();
-		const canvasView = context.getCurrentTexture().createView();
 		const passes = resolvePasses();
+		syncPassLifecycle(passes, width, height);
+		const graphPlan = planRenderGraph(passes, options.clearColor);
+		const canvasTexture = context.getCurrentTexture();
+		const canvasSurface: RenderTarget = {
+			texture: canvasTexture,
+			view: canvasTexture.createView(),
+			width,
+			height,
+			format
+		};
 		const runtimeTargets = syncRenderTargets(width, height);
-		const useOffscreenSource = passes.length > 0;
-		const sourceView = useOffscreenSource ? ensureSceneTarget(width, height).view : canvasView;
+		const slots =
+			graphPlan.steps.length > 0
+				? {
+						source: ensureSlotTarget('source', width, height),
+						target: ensureSlotTarget('target', width, height),
+						canvas: canvasSurface
+					}
+				: null;
+		const sceneOutput = slots ? slots.source : canvasSurface;
 
 		const scenePass = commandEncoder.beginRenderPass({
 			colorAttachments: [
 				{
-					view: sourceView,
+					view: sceneOutput.view,
 					clearValue: {
 						r: options.clearColor[0],
 						g: options.clearColor[1],
@@ -887,29 +946,65 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		scenePass.draw(3);
 		scenePass.end();
 
-		if (useOffscreenSource) {
-			let currentSourceView = sourceView;
+		if (slots) {
+			for (const step of graphPlan.steps) {
+				const input = slots[step.input];
+				const output =
+					step.output === 'canvas'
+						? slots.canvas
+						: step.output === 'source'
+							? slots.source
+							: slots.target;
 
-			for (const pass of passes) {
-				const nextSourceView = pass({
+				step.pass.render({
 					device,
 					commandEncoder,
-					sourceView: currentSourceView,
-					canvasView,
+					source: slots.source,
+					target: slots.target,
+					canvas: slots.canvas,
+					input,
+					output,
 					targets: runtimeTargets,
 					time,
 					delta,
 					width,
-					height
+					height,
+					clear: step.clear,
+					clearColor: step.clearColor,
+					preserve: step.preserve,
+					beginRenderPass: (passOptions) => {
+						const clear = passOptions?.clear ?? step.clear;
+						const clearColor = passOptions?.clearColor ?? step.clearColor;
+						const preserve = passOptions?.preserve ?? step.preserve;
+
+						return commandEncoder.beginRenderPass({
+							colorAttachments: [
+								{
+									view: passOptions?.view ?? output.view,
+									clearValue: {
+										r: clearColor[0],
+										g: clearColor[1],
+										b: clearColor[2],
+										a: clearColor[3]
+									},
+									loadOp: clear ? 'clear' : 'load',
+									storeOp: preserve ? 'store' : 'discard'
+								}
+							]
+						});
+					}
 				});
 
-				if (nextSourceView) {
-					currentSourceView = nextSourceView;
+				if (step.needsSwap) {
+					const previousSource = slots.source;
+					slots.source = slots.target;
+					slots.target = previousSource;
 				}
 			}
 
-			if (currentSourceView !== canvasView) {
-				blitToCanvas(commandEncoder, currentSourceView, canvasView);
+			if (graphPlan.finalOutput !== 'canvas') {
+				const finalSurface = graphPlan.finalOutput === 'source' ? slots.source : slots.target;
+				blitToCanvas(commandEncoder, finalSurface.view, slots.canvas.view);
 			}
 		}
 
@@ -923,11 +1018,16 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			device.removeEventListener('uncapturederror', handleUncapturedError);
 			frameBuffer.destroy();
 			uniformBuffer.destroy();
-			destroyRenderTexture(sceneTarget);
+			destroyRenderTexture(sourceSlotTarget);
+			destroyRenderTexture(targetSlotTarget);
 			for (const target of runtimeRenderTargets.values()) {
 				target.texture.destroy();
 			}
 			runtimeRenderTargets.clear();
+			for (const pass of activePasses) {
+				pass.dispose?.();
+			}
+			activePasses = [];
 			for (const binding of textureBindings) {
 				binding.texture?.destroy();
 				binding.fallbackTexture.destroy();
