@@ -24,6 +24,7 @@ export type {
 	TextureData,
 	TextureDefinition,
 	TextureDefinitionMap,
+	TextureUpdateMode,
 	TextureMap,
 	TextureSource,
 	TextureValue,
@@ -33,7 +34,11 @@ export type {
 	UniformType,
 	UniformValue
 } from './core/types';
-export type { LoadedTexture, TextureLoadOptions } from './core/texture-loader';
+export type {
+	LoadedTexture,
+	TextureDecodeOptions,
+	TextureLoadOptions
+} from './core/texture-loader';
 export type {
 	FragMaterial,
 	FragMaterialInput,

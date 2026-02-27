@@ -323,6 +323,7 @@
 					renderer.render({
 						time,
 						delta,
+						renderMode: registry.getRenderMode(),
 						uniforms: {
 							...activeUniforms,
 							...runtimeUniforms

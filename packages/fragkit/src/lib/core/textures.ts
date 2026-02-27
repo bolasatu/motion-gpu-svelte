@@ -1,5 +1,11 @@
 import { assertUniformName } from './uniforms';
-import type { TextureData, TextureDefinition, TextureDefinitionMap, TextureValue } from './types';
+import type {
+	TextureData,
+	TextureDefinition,
+	TextureDefinitionMap,
+	TextureUpdateMode,
+	TextureValue
+} from './types';
 
 /**
  * Texture definition with defaults and normalized numeric limits applied.
@@ -29,6 +35,10 @@ export interface NormalizedTextureDefinition {
 	 * Effective premultiplied-alpha flag.
 	 */
 	premultipliedAlpha: boolean;
+	/**
+	 * Effective dynamic update strategy.
+	 */
+	update?: TextureUpdateMode;
 	/**
 	 * Effective anisotropy level.
 	 */
@@ -87,6 +97,7 @@ export function normalizeTextureDefinition(
 		flipY: definition?.flipY ?? true,
 		generateMipmaps: definition?.generateMipmaps ?? false,
 		premultipliedAlpha: definition?.premultipliedAlpha ?? false,
+		update: definition?.update,
 		anisotropy: Math.max(1, Math.min(16, Math.floor(definition?.anisotropy ?? 1))),
 		filter: definition?.filter ?? DEFAULT_TEXTURE_FILTER,
 		addressModeU: definition?.addressModeU ?? DEFAULT_TEXTURE_ADDRESS_MODE,
@@ -135,6 +146,29 @@ export function toTextureData(value: TextureValue): TextureData | null {
 	}
 
 	return { source: value };
+}
+
+/**
+ * Resolves effective runtime texture update strategy.
+ */
+export function resolveTextureUpdateMode(input: {
+	source: TextureData['source'];
+	override?: TextureUpdateMode;
+	defaultMode?: TextureUpdateMode;
+}): TextureUpdateMode {
+	if (input.override) {
+		return input.override;
+	}
+
+	if (input.defaultMode) {
+		return input.defaultMode;
+	}
+
+	if (isVideoTextureSource(input.source)) {
+		return 'perFrame';
+	}
+
+	return 'once';
 }
 
 /**

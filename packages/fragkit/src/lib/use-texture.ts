@@ -2,6 +2,7 @@ import { onDestroy } from 'svelte';
 import type { CurrentReadable } from './current-writable';
 import { currentWritable } from './current-writable';
 import {
+	isAbortError,
 	loadTexturesFromUrls,
 	type LoadedTexture,
 	type TextureLoadOptions
@@ -54,6 +55,22 @@ function disposeTextures(list: LoadedTexture[] | null): void {
 	}
 }
 
+function mergeAbortSignals(primary: AbortSignal, secondary: AbortSignal | undefined): AbortSignal {
+	if (!secondary) {
+		return primary;
+	}
+
+	if (typeof AbortSignal.any === 'function') {
+		return AbortSignal.any([primary, secondary]);
+	}
+
+	const fallback = new AbortController();
+	const abort = (): void => fallback.abort();
+	primary.addEventListener('abort', abort, { once: true });
+	secondary.addEventListener('abort', abort, { once: true });
+	return fallback.signal;
+}
+
 /**
  * Loads textures from URLs and exposes reactive loading/error state.
  *
@@ -70,16 +87,28 @@ export function useTexture(
 	const error = currentWritable<Error | null>(null);
 	let disposed = false;
 	let requestVersion = 0;
+	let activeController: AbortController | null = null;
+	let runningLoad: Promise<void> | null = null;
+	let reloadQueued = false;
 	const getUrls = typeof urlInput === 'function' ? urlInput : () => urlInput;
 
-	const load = async (): Promise<void> => {
+	const executeLoad = async (): Promise<void> => {
+		if (disposed) {
+			return;
+		}
+
 		const version = ++requestVersion;
+		const controller = new AbortController();
+		activeController = controller;
 		loading.set(true);
 		error.set(null);
 
 		const previous = textures.current;
 		try {
-			const loaded = await loadTexturesFromUrls(getUrls(), options);
+			const loaded = await loadTexturesFromUrls(getUrls(), {
+				...options,
+				signal: mergeAbortSignals(controller.signal, options.signal)
+			});
 			if (disposed || version !== requestVersion) {
 				disposeTextures(loaded);
 				return;
@@ -92,6 +121,10 @@ export function useTexture(
 				return;
 			}
 
+			if (isAbortError(nextError)) {
+				return;
+			}
+
 			disposeTextures(previous);
 			textures.set(null);
 			error.set(toError(nextError));
@@ -99,7 +132,33 @@ export function useTexture(
 			if (!disposed && version === requestVersion) {
 				loading.set(false);
 			}
+			if (activeController === controller) {
+				activeController = null;
+			}
 		}
+	};
+
+	const runLoadLoop = async (): Promise<void> => {
+		do {
+			reloadQueued = false;
+			await executeLoad();
+		} while (reloadQueued && !disposed);
+	};
+
+	const load = (): Promise<void> => {
+		activeController?.abort();
+		if (runningLoad) {
+			reloadQueued = true;
+			return runningLoad;
+		}
+
+		const pending = runLoadLoop();
+		runningLoad = pending.finally(() => {
+			if (runningLoad === pending) {
+				runningLoad = null;
+			}
+		});
+		return runningLoad;
 	};
 
 	void load();
@@ -107,6 +166,7 @@ export function useTexture(
 	onDestroy(() => {
 		disposed = true;
 		requestVersion += 1;
+		activeController?.abort();
 		disposeTextures(textures.current);
 	});
 

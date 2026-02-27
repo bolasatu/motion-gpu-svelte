@@ -4,6 +4,7 @@ import {
 	isVideoTextureSource,
 	normalizeTextureDefinition,
 	normalizeTextureDefinitions,
+	resolveTextureUpdateMode,
 	resolveTextureKeys,
 	resolveTextureSize,
 	toTextureData
@@ -31,6 +32,8 @@ describe('textures', () => {
 			addressModeU: 'clamp-to-edge',
 			addressModeV: 'clamp-to-edge'
 		});
+
+		expect(normalizeTextureDefinition({ update: 'onInvalidate' }).update).toBe('onInvalidate');
 	});
 
 	it('normalizes texture maps by key', () => {
@@ -117,5 +120,17 @@ describe('textures', () => {
 
 		expect(isVideoTextureSource(video)).toBe(true);
 		expect(isVideoTextureSource(canvas)).toBe(false);
+	});
+
+	it('resolves runtime texture update strategy', () => {
+		const video = document.createElement('video');
+		const canvas = document.createElement('canvas');
+
+		expect(resolveTextureUpdateMode({ source: canvas })).toBe('once');
+		expect(resolveTextureUpdateMode({ source: canvas, defaultMode: 'onInvalidate' })).toBe(
+			'onInvalidate'
+		);
+		expect(resolveTextureUpdateMode({ source: canvas, override: 'perFrame' })).toBe('perFrame');
+		expect(resolveTextureUpdateMode({ source: video })).toBe('perFrame');
 	});
 });

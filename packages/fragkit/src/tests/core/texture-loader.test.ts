@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+	buildTextureResourceCacheKey,
 	clearTextureBlobCache,
+	isAbortError,
 	loadTextureFromUrl,
 	loadTexturesFromUrls
 } from '../../lib/core/texture-loader';
@@ -35,11 +37,22 @@ describe('texture-loader', () => {
 		vi.restoreAllMocks();
 	});
 
-	it('loads bitmap textures with dimensions and dispose', async () => {
-		const texture = await loadTextureFromUrl('/assets/pic-a.png');
+	it('loads bitmap textures with dimensions, metadata and dispose', async () => {
+		const texture = await loadTextureFromUrl('/assets/pic-a.png', {
+			colorSpace: 'linear',
+			update: 'onInvalidate',
+			flipY: false,
+			premultipliedAlpha: true,
+			generateMipmaps: true
+		});
 		expect(texture.url).toBe('/assets/pic-a.png');
 		expect(texture.width).toBe(32);
 		expect(texture.height).toBe(18);
+		expect(texture.colorSpace).toBe('linear');
+		expect(texture.update).toBe('onInvalidate');
+		expect(texture.flipY).toBe(false);
+		expect(texture.premultipliedAlpha).toBe(true);
+		expect(texture.generateMipmaps).toBe(true);
 		expect(fetch).toHaveBeenCalledTimes(1);
 		expect(createImageBitmap).toHaveBeenCalledTimes(1);
 
@@ -48,16 +61,38 @@ describe('texture-loader', () => {
 		expect(close).toHaveBeenCalledTimes(1);
 	});
 
-	it('reuses cached blob fetches for the same url', async () => {
-		await loadTexturesFromUrls(['/assets/shared.png', '/assets/shared.png']);
-		expect(fetch).toHaveBeenCalledTimes(1);
-		expect(createImageBitmap).toHaveBeenCalledTimes(2);
+	it('reuses cached fetches only when full cache key matches', async () => {
+		await loadTexturesFromUrls(['/assets/shared.png', '/assets/shared.png'], {
+			requestInit: {
+				method: 'GET',
+				headers: { accept: 'image/png' }
+			},
+			colorSpace: 'srgb'
+		});
+		await loadTextureFromUrl('/assets/shared.png', {
+			requestInit: {
+				method: 'GET',
+				headers: { accept: 'image/png' }
+			},
+			colorSpace: 'linear'
+		});
+
+		expect(fetch).toHaveBeenCalledTimes(2);
+		expect(createImageBitmap).toHaveBeenCalledTimes(3);
 	});
 
-	it('uses linear decode mode when requested', async () => {
-		await loadTextureFromUrl('/assets/linear.png', { colorSpace: 'linear' });
+	it('uses decode options and linear decode mode when requested', async () => {
+		await loadTextureFromUrl('/assets/linear.png', {
+			colorSpace: 'linear',
+			decode: {
+				imageOrientation: 'flipY',
+				premultiplyAlpha: 'premultiply'
+			}
+		});
 		expect(createImageBitmap).toHaveBeenCalledWith(expect.any(Blob), {
-			colorSpaceConversion: 'none'
+			colorSpaceConversion: 'none',
+			premultiplyAlpha: 'premultiply',
+			imageOrientation: 'flipY'
 		});
 	});
 
@@ -80,5 +115,70 @@ describe('texture-loader', () => {
 		);
 		await expect(loadTextureFromUrl('/assets/retry.png')).resolves.toBeDefined();
 		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('supports cancellation via AbortController', async () => {
+		const fetchMock = vi.fn((_: string, requestInit?: RequestInit) => {
+			const signal = requestInit?.signal as AbortSignal | undefined;
+			return new Promise((resolve, reject) => {
+				if (signal?.aborted) {
+					reject(new DOMException('Aborted', 'AbortError'));
+					return;
+				}
+
+				const onAbort = (): void => reject(new DOMException('Aborted', 'AbortError'));
+				signal?.addEventListener('abort', onAbort, { once: true });
+				setTimeout(() => {
+					signal?.removeEventListener('abort', onAbort);
+					resolve({
+						ok: true,
+						status: 200,
+						blob: async () => createMockBlob()
+					});
+				}, 50);
+			});
+		});
+		vi.stubGlobal('fetch', fetchMock);
+		const controller = new AbortController();
+
+		const promise = loadTextureFromUrl('/assets/abort.png', { signal: controller.signal });
+		controller.abort();
+		await expect(promise).rejects.toSatisfy((error: unknown) => isAbortError(error));
+	});
+
+	it('builds stable cache keys from full io config', () => {
+		const a = buildTextureResourceCacheKey('/assets/sprite.png', {
+			colorSpace: 'srgb',
+			requestInit: {
+				method: 'GET',
+				headers: { accept: 'image/png', 'x-test': 'a' }
+			},
+			decode: {
+				imageOrientation: 'flipY'
+			}
+		});
+		const b = buildTextureResourceCacheKey('/assets/sprite.png', {
+			colorSpace: 'srgb',
+			requestInit: {
+				headers: { 'x-test': 'a', accept: 'image/png' },
+				method: 'GET'
+			},
+			decode: {
+				imageOrientation: 'flipY'
+			}
+		});
+		const c = buildTextureResourceCacheKey('/assets/sprite.png', {
+			colorSpace: 'linear',
+			requestInit: {
+				method: 'GET',
+				headers: { accept: 'image/png', 'x-test': 'a' }
+			},
+			decode: {
+				imageOrientation: 'flipY'
+			}
+		});
+
+		expect(a).toBe(b);
+		expect(a).not.toBe(c);
 	});
 });

@@ -109,12 +109,37 @@ export interface TextureData {
 	 * Optional explicit height override.
 	 */
 	height?: number;
+	/**
+	 * Optional runtime color space override.
+	 */
+	colorSpace?: 'srgb' | 'linear';
+	/**
+	 * Optional runtime flip-y override.
+	 */
+	flipY?: boolean;
+	/**
+	 * Optional runtime premultiplied-alpha override.
+	 */
+	premultipliedAlpha?: boolean;
+	/**
+	 * Optional runtime mipmap generation override.
+	 */
+	generateMipmaps?: boolean;
+	/**
+	 * Runtime update strategy override.
+	 */
+	update?: TextureUpdateMode;
 }
 
 /**
  * Texture input accepted by renderer state APIs.
  */
 export type TextureValue = TextureData | TextureSource | null;
+
+/**
+ * Texture update strategy for dynamic sources.
+ */
+export type TextureUpdateMode = 'once' | 'onInvalidate' | 'perFrame';
 
 /**
  * Per-texture sampling and upload configuration.
@@ -140,6 +165,10 @@ export interface TextureDefinition {
 	 * Enables premultiplied-alpha upload mode.
 	 */
 	premultipliedAlpha?: boolean;
+	/**
+	 * Dynamic source update strategy.
+	 */
+	update?: TextureUpdateMode;
 	/**
 	 * Sampler anisotropy level (clamped internally).
 	 */
@@ -479,6 +508,7 @@ export interface Renderer {
 	render: (input: {
 		time: number;
 		delta: number;
+		renderMode: RenderMode;
 		uniforms: UniformMap;
 		textures: TextureMap;
 	}) => void;

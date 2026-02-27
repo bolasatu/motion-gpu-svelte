@@ -3,8 +3,8 @@ import { planRenderGraph } from './render-graph';
 import { buildShaderSourceWithMap, formatShaderSourceLocation, type ShaderLineMap } from './shader';
 import {
 	getTextureMipLevelCount,
-	isVideoTextureSource,
 	normalizeTextureDefinitions,
+	resolveTextureUpdateMode,
 	resolveTextureSize,
 	toTextureData
 } from './textures';
@@ -12,10 +12,12 @@ import { packUniformsInto } from './uniforms';
 import type {
 	RenderPass,
 	RenderPassInputSlot,
+	RenderMode,
 	RenderTarget,
 	Renderer,
 	RendererOptions,
 	TextureSource,
+	TextureUpdateMode,
 	TextureValue
 } from './types';
 
@@ -51,9 +53,17 @@ interface RuntimeTextureBinding {
 	height: number | undefined;
 	mipLevelCount: number;
 	format: GPUTextureFormat;
+	colorSpace: 'srgb' | 'linear';
+	defaultColorSpace: 'srgb' | 'linear';
 	flipY: boolean;
+	defaultFlipY: boolean;
 	generateMipmaps: boolean;
+	defaultGenerateMipmaps: boolean;
 	premultipliedAlpha: boolean;
+	defaultPremultipliedAlpha: boolean;
+	update: TextureUpdateMode;
+	defaultUpdate?: TextureUpdateMode;
+	lastToken: TextureValue;
 }
 
 /**
@@ -488,9 +498,17 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			height: undefined,
 			mipLevelCount: 1,
 			format: config.format,
+			colorSpace: config.colorSpace,
+			defaultColorSpace: config.colorSpace,
 			flipY: config.flipY,
+			defaultFlipY: config.flipY,
 			generateMipmaps: config.generateMipmaps,
-			premultipliedAlpha: config.premultipliedAlpha
+			defaultGenerateMipmaps: config.generateMipmaps,
+			premultipliedAlpha: config.premultipliedAlpha,
+			defaultPremultipliedAlpha: config.premultipliedAlpha,
+			update: config.update ?? 'once',
+			defaultUpdate: config.update,
+			lastToken: null
 		};
 	});
 
@@ -596,7 +614,11 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	 *
 	 * @returns `true` when bind group must be rebuilt.
 	 */
-	const updateTextureBinding = (binding: RuntimeTextureBinding, value: TextureValue): boolean => {
+	const updateTextureBinding = (
+		binding: RuntimeTextureBinding,
+		value: TextureValue,
+		renderMode: RenderMode
+	): boolean => {
 		const nextData = toTextureData(value);
 
 		if (!nextData) {
@@ -610,28 +632,54 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			binding.source = null;
 			binding.width = undefined;
 			binding.height = undefined;
+			binding.lastToken = null;
 			return true;
 		}
 
 		const source = nextData.source;
+		const colorSpace = nextData.colorSpace ?? binding.defaultColorSpace;
+		const format = colorSpace === 'linear' ? 'rgba8unorm' : 'rgba8unorm-srgb';
+		const flipY = nextData.flipY ?? binding.defaultFlipY;
+		const premultipliedAlpha = nextData.premultipliedAlpha ?? binding.defaultPremultipliedAlpha;
+		const generateMipmaps = nextData.generateMipmaps ?? binding.defaultGenerateMipmaps;
+		const update = resolveTextureUpdateMode({
+			source,
+			override: nextData.update,
+			defaultMode: binding.defaultUpdate
+		});
 		const { width, height } = resolveTextureSize(nextData);
-		const mipLevelCount = binding.generateMipmaps ? getTextureMipLevelCount(width, height) : 1;
+		const mipLevelCount = generateMipmaps ? getTextureMipLevelCount(width, height) : 1;
+		const sourceChanged = binding.source !== source;
+		const tokenChanged = binding.lastToken !== value;
+		const requiresReallocation =
+			binding.texture === null ||
+			sourceChanged ||
+			binding.width !== width ||
+			binding.height !== height ||
+			binding.mipLevelCount !== mipLevelCount ||
+			binding.format !== format;
 
-		if (
-			binding.source === source &&
-			binding.width === width &&
-			binding.height === height &&
-			binding.mipLevelCount === mipLevelCount
-		) {
-			if (isVideoTextureSource(source) && binding.texture) {
+		if (!requiresReallocation) {
+			const shouldUpload =
+				update === 'perFrame' ||
+				(update === 'onInvalidate' && (renderMode !== 'always' || tokenChanged));
+
+			if (shouldUpload && binding.texture) {
+				binding.flipY = flipY;
+				binding.generateMipmaps = generateMipmaps;
+				binding.premultipliedAlpha = premultipliedAlpha;
+				binding.colorSpace = colorSpace;
 				uploadTexture(device, binding.texture, binding, source, width, height, mipLevelCount);
 			}
+
+			binding.update = update;
+			binding.lastToken = value;
 			return false;
 		}
 
 		const texture = device.createTexture({
 			size: { width, height, depthOrArrayLayers: 1 },
-			format: binding.format,
+			format,
 			mipLevelCount,
 			usage:
 				GPUTextureUsage.TEXTURE_BINDING |
@@ -639,6 +687,11 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				GPUTextureUsage.RENDER_ATTACHMENT
 		});
 
+		binding.flipY = flipY;
+		binding.generateMipmaps = generateMipmaps;
+		binding.premultipliedAlpha = premultipliedAlpha;
+		binding.colorSpace = colorSpace;
+		binding.format = format;
 		uploadTexture(device, texture, binding, source, width, height, mipLevelCount);
 
 		binding.texture?.destroy();
@@ -648,12 +701,14 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		binding.width = width;
 		binding.height = height;
 		binding.mipLevelCount = mipLevelCount;
+		binding.update = update;
+		binding.lastToken = value;
 		return true;
 	};
 
 	for (const binding of textureBindings) {
 		const defaultSource = normalizedTextureDefinitions[binding.key]?.source ?? null;
-		updateTextureBinding(binding, defaultSource);
+		updateTextureBinding(binding, defaultSource, 'always');
 	}
 
 	let bindGroup = createBindGroup();
@@ -839,7 +894,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	/**
 	 * Executes a full frame render.
 	 */
-	const render: Renderer['render'] = ({ time, delta, uniforms, textures }) => {
+	const render: Renderer['render'] = ({ time, delta, renderMode, uniforms, textures }) => {
 		if (deviceLostMessage) {
 			throw new Error(deviceLostMessage);
 		}
@@ -906,7 +961,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		for (const binding of textureBindings) {
 			const nextTexture =
 				textures[binding.key] ?? normalizedTextureDefinitions[binding.key]?.source ?? null;
-			if (updateTextureBinding(binding, nextTexture)) {
+			if (updateTextureBinding(binding, nextTexture, renderMode)) {
 				bindGroupDirty = true;
 			}
 		}
