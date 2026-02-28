@@ -4,15 +4,13 @@
   "workspaces": {
     "": {
       "name": "motion-gpu-monorepo",
-      "dependencies": {
-        "carbon-icons-svelte": "^13.8.0",
-      },
     },
     "apps/web": {
       "name": "@motion-core/web",
       "version": "0.0.1",
       "dependencies": {
         "@motion-core/motion-gpu": "workspace:*",
+        "carbon-icons-svelte": "^13.8.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "shiki": "^4.0.0",
