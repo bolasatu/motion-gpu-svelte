@@ -120,14 +120,14 @@
 		}}
 	>
 		<div
-			class="w-full max-w-3xl border border-background-muted/90 bg-card"
+			class="w-full max-w-3xl border border-border bg-card"
 			transition:scale={{ duration: 300, start: 0.95, easing: cubicOut }}
 			onoutroend={() => {
 				query = '';
 				contentHeight = 0;
 			}}
 		>
-			<div class="flex items-center gap-2 border-b border-background-muted/90 px-3">
+			<div class="flex items-center gap-2 border-b border-border px-3">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					aria-hidden="true"
@@ -148,8 +148,7 @@
 					placeholder="Search MotionGPU docs"
 					aria-label="Search MotionGPU docs"
 				/>
-				<span
-					class="border border-background-muted/90 px-1.5 py-0.5 font-fono text-[10px] text-foreground-muted"
+				<span class="border border-border px-1.5 py-0.5 font-fono text-[10px] text-foreground-muted"
 					>ESC</span
 				>
 			</div>
@@ -168,7 +167,7 @@
 									onclick={() => selectResult(index)}
 									onmouseenter={() => (selectedIndex = index)}
 									class={cn(
-										'group relative w-full border-b border-background-muted/90 px-3 py-2 text-left transition-colors',
+										'group relative w-full border-b border-border px-3 py-2 text-left transition-colors',
 										isChild && 'pl-7',
 										selectedIndex === index
 											? 'bg-background-muted/65 text-foreground'
@@ -216,7 +215,7 @@
 				</div>
 			</div>
 
-			<div class="border-t border-background-muted/90 px-3 py-2">
+			<div class="border-t border-border px-3 py-2">
 				<p class="font-fono text-xs text-foreground-muted">
 					Use ↑ ↓ to navigate and Enter to open.
 				</p>

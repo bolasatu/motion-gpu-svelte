@@ -26,7 +26,7 @@
 				target="_blank"
 				rel="noreferrer"
 				variant="outline"
-				class="border-background-muted/90 text-background hover:bg-background/10"
+				class="border-border text-background hover:bg-background/10"
 			>
 				View GitHub
 			</Button>

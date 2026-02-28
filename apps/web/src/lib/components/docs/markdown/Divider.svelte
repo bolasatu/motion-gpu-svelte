@@ -7,4 +7,4 @@
 	let { class: className = '', ...rest }: Props = $props();
 </script>
 
-<hr {...rest} class={`my-8 border-0 border-t border-background-muted/90 ${className}`.trim()} />
+<hr {...rest} class={`my-8 border-0 border-t border-border ${className}`.trim()} />

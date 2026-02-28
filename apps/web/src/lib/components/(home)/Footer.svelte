@@ -13,7 +13,7 @@
 </script>
 
 <footer class="w-full">
-	<div class="w-full border-y border-background-muted/90 px-2 py-6 sm:px-6 sm:py-8">
+	<div class="w-full border-y border-border px-2 py-6 sm:px-6 sm:py-8">
 		<div class="flex w-full items-center justify-start gap-6">
 			<p class="text-xl tracking-tight">MotionGPU</p>
 			<p class="font-fono text-sm text-foreground-muted">Svelte-first WebGPU Runtime</p>
@@ -21,7 +21,7 @@
 	</div>
 
 	<div
-		class="w-full border-b border-background-muted/90 px-2 py-6 sm:px-6 sm:py-8 lg:grid lg:grid-cols-4 lg:gap-6"
+		class="w-full border-b border-border px-2 py-6 sm:px-6 sm:py-8 lg:grid lg:grid-cols-4 lg:gap-6"
 	>
 		<div class="grid gap-2">
 			<h3 class="font-fono text-xs tracking-wide uppercase">Menu</h3>
@@ -94,7 +94,7 @@
 	</div>
 
 	<p
-		class="px-2 pt-6 text-[clamp(4rem,16vw,16rem)] leading-none font-semibold tracking-tight sm:px-6"
+		class="bg-linear-to-b from-foreground to-foreground-muted bg-clip-text px-2 pt-6 text-[clamp(4rem,16vw,16rem)] leading-none font-medium tracking-tight text-transparent sm:px-6"
 	>
 		MotionGPU
 	</p>

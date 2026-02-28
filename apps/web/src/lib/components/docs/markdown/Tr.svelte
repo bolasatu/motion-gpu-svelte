@@ -10,6 +10,6 @@
 	let { children, class: className = '', ...rest }: Props = $props();
 </script>
 
-<tr {...rest} class={`border-b border-background-muted/90 ${className}`.trim()}>
+<tr {...rest} class={`border-b border-border ${className}`.trim()}>
 	{@render children?.()}
 </tr>
