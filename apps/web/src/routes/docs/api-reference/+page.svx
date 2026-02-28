@@ -1,0 +1,125 @@
+---
+layout: docs
+---
+
+## Root exports (`@motion-core/motion-gpu`)
+
+| Export | Kind | Description |
+| --- | --- | --- |
+| `FragCanvas` | Component | Main runtime canvas component. |
+| `defineMaterial` | Function | Creates validated, immutable material definition. |
+| `useMotionGPU` | Hook | Accesses runtime context inside `FragCanvas` subtree. |
+| `useFrame` | Hook | Registers frame callbacks with scheduler ordering controls. |
+| `useTexture` | Hook | Loads URL textures with reactive loading/error state. |
+| `BlitPass` | Class | Fullscreen sample pass. |
+| `CopyPass` | Class | Texture copy pass with safe fallback path. |
+| `ShaderPass` | Class | Custom post-processing pass (`shade(...)` WGSL contract). |
+
+## Advanced exports (`@motion-core/motion-gpu/advanced`)
+
+| Export | Kind | Description |
+| --- | --- | --- |
+| `useMotionGPUUserContext` | Hook | Namespaced shared runtime user context API. |
+
+## `FragCanvas` props
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `material` | `FragMaterial` | required | Main shader/material definition. |
+| `renderTargets` | `RenderTargetDefinitionMap` | `undefined` | Optional named offscreen targets. |
+| `passes` | `RenderPass[]` | `undefined` | Optional pass graph. |
+| `clearColor` | `[number, number, number, number]` | `[0, 0, 0, 1]` | RGBA clear value. |
+| `outputColorSpace` | `'srgb'` or `'linear'` | `'srgb'` | Output presentation color space. |
+| `renderMode` | `'always'`, `'on-demand'`, `'manual'` | `'always'` | Frame scheduling mode. |
+| `autoRender` | `boolean` | `true` | Hard gate for rendering regardless of mode. |
+| `maxDelta` | `number` | `0.1` | Max delta clamp passed to frame callbacks. |
+| `adapterOptions` | `GPURequestAdapterOptions` | `undefined` | Forwarded to WebGPU adapter request. |
+| `deviceDescriptor` | `GPUDeviceDescriptor` | `undefined` | Forwarded to `requestDevice`. |
+| `dpr` | `number` | device DPR | Runtime device pixel ratio. |
+| `showErrorOverlay` | `boolean` | `true` | Shows diagnostic overlay on runtime failures. |
+| `onError` | `(report) => void` | `undefined` | Receives normalized error report. |
+| `class` | `string` | `''` | Wrapper class name. |
+| `style` | `string` | `''` | Wrapper inline style. |
+| `children` | `Snippet` | `undefined` | Nested runtime components/hooks. |
+
+## `defineMaterial(input)`
+
+### Input shape
+
+| Key | Required | Description |
+| --- | --- | --- |
+| `fragment` | yes | WGSL fragment implementing `fn frag(uv: vec2f) -> vec4f`. |
+| `uniforms` | no | Uniform map with inferred or explicit typed values. |
+| `textures` | no | Texture definition map. |
+| `defines` | no | Compile-time constants injected as WGSL `const`. |
+| `includes` | no | Named source chunks for `#include <name>` expansion. |
+
+Returns immutable `FragMaterial`.
+
+## `useFrame`
+
+### Options (`UseFrameOptions`)
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `autoStart` | `boolean` | Starts task immediately when `true`. |
+| `autoInvalidate` | `boolean` | Enables default invalidation behavior for task. |
+| `invalidation` | `FrameTaskInvalidation` | Explicit invalidation strategy/token behavior. |
+| `stage` | `FrameKey` or `FrameStage` | Stage assignment for grouped execution. |
+| `before` | single or array task/stage reference | Ordering dependency: run before referenced items. |
+| `after` | single or array task/stage reference | Ordering dependency: run after referenced items. |
+| `running` | `() => boolean` | Dynamic enabled/disabled gate per frame. |
+
+### Return (`UseFrameResult`)
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `task` | metadata object | Contains task identity and stage metadata. |
+| `start` | `() => void` | Enables task execution. |
+| `stop` | `() => void` | Disables task execution. |
+| `started` | readable store | Effective running state. |
+
+## `useTexture(urlInput, options?)`
+
+### Inputs
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `urlInput` | `string[]` or `() => string[]` | Static or reactive URL list. |
+| `options` | loader options | Forwarded to fetch/decode/metadata normalization. |
+
+### Return
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `textures` | `CurrentReadable<LoadedTexture[] or null>` | Loaded resources. |
+| `loading` | `CurrentReadable<boolean>` | In-flight state. |
+| `error` | `CurrentReadable<Error or null>` | Last loader error. |
+| `reload` | `() => Promise<void>` | Aborts current load and restarts. |
+
+## `useMotionGPUUserContext` (advanced)
+
+| Overload | Returns | Description |
+| --- | --- | --- |
+| `useMotionGPUUserContext()` | full user store | Access complete shared user context. |
+| `useMotionGPUUserContext(namespace)` | namespaced readable | Reads one namespace. |
+| `useMotionGPUUserContext(namespace, value, options?)` | resolved entry | Initializes or updates namespace value. |
+
+## Built-in pass constructors
+
+| Constructor | Description |
+| --- | --- |
+| `new BlitPass(options?)` | Fullscreen sample pass. |
+| `new CopyPass(options?)` | Copy pass with direct copy optimization + fallback. |
+| `new ShaderPass({ fragment, ...flags })` | Custom post-process pass using `shade(...)`. |
+
+All implement the `RenderPass` interface.
+
+## Key type groups
+
+| Group | Representative types |
+| --- | --- |
+| Uniforms | `UniformValue`, `UniformType`, `UniformMap` |
+| Textures | `TextureValue`, `TextureDefinitionMap`, `TextureUpdateMode` |
+| Passes | `RenderPass`, `RenderPassContext`, `RenderTargetDefinitionMap` |
+| Scheduler | `RenderMode`, `FrameState`, `FrameInvalidationToken` |

@@ -1,0 +1,78 @@
+---
+layout: docs
+---
+
+## Render graph model
+
+Each pass can define runtime flags consumed by `planRenderGraph(...)`.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `enabled` | `boolean` | Enables/disables pass execution. |
+| `needsSwap` | `boolean` | Swaps `source` and `target` after pass when `true`. |
+| `input` | `'source'` or `'target'` | Selected input slot. |
+| `output` | `'source'`, `'target'`, `'canvas'` | Selected output slot. |
+| `clear` | `boolean` | Clears attachment before drawing. |
+| `clearColor` | RGBA tuple | Clear value used when `clear` is true. |
+| `preserve` | `boolean` | Keeps previous attachment content when applicable. |
+
+`planRenderGraph(...)` validates and resolves execution steps.
+
+## Ping-pong flow
+
+Default pass behavior (`needsSwap: true`) is `source -> target`, then swap source/target references.
+
+This enables chained post-processing with minimal texture allocations.
+
+## Built-in passes
+
+| Pass | Description |
+| --- | --- |
+| `BlitPass` | Fullscreen sample from `input` and write to `output`. |
+| `CopyPass` | Uses `copyTextureToTexture` when safe, falls back to fullscreen blit. |
+| `ShaderPass` | Custom post-process pass using `shade(inputColor, uv)`. |
+
+### `ShaderPass` fragment contract
+
+```wgsl
+fn shade(inputColor: vec4f, uv: vec2f) -> vec4f
+```
+
+## Render targets
+
+`renderTargets` is a named map:
+
+```ts
+{
+  half: { scale: 0.5 },
+  bloom: { width: 640, height: 360, format: 'rgba16float' }
+}
+```
+
+### Render target rules
+
+| Rule | Description |
+| --- | --- |
+| Key format | Must be WGSL-safe identifiers. |
+| Dimensions | `width`, `height`, and `scale` must be positive finite values. |
+| Derived size | If `width`/`height` are omitted, size is `canvas * scale`. |
+
+## Dynamic targets and passes
+
+`FragCanvas` accepts both static arrays/maps and dynamic getters.
+
+At runtime:
+
+- pass lifecycle is synced (`setSize`, `dispose`)
+- render targets are reallocated only when resolved signature changes
+
+## Pass context API
+
+| Field | Description |
+| --- | --- |
+| `device`, `commandEncoder` | WebGPU execution primitives. |
+| `source`, `target`, `canvas` | Slot textures/views. |
+| `input`, `output` | Resolved input/output for current pass. |
+| `targets` | Named runtime render target map. |
+| `time`, `delta`, `width`, `height` | Frame timing and dimensions. |
+| `beginRenderPass(...)` | Helper with per-pass override options. |

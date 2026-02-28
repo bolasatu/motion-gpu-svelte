@@ -11,7 +11,7 @@
 				variant: {
 					primary: 'bg-foreground text-background hover:bg-foreground/90',
 					secondary: 'bg-background-muted text-foreground hover:bg-background',
-					outline: 'border border-foreground/35 text-foreground hover:bg-background',
+					outline: 'border border-background-muted/90 text-foreground hover:bg-background',
 					ghost: 'text-foreground hover:bg-background',
 					link: 'h-auto p-0 text-foreground underline-offset-4 hover:underline'
 				},

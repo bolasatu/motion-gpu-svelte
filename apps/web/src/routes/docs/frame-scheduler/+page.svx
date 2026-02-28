@@ -1,0 +1,86 @@
+---
+layout: docs
+---
+
+## `useFrame`
+
+`useFrame` registers a callback executed before renderer submission.
+
+### Overloads
+
+| Signature | Description |
+| --- | --- |
+| `useFrame(callback, options?)` | Auto-generated task key. |
+| `useFrame(key, callback, options?)` | Explicit task key for ordering and debugging. |
+
+### Return
+
+| Field | Description |
+| --- | --- |
+| `task` | Metadata with task `key` and `stage`. |
+| `start()` | Enables task execution. |
+| `stop()` | Disables task execution. |
+| `started` | Readable store for effective running state. |
+
+## Task ordering
+
+Tasks can declare dependencies and are resolved with topological sort plus stable insertion-order fallback.
+
+| Option | Meaning |
+| --- | --- |
+| `before` | Run before referenced tasks/stages. |
+| `after` | Run after referenced tasks/stages. |
+
+## Stages
+
+Stages group tasks and support stage-level ordering.
+
+`createStage(key, { before, after, callback })`
+
+Stage callback signature:
+
+```ts
+(state, runTasks) => void
+```
+
+This allows custom orchestration around grouped task execution.
+
+## Invalidation model
+
+### Render modes
+
+| Mode | Behavior |
+| --- | --- |
+| `always` | Render every frame. |
+| `on-demand` | Render only with pending invalidation or `advance()`. |
+| `manual` | Render only after explicit `advance()`. |
+
+### Per-task invalidation options
+
+| Option | Behavior |
+| --- | --- |
+| `autoInvalidate` | Default `true`; enables built-in invalidation behavior. |
+| `invalidation: 'never'` | Task never invalidates rendering. |
+| `invalidation: 'always'` | Task invalidates each frame execution. |
+| `invalidation: { mode: 'on-change', token }` | Invalidates only when token value changes. |
+
+## Useful behavior details
+
+| Detail | Notes |
+| --- | --- |
+| Initial frame | Scheduler starts with one pending invalidation. |
+| Mode switch | `setRenderMode('on-demand')` injects mode-change invalidation token. |
+| `autoRender = false` | Disables rendering regardless of mode. |
+| `maxDelta` | Clamps `delta` passed to frame callbacks. |
+
+## Diagnostics and profiling
+
+| API | Purpose |
+| --- | --- |
+| `getSchedule()` | Returns resolved stage/task order. |
+| `setDiagnosticsEnabled(...)` | Enables/disables runtime timing collection. |
+| `getLastRunTimings()` | Last frame timing breakdown. |
+| `setProfilingEnabled(...)` | Enables/disables rolling profiler. |
+| `setProfilingWindow(...)` | Controls rolling window size. |
+| `resetProfiling()` | Clears profiling history. |
+| `getProfilingSnapshot()` | Returns rolling stats (`last`, `avg`, `min`, `max`, `count`). |

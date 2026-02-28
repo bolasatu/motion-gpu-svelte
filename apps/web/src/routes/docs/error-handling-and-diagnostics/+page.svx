@@ -1,0 +1,66 @@
+---
+layout: docs
+---
+
+## Error pipeline
+
+`FragCanvas` catches failures in two phases:
+
+- `initialization`
+- `render`
+
+It converts unknown errors into normalized `MotionGPUErrorReport`.
+
+## Error report fields
+
+| Field | Description |
+| --- | --- |
+| `title` | Human-readable short classification title. |
+| `message` | Main user-facing message. |
+| `hint` | Suggested next action/fix hint. |
+| `details[]` | Additional diagnostic strings. |
+| `stack[]` | Stack trace lines (when available). |
+| `rawMessage` | Original raw error message. |
+| `phase` | Failure phase (`initialization` or `render`). |
+
+## Built-in classification examples
+
+Known patterns are mapped to readable titles/hints.
+
+| Pattern | Mapped outcome |
+| --- | --- |
+| WebGPU unavailable | Browser/platform support guidance |
+| Adapter unavailable | Adapter acquisition guidance |
+| Invalid webgpu canvas context | Canvas/context setup guidance |
+| WGSL compilation failed | Shader syntax/source mapping guidance |
+| Device lost | Recovery/rebuild guidance |
+| Uncaptured GPU error | Runtime GPU diagnostics guidance |
+| Bind group mismatch | Binding/layout mismatch guidance |
+| Texture usage mismatch | Texture format/usage guidance |
+
+Unknown errors still get a generic MotionGPU classification.
+
+## UI behavior
+
+By default `FragCanvas` renders a full-screen diagnostic overlay (through internal `Portal.svelte`).
+
+| Prop | Default | Description |
+| --- | --- | --- |
+| `showErrorOverlay` | `true` | Enables/disables built-in overlay. |
+| `onError(report)` | `undefined` | Callback with normalized report. |
+
+Even with overlay disabled, `onError` still receives reports.
+
+## Shader compile diagnostics
+
+Compiler errors include generated line number and mapped source location:
+
+- `user fragment line X`
+- `include "name" line X`
+- `define "NAME"`
+
+This is enabled by material preprocessing + shader line-map integration.
+
+## Renderer retry behavior
+
+If renderer creation fails for a given material signature, `FragCanvas` retries with exponential backoff (capped delay) and resets retry state when signature changes.

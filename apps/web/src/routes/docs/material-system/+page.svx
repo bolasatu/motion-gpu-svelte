@@ -1,0 +1,94 @@
+---
+layout: docs
+---
+
+## Material contract
+
+Your fragment must declare exactly this shape:
+
+```wgsl
+fn frag(uv: vec2f) -> vec4f
+```
+
+If not, `defineMaterial` throws.
+
+## `defineMaterial(...)`
+
+```ts
+const material = defineMaterial({
+  fragment: `...`,
+  uniforms: { ... },
+  textures: { ... },
+  defines: { ... },
+  includes: { ... }
+});
+```
+
+The result is immutable (`Object.freeze`) and safe for caching.
+
+## Uniforms
+
+### Supported runtime forms
+
+| Form | Interpreted type | Notes |
+| --- | --- | --- |
+| `number` | `f32` | Scalar shorthand. |
+| `[x, y]` | `vec2f` | Tuple shorthand. |
+| `[x, y, z]` | `vec3f` | Tuple shorthand. |
+| `[x, y, z, w]` | `vec4f` | Tuple shorthand. |
+| `{ type: 'f32', value }` | `f32` | Explicit typed form. |
+| `{ type: 'vec2f', value }` | `vec2f` | Explicit typed form. |
+| `{ type: 'vec3f', value }` | `vec3f` | Explicit typed form. |
+| `{ type: 'vec4f', value }` | `vec4f` | Explicit typed form. |
+| `{ type: 'mat4x4f', value }` | `mat4x4f` | Requires 16 values (`number[]` or `Float32Array`). |
+
+Uniform names must be WGSL-safe identifiers: `[A-Za-z_][A-Za-z0-9_]*`.
+
+## Defines
+
+### Allowed define values
+
+| Form | Notes |
+| --- | --- |
+| `boolean` | Plain boolean define. |
+| `number` | Must be finite. |
+| `{ type: 'bool', value }` | Explicit typed define. |
+| `{ type: 'f32', value }` | Explicit typed define. |
+| `{ type: 'i32', value }` | Explicit typed define. |
+| `{ type: 'u32', value }` | Explicit typed define. |
+
+Defines are generated as WGSL `const` declarations and prepended deterministically (sorted by key).
+
+## Includes
+
+`#include <name>` directives are expanded recursively from `includes` map.
+
+| Rule | Behavior |
+| --- | --- |
+| Include key format | Must be WGSL-safe identifier. |
+| Unknown include | Throws validation error. |
+| Circular reference | Throws validation error. |
+
+## Material signature
+
+`resolveMaterial` computes deterministic signature from:
+
+| Source area | Used for signature |
+| --- | --- |
+| Preprocessed fragment | WGSL after defines/includes expansion. |
+| Uniform layout | Uniform names and normalized types. |
+| Texture config | Texture keys + normalized texture definitions. |
+
+This signature drives renderer rebuild policy.
+
+## Line mapping for diagnostics
+
+Material preprocessing keeps generated-line to source-line mapping for:
+
+| Source type | Mapping preserved |
+| --- | --- |
+| Fragment source | yes |
+| Include source | yes |
+| Define source | yes |
+
+Shader compile errors can then be shown as user-facing source references.

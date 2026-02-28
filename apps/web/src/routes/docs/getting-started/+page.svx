@@ -1,0 +1,88 @@
+---
+layout: docs
+---
+
+
+## Install
+
+```bash
+bun add @motion-core/motion-gpu
+# or npm/yarn/pnpm equivalent
+```
+
+Peer dependency: `svelte ^5`.
+
+## Minimal example
+
+```svelte
+<script lang="ts">
+  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
+
+  const material = defineMaterial({
+    fragment: `
+fn frag(uv: vec2f) -> vec4f {
+  return vec4f(uv.x, uv.y, 0.2, 1.0);
+}
+`
+  });
+</script>
+
+<div style="width:100vw;height:100vh;">
+  <FragCanvas {material} />
+</div>
+```
+
+## Add animated uniforms with `useFrame`
+
+```svelte
+<!-- App.svelte -->
+<script lang="ts">
+  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
+  import Runtime from './Runtime.svelte';
+
+  const material = defineMaterial({
+    fragment: `
+fn frag(uv: vec2f) -> vec4f {
+  let wave = 0.5 + 0.5 * sin(uTime + uv.x * 8.0);
+  return vec4f(vec3f(wave), 1.0);
+}
+`,
+    uniforms: {
+      uTime: { type: 'f32', value: 0 }
+    }
+  });
+</script>
+
+<FragCanvas {material}>
+  <Runtime />
+</FragCanvas>
+```
+
+```svelte
+<!-- Runtime.svelte -->
+<script lang="ts">
+  import { useFrame } from '@motion-core/motion-gpu';
+
+  useFrame((state) => {
+    state.setUniform('uTime', state.time);
+  });
+</script>
+```
+
+## Render mode quick guide
+
+| Mode | Behavior |
+| --- | --- |
+| `always` (default) | Render every frame. |
+| `on-demand` | Render only when invalidated. |
+| `manual` | Render only after explicit `advance()`. |
+
+Use `useMotionGPU()` from a child component inside `<FragCanvas>` to change mode at runtime.
+
+## Advanced entrypoint
+
+Use advanced APIs from:
+
+```ts
+import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
+```

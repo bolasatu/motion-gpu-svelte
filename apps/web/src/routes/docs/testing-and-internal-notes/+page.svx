@@ -1,0 +1,55 @@
+---
+layout: docs
+---
+
+## What is covered by tests
+
+| Area | Coverage |
+| --- | --- |
+| Public API | Root vs advanced entrypoint surface checks. |
+| Shader pipeline | Source generation and line/source mapping. |
+| Uniform system | Type validation, layout, and packing behavior. |
+| Material system | Defines/includes/signature/material validation behavior. |
+| Texture system | Normalization, URL loader, cancellation, cache behavior. |
+| Scheduler | Ordering, invalidation, modes, profiling, diagnostics. |
+| Render graph | Validation and execution planning rules. |
+| Error system | Error normalization and report shape behavior. |
+
+## Important contracts enforced by tests
+
+| Contract | Expectation |
+| --- | --- |
+| `FragCanvas` diagnostics | Readable WebGPU errors + `onError` delivery. |
+| Hook context safety | `useMotionGPU` and `useFrame` require `FragCanvas` subtree. |
+| User context conflicts | `useMotionGPUUserContext` supports `skip`, `merge`, `replace`. |
+| Shader pass contract | `ShaderPass` requires `fn shade(inputColor: vec4f, uv: vec2f) -> vec4f`. |
+
+## Build and validation commands
+
+From `packages/motion-gpu`:
+
+```bash
+bun run build
+bun run test
+bun run check
+bun run lint
+```
+
+## Internal implementation details worth knowing
+
+| Area | Detail |
+| --- | --- |
+| Uniform writes | Frame uniforms are written each frame; material uniforms use dirty-range updates. |
+| Texture fallback | 1x1 fallback textures are used until real source is available. |
+| Render target allocation | Reallocation occurs only on signature-changing topology/size/format changes. |
+| Shader diagnostics | Compile failures map back to fragment/include/define source references. |
+| Scheduler timing | Diagnostics and profiling share same timing collection path. |
+
+## Practical caveats
+
+| Caveat | Guidance |
+| --- | --- |
+| WebGPU availability | Depends on browser, platform, and secure context. |
+| `onInvalidate` vs `perFrame` | Choose explicitly; behavior is materially different. |
+| `autoRender = false` | Overrides mode and suppresses all rendering. |
+| Material construction | Always use `defineMaterial`; do not handcraft plain material objects. |

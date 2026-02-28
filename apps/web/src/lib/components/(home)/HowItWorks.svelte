@@ -112,7 +112,7 @@
 					</div>
 
 					<div
-						class="absolute top-0 left-5 grid size-3 -translate-x-1/2 place-items-center rounded-full border border-foreground/20 bg-background sm:left-1/2 sm:-translate-x-1/2"
+						class="absolute top-0 left-5 grid size-3 -translate-x-1/2 place-items-center rounded-full border border-background-muted/90 bg-background sm:left-1/2 sm:-translate-x-1/2"
 					>
 						<div class="size-1.5 rounded-full bg-foreground/50"></div>
 					</div>

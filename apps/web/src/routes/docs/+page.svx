@@ -1,0 +1,45 @@
+---
+layout: docs
+---
+
+
+This documentation covers the `@motion-core/motion-gpu` package in depth, from core concepts to practical production use cases.
+
+## Who this is for
+
+- You want to render fullscreen WGSL shaders in Svelte 5.
+- You want explicit control over frame scheduling and render invalidation.
+- You want a post-processing pipeline (passes + render targets) on top of a fullscreen shader.
+
+## Documentation map
+
+1. [Concepts and Architecture](/docs/concepts-and-architecture)
+2. [Getting Started](/docs/getting-started)
+3. [Material System (WGSL + uniforms + defines + includes)](/docs/material-system)
+4. [Texture System](/docs/texture-system)
+5. [Frame Scheduler and Render Modes](/docs/frame-scheduler)
+6. [Render Passes and Render Targets](/docs/render-passes)
+7. [Hooks and Context](/docs/hooks-and-context)
+8. [Error Handling and Diagnostics](/docs/error-handling-and-diagnostics)
+9. [API Reference](/docs/api-reference)
+10. [Examples](/docs/examples)
+11. [Use Cases](/docs/use-cases)
+12. [Testing and Internal Notes](/docs/testing-and-internal-notes)
+
+## 60-second mental model
+
+- `FragCanvas` owns the WebGPU renderer lifecycle.
+- `defineMaterial` defines your main fullscreen fragment (`fn frag(uv: vec2f) -> vec4f`).
+- `useFrame` schedules per-frame logic and controls invalidation.
+- `useMotionGPU` gives runtime context (canvas, size, renderMode, scheduler).
+- Optional passes (`BlitPass`, `CopyPass`, `ShaderPass`) create a post-processing graph.
+- Optional advanced hook (`useMotionGPUUserContext`) provides namespaced shared runtime context.
+
+## Package entrypoints
+
+- Root entrypoint:
+  - `@motion-core/motion-gpu`
+  - Production API (`FragCanvas`, `defineMaterial`, `useFrame`, `useMotionGPU`, `useTexture`, passes).
+- Advanced entrypoint:
+  - `@motion-core/motion-gpu/advanced`
+  - Adds power-user APIs (`useMotionGPUUserContext`, advanced scheduler/user-context types).

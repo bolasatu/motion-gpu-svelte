@@ -1,0 +1,73 @@
+---
+layout: docs
+---
+
+## `useMotionGPU()`
+
+Available only inside `<FragCanvas>` subtree.
+
+### Runtime context shape
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `canvas` | `HTMLCanvasElement` | Runtime canvas element. |
+| `size` | `CurrentReadable<{ width; height }>` | Reactive canvas pixel size. |
+| `dpr` | `CurrentWritable<number>` | Runtime device pixel ratio store. |
+| `maxDelta` | `CurrentWritable<number>` | Delta clamp store used by scheduler. |
+| `renderMode` | `CurrentWritable<'always' or 'on-demand' or 'manual'>` | Current render mode store. |
+| `autoRender` | `CurrentWritable<boolean>` | Global render enable/disable store. |
+| `user` | `CurrentWritable<Record<namespace, unknown>>` | Shared user/plugin context store. |
+| `invalidate` | `(token?) => void` | Schedules render invalidation. |
+| `advance` | `() => void` | Triggers one render step in manual mode. |
+| `scheduler` | scheduler API object | Stage creation, diagnostics, profiling API. |
+
+Outside `FragCanvas`, it throws `useMotionGPU must be used inside <FragCanvas>`.
+
+## `useFrame(...)`
+
+Registers frame tasks and auto-unsubscribes on component destroy.
+
+Common pattern:
+
+```ts
+useFrame('camera-update', (state) => {
+  state.setUniform('uTime', state.time);
+});
+```
+
+## `useTexture(...)`
+
+Reactive URL texture loading hook with cancellation, error state, and reload support.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `textures.current` | `LoadedTexture[] or null` | Loaded decoded resources. |
+| `loading.current` | `boolean` | In-flight loader state. |
+| `error.current` | `Error or null` | Last loader failure. |
+| `reload()` | `Promise<void>` | Abort and restart loading. |
+
+## Advanced: `useMotionGPUUserContext(...)`
+
+Import from `@motion-core/motion-gpu/advanced`.
+
+### Modes
+
+| Call form | Result |
+| --- | --- |
+| no args | Full user store |
+| `namespace` | Scoped readable store |
+| `namespace + value` | Initialize or update namespace |
+
+### Conflict behavior (`existing` option)
+
+| Value | Behavior |
+| --- | --- |
+| `skip` | Keep existing namespace value (default). |
+| `replace` | Replace existing value completely. |
+| `merge` | Shallow merge when old/new are plain objects. |
+
+## `CurrentWritable` utilities
+
+Internal helper `currentWritable` creates Svelte stores with synchronous `.current` access.
+
+This pattern is used heavily in runtime context APIs for low-overhead reads.

@@ -1,0 +1,68 @@
+---
+layout: docs
+---
+
+## Texture declaration (`TextureDefinition`)
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `source` | texture source | Initial texture source (optional). |
+| `colorSpace` | `'srgb'` or `'linear'` | Texture color space interpretation. |
+| `flipY` | `boolean` | Vertical flip during upload. |
+| `generateMipmaps` | `boolean` | Enables mip chain generation. |
+| `premultipliedAlpha` | `boolean` | Premultiplied alpha upload mode. |
+| `update` | `'once'`, `'onInvalidate'`, `'perFrame'` | Upload policy over time. |
+| `anisotropy` | `number` | Sampler anisotropy level. |
+| `filter` | sampler filter | Min/mag filtering mode. |
+| `addressModeU` | sampler address mode | Horizontal addressing mode. |
+| `addressModeV` | sampler address mode | Vertical addressing mode. |
+
+## Runtime texture value forms
+
+| Form | Description |
+| --- | --- |
+| `TextureSource` | `ImageBitmap`, `HTMLImageElement`, `HTMLCanvasElement`, `HTMLVideoElement`. |
+| `TextureData` | `{ source, width?, height?, ...overrides }` object. |
+| `null` | Unbinds user texture and uses fallback texture. |
+
+## Upload behavior and update modes
+
+| Mode | Behavior |
+| --- | --- |
+| `once` | Upload when resource is allocated or source changes. |
+| `onInvalidate` | Upload when invalidation-worthy change is detected. |
+| `perFrame` | Upload every frame (best for live/canvas/video feeds). |
+
+If source is video and mode is omitted, default resolves to `perFrame`.
+
+## Mipmaps
+
+When `generateMipmaps` is enabled, Motion GPU generates mip levels by downscaling through canvas contexts and uploading each level.
+
+## URL texture loading (`useTexture`)
+
+`useTexture(urls, options)` wraps URL loading with reactive state.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `textures.current` | `LoadedTexture[] or null` | Decoded loaded textures. |
+| `loading.current` | `boolean` | Loader in-flight state. |
+| `error.current` | `Error or null` | Last load error. |
+| `reload()` | `Promise<void>` | Aborts active request and reloads. |
+
+### Loader details
+
+| Area | Behavior |
+| --- | --- |
+| Fetch/decode path | Uses `fetch` + `createImageBitmap`. |
+| Cancellation | Supports `AbortSignal`. |
+| Caching | Resource cache keyed by full IO/decode config. |
+| Failure cleanup | Disposes already-loaded bitmaps on partial failure. |
+
+## Recommended patterns
+
+| Scenario | Suggested mode |
+| --- | --- |
+| Static image atlas | `update: 'once'` |
+| User-driven updates | `update: 'onInvalidate'` + explicit invalidation token |
+| Video/webcam/canvas stream | `update: 'perFrame'` |

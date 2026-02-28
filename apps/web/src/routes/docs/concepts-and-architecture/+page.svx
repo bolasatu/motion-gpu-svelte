@@ -1,0 +1,48 @@
+---
+layout: docs
+---
+
+## Core goals
+
+Motion GPU is a Svelte-first WebGPU runtime for fullscreen shader rendering.
+
+| Goal | Description |
+| --- | --- |
+| Strong contracts | Strict material/shader input validation. |
+| Predictable scheduling | Deterministic frame task ordering and invalidation model. |
+| Post-processing graph | Built-in pass graph with source/target ping-pong. |
+| Actionable diagnostics | Normalized runtime errors and source-mapped shader failures. |
+
+## Main runtime pieces
+
+| Layer | Responsibility |
+| --- | --- |
+| `FragCanvas.svelte` | Owns renderer lifecycle, runs scheduler, executes render graph, exposes context. |
+| Material layer (`core/material.ts`, `core/material-preprocess.ts`) | Validates fragment contract, uniforms/textures, defines/includes, computes deterministic signature. |
+| Renderer (`core/renderer.ts`) | Initializes WebGPU, compiles WGSL, manages uniform writes and texture uploads, executes frame render flow. |
+| Frame scheduler (`frame-context.ts`) | Registers ordered frame tasks, stages, invalidation, manual advance, diagnostics/profiling. |
+| Pass graph (`core/render-graph.ts`, `passes/*`) | Plans pass execution and manages source/target/canvas outputs with built-in passes. |
+
+## Render pipeline flow
+
+| Step | What happens |
+| --- | --- |
+| 1 | `FragCanvas` resolves current material. |
+| 2 | Renderer signature is built from material + output color space. |
+| 3 | Signature change triggers renderer rebuild (with retry backoff on failures). |
+| 4 | On each animation frame: run scheduler tasks, merge runtime values, render main shader, execute pass graph, present final canvas output. |
+
+## Data model highlights
+
+| Area | Contract |
+| --- | --- |
+| Uniforms | Strong typed values (`f32`, vectors, matrices) with WGSL-style layout/alignment semantics. |
+| Identifiers | Uniform and texture keys must be WGSL-safe identifiers. |
+| Render targets | Named targets resolve from fixed dimensions or canvas scale. |
+
+## Philosophy
+
+- Strict validation early (`defineMaterial`, texture/uniform checks).
+- Runtime flexibility where it matters (dynamic passes/targets/textures).
+- Deterministic signatures for cache and rebuild decisions.
+- User-facing errors optimized for readability and actionability.
