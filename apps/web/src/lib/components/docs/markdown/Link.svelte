@@ -12,7 +12,7 @@
 
 <a
 	{...rest}
-	class={`text-foreground underline decoration-accent/60 decoration-1 underline-offset-[3px] transition-colors duration-150 ease-out hover:text-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none ${className}`.trim()}
+	class={`text-foreground underline decoration-accent/60 decoration-1 underline-offset-[3px] transition-colors duration-150 ease-out hover:text-accent/80 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none ${className}`.trim()}
 >
 	{@render children?.()}
 </a>

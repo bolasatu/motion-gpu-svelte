@@ -50,7 +50,7 @@
 		{#each cards as card (card.number)}
 			<article class="grid min-h-72 bg-background p-4 sm:min-h-96 sm:p-8">
 				<div class="flex items-start justify-between">
-					<div class="grid size-12 place-items-center bg-accent text-foreground">
+					<div class="grid size-12 place-items-center bg-accent/80 text-foreground">
 						{#if card.icon === 'chart'}
 							<Blockchain size={24} />
 						{:else if card.icon === 'stack'}

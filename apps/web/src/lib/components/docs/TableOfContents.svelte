@@ -500,7 +500,7 @@
 				<div class="absolute inset-0 h-full w-full bg-foreground/20"></div>
 				{#if indicatorHeight > 0}
 					<div
-						class="absolute left-0 w-full bg-accent transition-all duration-450 ease-out"
+						class="absolute left-0 w-full bg-accent/80 transition-all duration-450 ease-out"
 						style={`
                             top: ${indicatorTop}px;
                             bottom: ${Math.max(0, lineHeight - indicatorBottom)}px;
@@ -520,7 +520,7 @@
 							class={cn(
 								'block py-1.5 font-fono text-xs transition-colors duration-150 ease-out',
 								isLinkHighlighted(heading.id)
-									? 'text-accent'
+									? 'text-accent/80'
 									: 'text-foreground-muted hover:text-foreground'
 							)}
 							use:registerLink={heading.id}
