@@ -256,6 +256,11 @@ export function buildTextureResourceCacheKey(
  * Clears the internal texture resource cache.
  */
 export function clearTextureBlobCache(): void {
+	for (const entry of resourceCache.values()) {
+		if (!entry.settled) {
+			entry.controller.abort();
+		}
+	}
 	resourceCache.clear();
 }
 
@@ -279,8 +284,10 @@ function acquireTextureBlob(
 				}
 				released = true;
 				existing.refs = Math.max(0, existing.refs - 1);
-				if (existing.refs === 0 && !existing.settled) {
-					existing.controller.abort();
+				if (existing.refs === 0) {
+					if (!existing.settled) {
+						existing.controller.abort();
+					}
 					resourceCache.delete(key);
 				}
 			}
@@ -325,8 +332,10 @@ function acquireTextureBlob(
 			}
 			released = true;
 			entry.refs = Math.max(0, entry.refs - 1);
-			if (entry.refs === 0 && !entry.settled) {
-				entry.controller.abort();
+			if (entry.refs === 0) {
+				if (!entry.settled) {
+					entry.controller.abort();
+				}
 				resourceCache.delete(key);
 			}
 		}

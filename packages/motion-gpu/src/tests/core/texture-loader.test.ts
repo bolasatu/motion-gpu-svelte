@@ -81,6 +81,13 @@ describe('texture-loader', () => {
 		expect(createImageBitmap).toHaveBeenCalledTimes(3);
 	});
 
+	it('evicts settled blob cache entries once all consumers release them', async () => {
+		await loadTextureFromUrl('/assets/evict.png');
+		await loadTextureFromUrl('/assets/evict.png');
+		expect(fetch).toHaveBeenCalledTimes(2);
+		expect(createImageBitmap).toHaveBeenCalledTimes(2);
+	});
+
 	it('uses decode options and linear decode mode when requested', async () => {
 		await loadTextureFromUrl('/assets/linear.png', {
 			colorSpace: 'linear',
