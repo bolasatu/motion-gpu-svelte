@@ -415,6 +415,12 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		throw new Error('WebGPU is not available in this browser');
 	}
 
+	const context = options.canvas.getContext('webgpu') as GPUCanvasContext | null;
+	if (!context) {
+		throw new Error('Canvas does not support webgpu context');
+	}
+
+	const format = navigator.gpu.getPreferredCanvasFormat();
 	const adapter = await navigator.gpu.requestAdapter(options.adapterOptions);
 	if (!adapter) {
 		throw new Error('Unable to acquire WebGPU adapter');
@@ -450,79 +456,74 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	};
 
 	device.addEventListener('uncapturederror', handleUncapturedError);
-	const context = options.canvas.getContext('webgpu') as GPUCanvasContext | null;
-	if (!context) {
-		throw new Error('Canvas does not support webgpu context');
-	}
+	try {
+		const convertLinearToSrgb = shouldConvertLinearToSrgb(options.outputColorSpace, format);
+		const builtShader = buildShaderSourceWithMap(
+			options.fragmentWgsl,
+			options.uniformLayout,
+			options.textureKeys,
+			{
+				convertLinearToSrgb,
+				fragmentLineMap: options.fragmentLineMap
+			}
+		);
+		const shaderModule = device.createShaderModule({ code: builtShader.code });
+		await assertCompilation(shaderModule, { lineMap: builtShader.lineMap });
 
-	const format = navigator.gpu.getPreferredCanvasFormat();
-	const convertLinearToSrgb = shouldConvertLinearToSrgb(options.outputColorSpace, format);
-	const builtShader = buildShaderSourceWithMap(
-		options.fragmentWgsl,
-		options.uniformLayout,
-		options.textureKeys,
-		{
-			convertLinearToSrgb,
-			fragmentLineMap: options.fragmentLineMap
-		}
-	);
-	const shaderModule = device.createShaderModule({ code: builtShader.code });
-	await assertCompilation(shaderModule, { lineMap: builtShader.lineMap });
+		const normalizedTextureDefinitions = normalizeTextureDefinitions(
+			options.textureDefinitions,
+			options.textureKeys
+		);
+		const textureBindings = options.textureKeys.map((key, index): RuntimeTextureBinding => {
+			const config = normalizedTextureDefinitions[key];
+			if (!config) {
+				throw new Error(`Missing texture definition for "${key}"`);
+			}
 
-	const normalizedTextureDefinitions = normalizeTextureDefinitions(
-		options.textureDefinitions,
-		options.textureKeys
-	);
-	const textureBindings = options.textureKeys.map((key, index): RuntimeTextureBinding => {
-		const config = normalizedTextureDefinitions[key];
-		if (!config) {
-			throw new Error(`Missing texture definition for "${key}"`);
-		}
+			const { samplerBinding, textureBinding } = getTextureBindings(index);
+			const sampler = device.createSampler({
+				magFilter: config.filter,
+				minFilter: config.filter,
+				mipmapFilter: config.generateMipmaps ? config.filter : 'nearest',
+				addressModeU: config.addressModeU,
+				addressModeV: config.addressModeV,
+				maxAnisotropy: config.filter === 'linear' ? config.anisotropy : 1
+			});
+			const fallbackTexture = createFallbackTexture(device, config.format);
+			const fallbackView = fallbackTexture.createView();
 
-		const { samplerBinding, textureBinding } = getTextureBindings(index);
-		const sampler = device.createSampler({
-			magFilter: config.filter,
-			minFilter: config.filter,
-			mipmapFilter: config.generateMipmaps ? config.filter : 'nearest',
-			addressModeU: config.addressModeU,
-			addressModeV: config.addressModeV,
-			maxAnisotropy: config.filter === 'linear' ? config.anisotropy : 1
+			const runtimeBinding: RuntimeTextureBinding = {
+				key,
+				samplerBinding,
+				textureBinding,
+				sampler,
+				fallbackTexture,
+				fallbackView,
+				texture: null,
+				view: fallbackView,
+				source: null,
+				width: undefined,
+				height: undefined,
+				mipLevelCount: 1,
+				format: config.format,
+				colorSpace: config.colorSpace,
+				defaultColorSpace: config.colorSpace,
+				flipY: config.flipY,
+				defaultFlipY: config.flipY,
+				generateMipmaps: config.generateMipmaps,
+				defaultGenerateMipmaps: config.generateMipmaps,
+				premultipliedAlpha: config.premultipliedAlpha,
+				defaultPremultipliedAlpha: config.premultipliedAlpha,
+				update: config.update ?? 'once',
+				lastToken: null
+			};
+
+			if (config.update !== undefined) {
+				runtimeBinding.defaultUpdate = config.update;
+			}
+
+			return runtimeBinding;
 		});
-		const fallbackTexture = createFallbackTexture(device, config.format);
-		const fallbackView = fallbackTexture.createView();
-
-		const runtimeBinding: RuntimeTextureBinding = {
-			key,
-			samplerBinding,
-			textureBinding,
-			sampler,
-			fallbackTexture,
-			fallbackView,
-			texture: null,
-			view: fallbackView,
-			source: null,
-			width: undefined,
-			height: undefined,
-			mipLevelCount: 1,
-			format: config.format,
-			colorSpace: config.colorSpace,
-			defaultColorSpace: config.colorSpace,
-			flipY: config.flipY,
-			defaultFlipY: config.flipY,
-			generateMipmaps: config.generateMipmaps,
-			defaultGenerateMipmaps: config.generateMipmaps,
-			premultipliedAlpha: config.premultipliedAlpha,
-			defaultPremultipliedAlpha: config.premultipliedAlpha,
-			update: config.update ?? 'once',
-			lastToken: null
-		};
-
-		if (config.update !== undefined) {
-			runtimeBinding.defaultUpdate = config.update;
-		}
-
-		return runtimeBinding;
-	});
 
 	const bindGroupLayout = device.createBindGroupLayout({
 		entries: createBindGroupLayoutEntries(textureBindings)
@@ -1092,27 +1093,32 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		device.queue.submit([commandEncoder.finish()]);
 	};
 
-	return {
-		render,
-		destroy: () => {
-			isDestroyed = true;
-			device.removeEventListener('uncapturederror', handleUncapturedError);
-			frameBuffer.destroy();
-			uniformBuffer.destroy();
-			destroyRenderTexture(sourceSlotTarget);
-			destroyRenderTexture(targetSlotTarget);
-			for (const target of runtimeRenderTargets.values()) {
-				target.texture.destroy();
+		return {
+			render,
+			destroy: () => {
+				isDestroyed = true;
+				device.removeEventListener('uncapturederror', handleUncapturedError);
+				frameBuffer.destroy();
+				uniformBuffer.destroy();
+				destroyRenderTexture(sourceSlotTarget);
+				destroyRenderTexture(targetSlotTarget);
+				for (const target of runtimeRenderTargets.values()) {
+					target.texture.destroy();
+				}
+				runtimeRenderTargets.clear();
+				for (const pass of activePasses) {
+					pass.dispose?.();
+				}
+				activePasses = [];
+				for (const binding of textureBindings) {
+					binding.texture?.destroy();
+					binding.fallbackTexture.destroy();
+				}
 			}
-			runtimeRenderTargets.clear();
-			for (const pass of activePasses) {
-				pass.dispose?.();
-			}
-			activePasses = [];
-			for (const binding of textureBindings) {
-				binding.texture?.destroy();
-				binding.fallbackTexture.destroy();
-			}
-		}
-	};
+		};
+	} catch (error) {
+		isDestroyed = true;
+		device.removeEventListener('uncapturederror', handleUncapturedError);
+		throw error;
+	}
 }
