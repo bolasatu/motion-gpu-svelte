@@ -9,7 +9,7 @@
 	const currentPath = $derived(page.url.pathname);
 </script>
 
-<aside class="flex h-full flex-col border-r border-background-muted/90 bg-card">
+<aside class="flex h-full flex-col border-r border-background-muted/90 bg-background">
 	<div class="p-4">
 		<a href={resolve(homeRoute)} class="inline-flex items-center gap-2">
 			<span class="font-sans text-sm font-normal tracking-tight">MotionGPU</span>

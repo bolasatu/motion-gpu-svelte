@@ -12,7 +12,7 @@
 
 <code
 	{...rest}
-	class={`bg-background-muted/60 px-2 py-0.5 font-mono text-sm text-foreground ${className}`.trim()}
+	class={`bg-background px-2 py-0.5 font-mono text-sm text-foreground ${className}`.trim()}
 >
 	{@render children?.()}
 </code>

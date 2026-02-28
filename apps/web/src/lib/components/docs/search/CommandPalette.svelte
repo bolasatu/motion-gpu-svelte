@@ -120,7 +120,7 @@
 		}}
 	>
 		<div
-			class="w-full max-w-3xl border border-background-muted/90 bg-background"
+			class="w-full max-w-3xl border border-background-muted/90 bg-card"
 			transition:scale={{ duration: 300, start: 0.95, easing: cubicOut }}
 			onoutroend={() => {
 				query = '';
@@ -172,14 +172,14 @@
 										isChild && 'pl-7',
 										selectedIndex === index
 											? 'bg-background-muted/65 text-foreground'
-											: 'bg-background text-foreground hover:bg-background-muted/45'
+											: 'bg-card text-foreground hover:bg-background'
 									)}
 								>
 									{#if isChild}
 										<div
 											class={cn(
 												'absolute top-0 bottom-0 left-3 w-px',
-												selectedIndex === index ? 'bg-accent/45' : 'bg-foreground/18'
+												selectedIndex === index ? 'bg-accent/80' : 'bg-foreground/18'
 											)}
 										></div>
 									{/if}

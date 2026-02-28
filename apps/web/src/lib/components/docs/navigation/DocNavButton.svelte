@@ -15,7 +15,7 @@
 <a
 	href={resolve(href as '/')}
 	class={cn(
-		'block border border-background-muted/90 bg-card px-4 py-3 transition-colors hover:bg-background-muted/70',
+		'block border border-background-muted/90 bg-background px-4 py-3 transition-colors hover:bg-background-muted',
 		align === 'right' && 'text-right'
 	)}
 >

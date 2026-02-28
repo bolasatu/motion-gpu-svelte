@@ -36,9 +36,7 @@
 
 <CommandPalette />
 
-<main
-	class="min-h-dvh bg-background text-foreground lg:grid lg:grid-cols-[18rem_minmax(0,1fr)_16rem]"
->
+<main class="min-h-dvh bg-card text-foreground lg:grid lg:grid-cols-[18rem_minmax(0,1fr)_16rem]">
 	<MobileSidebar />
 
 	<aside class="hidden lg:block">

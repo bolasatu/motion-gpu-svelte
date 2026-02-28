@@ -13,7 +13,7 @@
 	type="button"
 	onclick={() => searchState.open()}
 	class={cn(
-		'flex h-10 w-full items-center gap-2 border border-background-muted/90 px-3 text-left transition-colors hover:bg-background-muted/70',
+		'flex h-10 w-full items-center gap-2 border border-background-muted/90 bg-card px-3 text-left',
 		className
 	)}
 >
