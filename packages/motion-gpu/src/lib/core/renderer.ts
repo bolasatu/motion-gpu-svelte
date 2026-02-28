@@ -95,9 +95,12 @@ function resizeCanvas(
 	canvas: HTMLCanvasElement,
 	dprInput: number
 ): { width: number; height: number } {
-	const dpr = Math.max(1, dprInput || 1);
-	const width = Math.max(1, Math.floor((canvas.clientWidth || canvas.width || 1) * dpr));
-	const height = Math.max(1, Math.floor((canvas.clientHeight || canvas.height || 1) * dpr));
+	const dpr = Number.isFinite(dprInput) && dprInput > 0 ? dprInput : 1;
+	const rect = canvas.getBoundingClientRect();
+	const cssWidth = Math.max(0, rect.width);
+	const cssHeight = Math.max(0, rect.height);
+	const width = Math.max(1, Math.floor((cssWidth || 1) * dpr));
+	const height = Math.max(1, Math.floor((cssHeight || 1) * dpr));
 
 	if (canvas.width !== width || canvas.height !== height) {
 		canvas.width = width;

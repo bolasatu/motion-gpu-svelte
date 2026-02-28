@@ -308,8 +308,9 @@
 			const rawDelta = Math.max(0, time - previousTime);
 			const delta = Math.min(rawDelta, maxDeltaState.current);
 			previousTime = time;
-			const width = canvasElement.clientWidth || canvasElement.width;
-			const height = canvasElement.clientHeight || canvasElement.height;
+			const rect = canvasElement.getBoundingClientRect();
+			const width = Math.max(0, Math.floor(rect.width));
+			const height = Math.max(0, Math.floor(rect.height));
 			size.set({ width, height });
 
 			try {
@@ -421,12 +422,16 @@
 <style>
 	.motiongpu-canvas-wrap {
 		position: relative;
-		display: grid;
 		width: 100%;
 		height: 100%;
+		min-width: 0;
+		min-height: 0;
+		overflow: hidden;
 	}
 
 	canvas {
+		position: absolute;
+		inset: 0;
 		display: block;
 		width: 100%;
 		height: 100%;
