@@ -55,20 +55,48 @@ function disposeTextures(list: LoadedTexture[] | null): void {
 	}
 }
 
-function mergeAbortSignals(primary: AbortSignal, secondary: AbortSignal | undefined): AbortSignal {
+interface MergedAbortSignal {
+	signal: AbortSignal;
+	dispose: () => void;
+}
+
+function mergeAbortSignals(
+	primary: AbortSignal,
+	secondary: AbortSignal | undefined
+): MergedAbortSignal {
 	if (!secondary) {
-		return primary;
+		return {
+			signal: primary,
+			dispose: () => {}
+		};
 	}
 
 	if (typeof AbortSignal.any === 'function') {
-		return AbortSignal.any([primary, secondary]);
+		return {
+			signal: AbortSignal.any([primary, secondary]),
+			dispose: () => {}
+		};
 	}
 
 	const fallback = new AbortController();
+	let disposed = false;
+	const cleanup = (): void => {
+		if (disposed) {
+			return;
+		}
+		disposed = true;
+		primary.removeEventListener('abort', abort);
+		secondary.removeEventListener('abort', abort);
+	};
 	const abort = (): void => fallback.abort();
+
 	primary.addEventListener('abort', abort, { once: true });
 	secondary.addEventListener('abort', abort, { once: true });
-	return fallback.signal;
+
+	return {
+		signal: fallback.signal,
+		dispose: cleanup
+	};
 }
 
 /**
@@ -104,10 +132,11 @@ export function useTexture(
 		error.set(null);
 
 		const previous = textures.current;
+		const mergedSignal = mergeAbortSignals(controller.signal, options.signal);
 		try {
 			const loaded = await loadTexturesFromUrls(getUrls(), {
 				...options,
-				signal: mergeAbortSignals(controller.signal, options.signal)
+				signal: mergedSignal.signal
 			});
 			if (disposed || version !== requestVersion) {
 				disposeTextures(loaded);
@@ -132,11 +161,12 @@ export function useTexture(
 			if (!disposed && version === requestVersion) {
 				loading.set(false);
 			}
-			if (activeController === controller) {
-				activeController = null;
+				if (activeController === controller) {
+					activeController = null;
+				}
+				mergedSignal.dispose();
 			}
-		}
-	};
+		};
 
 	const runLoadLoop = async (): Promise<void> => {
 		do {
