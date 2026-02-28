@@ -149,7 +149,7 @@
 					{error}
 				</div>
 			{:else}
-				<div class="h-72 overflow-auto overscroll-none sm:h-96">
+				<div class="h-72 overflow-auto overscroll-none font-normal sm:h-96">
 					<div class="grid min-w-max grid-cols-[3.25rem_auto] font-mono text-xs leading-5">
 						<div class="bg-background-muted py-3 text-right text-xs text-foreground">
 							{#each lineNumbers as line (line)}

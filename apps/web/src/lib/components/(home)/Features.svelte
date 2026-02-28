@@ -1,5 +1,6 @@
 <script lang="ts">
-	import Badge from '../ui/Badge.svelte';
+	import LandingSection from './LandingSection.svelte';
+	import LandingSectionHeader from './LandingSectionHeader.svelte';
 	import Layers from 'carbon-icons-svelte/lib/Layers.svelte';
 	import Blockchain from 'carbon-icons-svelte/lib/Blockchain.svelte';
 	import Chart_3D from 'carbon-icons-svelte/lib/Chart_3D.svelte';
@@ -36,27 +37,20 @@
 	];
 </script>
 
-<section class="flex w-full flex-col items-start justify-start bg-card p-4 sm:p-8">
-	<div class="flex w-full flex-col items-start justify-center gap-6">
-		<Badge>Features</Badge>
-		<div class="grid grid-cols-3 gap-3">
-			<h2
-				class="col-span-3 max-w-2xl text-2xl tracking-tight text-balance sm:col-span-2 sm:text-5xl"
-			>
-				<span class="block">Strict contracts.</span>
-				<span class="block">Predictable rendering.</span>
-			</h2>
-			<p class="col-span-3 font-fono text-sm sm:col-span-1">
-				From a single fullscreen fragment shader to multi-pass effects, Motion GPU gives you strict
-				contracts and predictable runtime behavior.
-			</p>
-		</div>
-	</div>
-	<div class="mt-12 grid w-full grid-cols-1 gap-6 sm:mt-24 xl:grid-cols-3">
+<LandingSection id="features">
+	<LandingSectionHeader
+		badge="Features"
+		description="From a single fullscreen fragment shader to multi-pass effects, Motion GPU gives you strict contracts and predictable runtime behavior."
+		gridClass="grid w-full grid-cols-3 gap-3"
+	>
+		<span class="block">Strict contracts.</span>
+		<span class="block">Predictable rendering.</span>
+	</LandingSectionHeader>
+	<div class="mt-6 grid w-full grid-cols-1 gap-6 sm:mt-12 xl:grid-cols-3">
 		{#each cards as card (card.number)}
 			<article class="grid min-h-72 bg-background p-4 sm:min-h-96 sm:p-8">
 				<div class="flex items-start justify-between">
-					<div class="grid size-12 place-items-center bg-accent/80 text-foreground">
+					<div class="grid size-12 place-items-center bg-accent text-foreground">
 						{#if card.icon === 'chart'}
 							<Blockchain size={24} />
 						{:else if card.icon === 'stack'}
@@ -72,9 +66,9 @@
 
 				<div class="mt-auto grid gap-4">
 					<h3 class="text-xl tracking-tight sm:text-2xl">{card.title}</h3>
-					<p class="font-fono text-sm leading-relaxed">{card.description}</p>
+					<p class="font-fono text-sm text-foreground-muted">{card.description}</p>
 				</div>
 			</article>
 		{/each}
 	</div>
-</section>
+</LandingSection>
