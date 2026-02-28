@@ -92,15 +92,10 @@ export const docsRouteGroups: DocRouteGroup[] = [
 					'Practical integration examples for animation loops, on-demand rendering, and pass pipelines.'
 			},
 			{
-				slug: 'use-cases',
-				title: 'Use Cases',
-				description:
-					'Production-oriented patterns for interactive heroes, audio-reactive scenes, and dashboards.'
-			},
-			{
 				slug: 'testing-and-internal-notes',
 				title: 'Testing and Internal Notes',
-				description: 'Test coverage scope, enforced runtime contracts, and key implementation details.'
+				description:
+					'Test coverage scope, enforced runtime contracts, and key implementation details.'
 			}
 		]
 	}

@@ -2,148 +2,162 @@
 layout: docs
 ---
 
-
-## 1. Time-based gradient
+## 1. Animated uniform (`uTime`)
 
 ```svelte
 <!-- App.svelte -->
 <script lang="ts">
-  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
-  import Runtime from './Runtime.svelte';
+	import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
+	import Runtime from './Runtime.svelte';
 
-  const material = defineMaterial({
-    fragment: `
+	const material = defineMaterial({
+		fragment: `
 fn frag(uv: vec2f) -> vec4f {
-  let c = 0.5 + 0.5 * sin(uTime + uv.x * 10.0);
-  return vec4f(c, uv.y, 1.0 - c, 1.0);
+	let c = 0.5 + 0.5 * sin(uTime + uv.x * 10.0);
+	return vec4f(c, uv.y, 1.0 - c, 1.0);
 }
 `,
-    uniforms: {
-      uTime: { type: 'f32', value: 0 }
-    }
-  });
+		uniforms: {
+			uTime: { type: 'f32', value: 0 }
+		}
+	});
 </script>
 
 <FragCanvas {material}>
-  <Runtime />
+	<Runtime />
 </FragCanvas>
 ```
 
 ```svelte
 <!-- Runtime.svelte -->
 <script lang="ts">
-  import { useFrame } from '@motion-core/motion-gpu';
+	import { useFrame } from '@motion-core/motion-gpu';
 
-  useFrame((state) => state.setUniform('uTime', state.time));
+	useFrame((state) => {
+		state.setUniform('uTime', state.time);
+	});
 </script>
 ```
 
-## 2. On-demand rendering with explicit invalidation
+## 2. On-demand rendering with invalidation tokens
 
 ```svelte
-<!-- App.svelte -->
 <script lang="ts">
-  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
-  import Controls from './Controls.svelte';
+	import { useMotionGPU } from '@motion-core/motion-gpu';
 
-  const material = defineMaterial({
-    fragment: `
-fn frag(uv: vec2f) -> vec4f {
-  return vec4f(uv, 0.0, 1.0);
+	const gpu = useMotionGPU();
+
+	$effect(() => {
+		gpu.renderMode.set('on-demand');
+	});
+
+	function handlePointerMove() {
+		gpu.invalidate('pointer');
+	}
+</script>
+
+<div onpointermove={handlePointerMove}>Interactive area</div>
+```
+
+## 3. Texture loading via `useTexture`
+
+```svelte
+<script lang="ts">
+	import { useFrame, useTexture } from '@motion-core/motion-gpu';
+
+	const loaded = useTexture(['/assets/albedo.png'], {
+		colorSpace: 'srgb',
+		generateMipmaps: true
+	});
+
+	useFrame((state) => {
+		const tex = loaded.textures.current?.[0];
+		state.setTexture('uMain', tex ? { source: tex.source } : null);
+	});
+</script>
+```
+
+Matching material texture declaration:
+
+```ts
+textures: {
+	uMain: { filter: 'linear', update: 'once' }
 }
-`
-  });
-</script>
-
-<FragCanvas {material}>
-  <Controls />
-</FragCanvas>
 ```
 
-```svelte
-<!-- Controls.svelte -->
-<script lang="ts">
-  import { onMount } from 'svelte';
-  import { useMotionGPU } from '@motion-core/motion-gpu';
-
-  const gpu = useMotionGPU();
-
-  onMount(() => {
-    gpu.renderMode.set('on-demand');
-  });
-</script>
-
-<button onclick={() => gpu.invalidate('ui-change')}>
-  Redraw
-</button>
-```
-
-## 3. Load textures with `useTexture`
-
-```svelte
-<!-- App.svelte -->
-<script lang="ts">
-  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
-  import Runtime from './Runtime.svelte';
-
-  const material = defineMaterial({
-    fragment: `
-fn frag(uv: vec2f) -> vec4f {
-  return textureSample(uMain, uMainSampler, uv);
-}
-`,
-    textures: {
-      uMain: { filter: 'linear', update: 'once' }
-    }
-  });
-</script>
-
-<FragCanvas {material}>
-  <Runtime />
-</FragCanvas>
-```
-
-```svelte
-<!-- Runtime.svelte -->
-<script lang="ts">
-  import { useFrame, useTexture } from '@motion-core/motion-gpu';
-
-  const loaded = useTexture(['/assets/tex.png']);
-
-  useFrame((state) => {
-    const first = loaded.textures.current?.[0];
-    state.setTexture('uMain', first ? { source: first.source } : null);
-  });
-</script>
-```
-
-## 4. Post-processing with `ShaderPass`
+## 4. Post-process with `ShaderPass`
 
 ```ts
 import { ShaderPass } from '@motion-core/motion-gpu';
 
 const tonePass = new ShaderPass({
-  fragment: `
+	fragment: `
 fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
-  let vignette = smoothstep(1.0, 0.2, distance(uv, vec2f(0.5, 0.5)));
-  return vec4f(inputColor.rgb * vignette, inputColor.a);
+	let dist = distance(uv, vec2f(0.5, 0.5));
+	let vignette = smoothstep(0.9, 0.35, dist);
+	return vec4f(inputColor.rgb * vignette, inputColor.a);
 }
 `
 });
 ```
 
-Then pass it to `<FragCanvas passes={[tonePass]} />`.
+Use pass in canvas:
 
-## 5. Advanced shared plugin state
+```svelte
+<FragCanvas {material} passes={[tonePass]} />
+```
+
+## 5. Multi-pass chain with explicit slots
+
+```ts
+import { ShaderPass } from '@motion-core/motion-gpu';
+
+const bloomPrefilter = new ShaderPass({
+	needsSwap: true,
+	fragment: `
+fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
+	let luma = dot(inputColor.rgb, vec3f(0.2126, 0.7152, 0.0722));
+	let threshold = step(0.8, luma);
+	return vec4f(inputColor.rgb * threshold, inputColor.a);
+}
+`
+});
+
+const composite = new ShaderPass({
+	needsSwap: false,
+	input: 'source',
+	output: 'canvas',
+	fragment: `
+fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
+	return vec4f(pow(inputColor.rgb, vec3f(1.0 / 2.2)), inputColor.a);
+}
+`
+});
+```
+
+## 6. Advanced plugin state (`/advanced`)
 
 ```ts
 import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
 
 // initialize once
-useMotionGPUUserContext('plugin:orbit', () => ({ enabled: true, speed: 1 }), {
-  existing: 'skip'
-});
+useMotionGPUUserContext('orbit-controls', () => ({
+	enabled: true,
+	speed: 1.0
+}), { existing: 'skip' });
 
-// read later
-const orbit = useMotionGPUUserContext<{ enabled: boolean; speed: number }>('plugin:orbit');
+// consume in another component
+const orbit = useMotionGPUUserContext<{ enabled: boolean; speed: number }>('orbit-controls');
+```
+
+## 7. Runtime error reporting hook
+
+```svelte
+<FragCanvas
+	{material}
+	onError={(report) => {
+		console.error(report.phase, report.title, report.message, report.details);
+	}}
+	showErrorOverlay={false}
+/>
 ```

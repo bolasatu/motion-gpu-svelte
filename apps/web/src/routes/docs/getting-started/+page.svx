@@ -2,86 +2,110 @@
 layout: docs
 ---
 
-
 ## Install
 
 ```bash
 bun add @motion-core/motion-gpu
-# or npm/yarn/pnpm equivalent
+# or npm/pnpm/yarn equivalent
 ```
 
-Peer dependency: `svelte ^5`.
+Peer dependency requirement:
 
-## Minimal example
+- `svelte ^5`
+
+## Minimal working setup
 
 ```svelte
 <script lang="ts">
-  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
+	import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
 
-  const material = defineMaterial({
-    fragment: `
+	const material = defineMaterial({
+		fragment: `
 fn frag(uv: vec2f) -> vec4f {
-  return vec4f(uv.x, uv.y, 0.2, 1.0);
+	return vec4f(uv.x, uv.y, 0.2, 1.0);
 }
 `
-  });
+	});
 </script>
 
-<div style="width:100vw;height:100vh;">
-  <FragCanvas {material} />
+<div style="width: 100vw; height: 100vh;">
+	<FragCanvas {material} />
 </div>
 ```
 
-## Add animated uniforms with `useFrame`
+## Add runtime animation with `useFrame`
 
 ```svelte
 <!-- App.svelte -->
 <script lang="ts">
-  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
-  import Runtime from './Runtime.svelte';
+	import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
+	import Runtime from './Runtime.svelte';
 
-  const material = defineMaterial({
-    fragment: `
+	const material = defineMaterial({
+		fragment: `
 fn frag(uv: vec2f) -> vec4f {
-  let wave = 0.5 + 0.5 * sin(uTime + uv.x * 8.0);
-  return vec4f(vec3f(wave), 1.0);
+	let wave = 0.5 + 0.5 * sin(uTime + uv.x * 8.0);
+	return vec4f(vec3f(wave), 1.0);
 }
 `,
-    uniforms: {
-      uTime: { type: 'f32', value: 0 }
-    }
-  });
+		uniforms: {
+			uTime: { type: 'f32', value: 0 }
+		}
+	});
 </script>
 
 <FragCanvas {material}>
-  <Runtime />
+	<Runtime />
 </FragCanvas>
 ```
 
 ```svelte
 <!-- Runtime.svelte -->
 <script lang="ts">
-  import { useFrame } from '@motion-core/motion-gpu';
+	import { useFrame } from '@motion-core/motion-gpu';
 
-  useFrame((state) => {
-    state.setUniform('uTime', state.time);
-  });
+	useFrame((state) => {
+		state.setUniform('uTime', state.time);
+	});
 </script>
 ```
 
-## Render mode quick guide
+## Basic render-mode control
 
-| Mode | Behavior |
+`renderMode` is controlled by `FragCanvas` prop or runtime context store.
+
+| Mode | Use when |
 | --- | --- |
-| `always` (default) | Render every frame. |
-| `on-demand` | Render only when invalidated. |
-| `manual` | Render only after explicit `advance()`. |
+| `always` | Continuous animation / simulation. |
+| `on-demand` | Render only on state changes. |
+| `manual` | Render only on explicit `advance()`. |
 
-Use `useMotionGPU()` from a child component inside `<FragCanvas>` to change mode at runtime.
+Runtime switch example:
+
+```svelte
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { useMotionGPU } from '@motion-core/motion-gpu';
+
+	const gpu = useMotionGPU();
+
+	onMount(() => {
+		gpu.renderMode.set('on-demand');
+	});
+</script>
+```
+
+## Recommended first-production checklist
+
+1. Keep shader contract strict (`fn frag(uv: vec2f) -> vec4f`).
+2. Define uniform names/types upfront in `defineMaterial`.
+3. Pick render mode intentionally (`always` is not always necessary).
+4. Set `maxDelta` if callbacks can become unstable on tab throttling.
+5. Wire `onError` for telemetry and disable overlay only when you provide your own UX.
 
 ## Advanced entrypoint
 
-Use advanced APIs from:
+If you need namespaced shared user state across nested runtime helpers:
 
 ```ts
 import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';

@@ -2,27 +2,61 @@
 layout: docs
 ---
 
-## What is covered by tests
+## Test coverage map (`packages/motion-gpu/src/tests`)
 
-| Area | Coverage |
+| Area | Coverage focus |
 | --- | --- |
-| Public API | Root vs advanced entrypoint surface checks. |
-| Shader pipeline | Source generation and line/source mapping. |
-| Uniform system | Type validation, layout, and packing behavior. |
-| Material system | Defines/includes/signature/material validation behavior. |
-| Texture system | Normalization, URL loader, cancellation, cache behavior. |
-| Scheduler | Ordering, invalidation, modes, profiling, diagnostics. |
-| Render graph | Validation and execution planning rules. |
-| Error system | Error normalization and report shape behavior. |
+| Public API | Root and advanced export contracts. |
+| `FragCanvas` | WebGPU unavailable behavior, error callback + overlay toggling. |
+| Context hooks | Runtime context access constraints and exposed controls. |
+| Scheduler | ordering, invalidation modes, stage callbacks, diagnostics/profiling. |
+| Material | contract validation, includes/defines, signature behavior, caching. |
+| Uniforms | type inference, layout alignment, packing behavior. |
+| Textures | defaults, size/update/mipmap helpers, video detection. |
+| Texture loader | URL loading, cache key behavior, cancellation, retry on failure. |
+| Render graph | slot validation and plan generation rules. |
+| Passes | defaults and shader contract validation. |
+| Error report | classification and normalized shape. |
+| Recompile policy | rebuild triggers and non-triggers. |
 
-## Important contracts enforced by tests
+## Key runtime guarantees validated by tests
 
-| Contract | Expectation |
+| Guarantee | Why it matters |
 | --- | --- |
-| `FragCanvas` diagnostics | Readable WebGPU errors + `onError` delivery. |
-| Hook context safety | `useMotionGPU` and `useFrame` require `FragCanvas` subtree. |
-| User context conflicts | `useMotionGPUUserContext` supports `skip`, `merge`, `replace`. |
-| Shader pass contract | `ShaderPass` requires `fn shade(inputColor: vec4f, uv: vec2f) -> vec4f`. |
+| `useMotionGPU` and `useFrame` require `FragCanvas` | Prevents undefined runtime context usage. |
+| `defineMaterial` freezes output | Makes material snapshots cache-safe and deterministic. |
+| Pipeline signature ignores pure uniform value changes | Avoids unnecessary recompiles. |
+| `useTexture` abort/reload semantics are race-safe | Prevents stale async writes. |
+| `ShaderPass` contract enforcement | Keeps post-process shader interface stable. |
+
+## Internal implementation details (important for maintainers)
+
+### Uniform updates
+
+- Frame uniforms (`time`, `delta`, `resolution`) are written each frame.
+- Material uniform buffer uses dirty-range detection to minimize queue writes.
+
+### Texture lifetime
+
+- Each texture binding keeps a fallback 1x1 texture.
+- Reallocation happens on format/size/source object change.
+- Dynamic upload policy comes from resolved update mode.
+
+### Pass lifecycle
+
+- Pass instances are identity-tracked.
+- `setSize` is called when resolution changes or pass first appears.
+- `dispose` runs on removal or renderer destroy.
+
+### Render target lifecycle
+
+- Resolved definitions are signature-compared per frame.
+- Only changed/removed targets are reallocated/destroyed.
+
+### Diagnostics and profiling
+
+- Scheduler stores last run timings and optional rolling window stats.
+- `setDiagnosticsEnabled(false)` clears timing state.
 
 ## Build and validation commands
 
@@ -35,21 +69,25 @@ bun run check
 bun run lint
 ```
 
-## Internal implementation details worth knowing
+From `apps/web`:
 
-| Area | Detail |
-| --- | --- |
-| Uniform writes | Frame uniforms are written each frame; material uniforms use dirty-range updates. |
-| Texture fallback | 1x1 fallback textures are used until real source is available. |
-| Render target allocation | Reallocation occurs only on signature-changing topology/size/format changes. |
-| Shader diagnostics | Compile failures map back to fragment/include/define source references. |
-| Scheduler timing | Diagnostics and profiling share same timing collection path. |
+```bash
+bun run check
+bun run test
+bun run lint
+```
 
 ## Practical caveats
 
 | Caveat | Guidance |
 | --- | --- |
-| WebGPU availability | Depends on browser, platform, and secure context. |
-| `onInvalidate` vs `perFrame` | Choose explicitly; behavior is materially different. |
-| `autoRender = false` | Overrides mode and suppresses all rendering. |
-| Material construction | Always use `defineMaterial`; do not handcraft plain material objects. |
+| WebGPU availability varies by browser/platform | Always expect initialization failures in unsupported contexts. |
+| `autoRender = false` overrides all render modes | Use it carefully, especially during debugging. |
+| `onInvalidate` texture mode is context-sensitive | Pair with explicit invalidation policy for predictability. |
+| Handcrafted material objects are unsupported | Always use `defineMaterial(...)`. |
+
+## Suggested future hardening areas
+
+1. Add integration tests around dynamic pass list churn under load.
+2. Add stress tests for frequent render target topology changes.
+3. Add browser-matrix smoke tests for WebGPU feature differences.

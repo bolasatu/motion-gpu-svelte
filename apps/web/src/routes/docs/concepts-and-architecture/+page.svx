@@ -2,47 +2,93 @@
 layout: docs
 ---
 
-## Core goals
+## Design goals
 
-Motion GPU is a Svelte-first WebGPU runtime for fullscreen shader rendering.
+MotionGPU is intentionally strict in input contracts and explicit in runtime scheduling.
 
-| Goal | Description |
+| Goal | Practical effect |
 | --- | --- |
-| Strong contracts | Strict material/shader input validation. |
-| Predictable scheduling | Deterministic frame task ordering and invalidation model. |
-| Post-processing graph | Built-in pass graph with source/target ping-pong. |
-| Actionable diagnostics | Normalized runtime errors and source-mapped shader failures. |
+| Deterministic pipeline rebuilds | Material + output color-space signatures control renderer recreation. |
+| Predictable frame flow | Scheduler owns invalidation and render-mode gates. |
+| Minimal hidden magic | Most runtime behavior is explicit (`setUniform`, `setTexture`, pass flags). |
+| Recoverable failure UX | Errors are normalized and surfaced with hints + optional overlay. |
 
-## Main runtime pieces
+## Package layout
 
-| Layer | Responsibility |
+| Path | Responsibility |
 | --- | --- |
-| `FragCanvas.svelte` | Owns renderer lifecycle, runs scheduler, executes render graph, exposes context. |
-| Material layer (`core/material.ts`, `core/material-preprocess.ts`) | Validates fragment contract, uniforms/textures, defines/includes, computes deterministic signature. |
-| Renderer (`core/renderer.ts`) | Initializes WebGPU, compiles WGSL, manages uniform writes and texture uploads, executes frame render flow. |
-| Frame scheduler (`frame-context.ts`) | Registers ordered frame tasks, stages, invalidation, manual advance, diagnostics/profiling. |
-| Pass graph (`core/render-graph.ts`, `passes/*`) | Plans pass execution and manages source/target/canvas outputs with built-in passes. |
+| `src/lib/index.ts` | Public root exports. |
+| `src/lib/advanced.ts` | Advanced exports on top of root API. |
+| `src/lib/FragCanvas.svelte` | Runtime entry component. |
+| `src/lib/core/*` | Material, shader, renderer, textures, graph planner, diagnostics. |
+| `src/lib/passes/*` | Built-in post-process pass classes. |
+| `src/lib/frame-context.ts` | Scheduler registry and `useFrame`. |
+| `src/lib/motiongpu-context.ts` | `useMotionGPU` context contract. |
+| `src/lib/use-texture.ts` | Reactive URL texture hook. |
+| `src/lib/use-motiongpu-user-context.ts` | Advanced namespaced user state hook. |
 
-## Render pipeline flow
+## `FragCanvas` runtime lifecycle
 
-| Step | What happens |
+1. Initializes frame registry and MotionGPU context stores.
+2. Resolves material (`resolveMaterial`).
+3. Builds pipeline signature from material signature + output color space.
+4. Creates renderer if missing/signature changed.
+5. On each `requestAnimationFrame` tick:
+   - computes `time` + clamped `delta`,
+   - updates `size` from current canvas bounds,
+   - runs scheduler tasks,
+   - conditionally renders based on scheduler state,
+   - clears scheduler one-frame flags.
+6. On destroy: cancels RAF, destroys renderer resources, clears scheduler.
+
+## Rebuild and retry policy
+
+| Trigger | Behavior |
 | --- | --- |
-| 1 | `FragCanvas` resolves current material. |
-| 2 | Renderer signature is built from material + output color space. |
-| 3 | Signature change triggers renderer rebuild (with retry backoff on failures). |
-| 4 | On each animation frame: run scheduler tasks, merge runtime values, render main shader, execute pass graph, present final canvas output. |
+| Material signature change | Renderer rebuilt. |
+| Output color-space change | Renderer rebuilt. |
+| Runtime uniform value change only | No rebuild (buffer update only). |
+| Runtime texture source change | No rebuild (binding/upload update only). |
 
-## Data model highlights
+If renderer creation fails for current signature, retries are delayed with exponential backoff (`250ms` to max `8000ms`) until signature changes or setup succeeds.
 
-| Area | Contract |
+## Data flow: uniforms and textures
+
+| Stage | Uniforms | Textures |
+| --- | --- | --- |
+| Material definition | Static defaults in `defineMaterial` | Static `TextureDefinition` map |
+| Frame runtime | `setUniform(name, value)` updates runtime override map | `setTexture(name, value)` updates runtime source map |
+| Render submit | Merged as `{ ...materialUniforms, ...runtimeUniforms }` | Merged as material defaults + runtime map |
+
+Unknown uniform/texture names throw immediately in `FragCanvas` frame state setters.
+
+## Scheduling architecture
+
+| Concept | Meaning |
 | --- | --- |
-| Uniforms | Strong typed values (`f32`, vectors, matrices) with WGSL-style layout/alignment semantics. |
-| Identifiers | Uniform and texture keys must be WGSL-safe identifiers. |
-| Render targets | Named targets resolve from fixed dimensions or canvas scale. |
+| Task | A `useFrame` callback with metadata and invalidation policy. |
+| Stage | Ordered group of tasks, optional stage callback wrapper. |
+| Dependencies | `before` / `after` on tasks and stages with topological sort fallback. |
+| Modes | `always`, `on-demand`, `manual`. |
 
-## Philosophy
+Scheduler state is exposed through `useMotionGPU().scheduler` (stage creation, diagnostics, profiling snapshot access).
 
-- Strict validation early (`defineMaterial`, texture/uniform checks).
-- Runtime flexibility where it matters (dynamic passes/targets/textures).
-- Deterministic signatures for cache and rebuild decisions.
-- User-facing errors optimized for readability and actionability.
+## Render graph architecture
+
+| Slot | Purpose |
+| --- | --- |
+| `source` | Current scene/result surface. |
+| `target` | Ping-pong companion surface. |
+| `canvas` | Presentation surface. |
+
+`planRenderGraph(...)` validates pass sequence and produces an execution plan with resolved flags (`clear`, `clearColor`, `preserve`, `needsSwap`, input/output slots).
+
+## Diagnostics model
+
+All initialization/render failures are normalized via `toMotionGPUErrorReport(...)` into a stable shape:
+
+- `title`, `message`, `hint`
+- `details[]`, `stack[]`
+- `rawMessage`, `phase`
+
+Overlay display is optional (`showErrorOverlay`), callback delivery (`onError`) remains available even if overlay is disabled.

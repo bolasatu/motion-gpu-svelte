@@ -2,20 +2,72 @@
 layout: docs
 ---
 
+`@motion-core/motion-gpu` is a Svelte 5 runtime for fullscreen WGSL rendering on WebGPU.
 
-This documentation covers the `@motion-core/motion-gpu` package in depth, from core concepts to practical production use cases.
+This documentation was rebuilt directly from `packages/motion-gpu/src` and its test suite, so all contracts below reflect real implementation behavior, defaults, and failure modes.
 
-## Who this is for
+## What this package actually ships
 
-- You want to render fullscreen WGSL shaders in Svelte 5.
-- You want explicit control over frame scheduling and render invalidation.
-- You want a post-processing pipeline (passes + render targets) on top of a fullscreen shader.
+| Area | Source of truth | Notes |
+| --- | --- | --- |
+| Runtime component | `src/lib/FragCanvas.svelte` | Owns canvas, renderer lifecycle, scheduler integration, and error overlay. |
+| Material pipeline | `src/lib/core/material.ts` + `material-preprocess.ts` | Validates fragment contract, expands includes/defines, computes deterministic signatures. |
+| Renderer | `src/lib/core/renderer.ts` | WebGPU setup, shader compile checks, uniform writes, texture uploads, pass execution. |
+| Scheduler | `src/lib/frame-context.ts` | Ordered frame tasks, stage graph, invalidation, render modes, diagnostics/profiling. |
+| Pass system | `src/lib/core/render-graph.ts` + `src/lib/passes/*` | Ping-pong source/target model and optional canvas output. |
+| Texture loading | `src/lib/core/texture-loader.ts` + `use-texture.ts` | URL decode, cancellation, caching, reactive hook state. |
+| Diagnostics | `src/lib/core/error-report.ts` | Maps low-level runtime errors to structured reports with hints. |
+
+## Public entrypoints
+
+| Entrypoint | Exports |
+| --- | --- |
+| `@motion-core/motion-gpu` | `FragCanvas`, `defineMaterial`, `useMotionGPU`, `useFrame`, `useTexture`, `BlitPass`, `CopyPass`, `ShaderPass` |
+| `@motion-core/motion-gpu/advanced` | Everything above plus `useMotionGPUUserContext` and advanced scheduler/user-context types |
+
+The export contract is verified in tests (`src/tests/public-api.test.ts`).
+
+## Runtime mental model
+
+1. You create an immutable material with `defineMaterial(...)`.
+2. `FragCanvas` resolves that material and derives a renderer pipeline signature.
+3. If signature changes, renderer is rebuilt (with retry backoff on init failures).
+4. Every animation frame:
+   - scheduler tasks run (`useFrame` registrations),
+   - runtime uniforms/textures are merged,
+   - fullscreen base pass renders,
+   - optional post-process passes execute,
+   - final result is presented to canvas.
+
+## Technical contracts you should treat as hard requirements
+
+| Contract | Enforced by |
+| --- | --- |
+| Fragment function signature must be `fn frag(uv: vec2f) -> vec4f` | `defineMaterial` validation |
+| `ShaderPass` fragment must define `fn shade(inputColor: vec4f, uv: vec2f) -> vec4f` | `ShaderPass` constructor |
+| Uniform / texture keys must be WGSL-safe identifiers (`[A-Za-z_][A-Za-z0-9_]*`) | uniform + texture validators |
+| `renderMode` can only be `always`, `on-demand`, `manual` | scheduler runtime |
+| `maxDelta > 0`, `profilingWindow > 0` | scheduler assertions |
+| Render target dimensions and scale must be finite and > 0 | render-target resolver |
+
+## Defaults worth knowing
+
+| Setting | Default |
+| --- | --- |
+| `FragCanvas.clearColor` | `[0, 0, 0, 1]` |
+| `FragCanvas.outputColorSpace` | `'srgb'` |
+| `FragCanvas.renderMode` | `'always'` |
+| `FragCanvas.autoRender` | `true` |
+| `FragCanvas.maxDelta` | `0.1` |
+| Texture filter | `'linear'` |
+| Texture address mode | `'clamp-to-edge'` |
+| Texture update mode | source-dependent (`video -> perFrame`, otherwise `once`) |
 
 ## Documentation map
 
 1. [Concepts and Architecture](/docs/concepts-and-architecture)
 2. [Getting Started](/docs/getting-started)
-3. [Material System (WGSL + uniforms + defines + includes)](/docs/material-system)
+3. [Material System](/docs/material-system)
 4. [Texture System](/docs/texture-system)
 5. [Frame Scheduler and Render Modes](/docs/frame-scheduler)
 6. [Render Passes and Render Targets](/docs/render-passes)
@@ -23,23 +75,10 @@ This documentation covers the `@motion-core/motion-gpu` package in depth, from c
 8. [Error Handling and Diagnostics](/docs/error-handling-and-diagnostics)
 9. [API Reference](/docs/api-reference)
 10. [Examples](/docs/examples)
-11. [Use Cases](/docs/use-cases)
-12. [Testing and Internal Notes](/docs/testing-and-internal-notes)
+11. [Testing and Internal Notes](/docs/testing-and-internal-notes)
 
-## 60-second mental model
+## Scope and boundaries
 
-- `FragCanvas` owns the WebGPU renderer lifecycle.
-- `defineMaterial` defines your main fullscreen fragment (`fn frag(uv: vec2f) -> vec4f`).
-- `useFrame` schedules per-frame logic and controls invalidation.
-- `useMotionGPU` gives runtime context (canvas, size, renderMode, scheduler).
-- Optional passes (`BlitPass`, `CopyPass`, `ShaderPass`) create a post-processing graph.
-- Optional advanced hook (`useMotionGPUUserContext`) provides namespaced shared runtime context.
-
-## Package entrypoints
-
-- Root entrypoint:
-  - `@motion-core/motion-gpu`
-  - Production API (`FragCanvas`, `defineMaterial`, `useFrame`, `useMotionGPU`, `useTexture`, passes).
-- Advanced entrypoint:
-  - `@motion-core/motion-gpu/advanced`
-  - Adds power-user APIs (`useMotionGPUUserContext`, advanced scheduler/user-context types).
+- This package targets **fullscreen fragment workflows** in Svelte, not general-purpose scene graphs.
+- Main runtime works without the advanced entrypoint; advanced is for namespaced user state and extended type ergonomics.
+- Documentation references behaviors currently implemented in this repository state, including test-verified edge cases.

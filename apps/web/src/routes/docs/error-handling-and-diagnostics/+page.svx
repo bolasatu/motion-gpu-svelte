@@ -2,65 +2,88 @@
 layout: docs
 ---
 
-## Error pipeline
+## Error normalization pipeline
 
-`FragCanvas` catches failures in two phases:
+Errors from initialization and per-frame rendering are normalized by:
+
+- `toMotionGPUErrorReport(error, phase)`
+
+Phases:
 
 - `initialization`
 - `render`
 
-It converts unknown errors into normalized `MotionGPUErrorReport`.
+## `MotionGPUErrorReport` shape
 
-## Error report fields
-
-| Field | Description |
+| Field | Meaning |
 | --- | --- |
-| `title` | Human-readable short classification title. |
-| `message` | Main user-facing message. |
-| `hint` | Suggested next action/fix hint. |
-| `details[]` | Additional diagnostic strings. |
-| `stack[]` | Stack trace lines (when available). |
-| `rawMessage` | Original raw error message. |
-| `phase` | Failure phase (`initialization` or `render`). |
+| `title` | Short category heading |
+| `message` | Primary error message line |
+| `hint` | Suggested remediation |
+| `details` | Extra lines (for example WGSL compiler details) |
+| `stack` | Stack trace lines when available |
+| `rawMessage` | Original unsanitized message |
+| `phase` | `initialization` or `render` |
 
-## Built-in classification examples
+## Built-in classification patterns
 
-Known patterns are mapped to readable titles/hints.
-
-| Pattern | Mapped outcome |
+| Pattern detected in message | Classification title |
 | --- | --- |
-| WebGPU unavailable | Browser/platform support guidance |
-| Adapter unavailable | Adapter acquisition guidance |
-| Invalid webgpu canvas context | Canvas/context setup guidance |
-| WGSL compilation failed | Shader syntax/source mapping guidance |
-| Device lost | Recovery/rebuild guidance |
-| Uncaptured GPU error | Runtime GPU diagnostics guidance |
-| Bind group mismatch | Binding/layout mismatch guidance |
-| Texture usage mismatch | Texture format/usage guidance |
+| `WebGPU is not available in this browser` | `WebGPU unavailable` |
+| `Unable to acquire WebGPU adapter` | `WebGPU adapter unavailable` |
+| `Canvas does not support webgpu context` | `Canvas cannot create WebGPU context` |
+| `WGSL compilation failed` | `WGSL compilation failed` |
+| `WebGPU device lost` / `Device Lost` | `WebGPU device lost` |
+| `WebGPU uncaptured error` | `WebGPU uncaptured error` |
+| `CreateBindGroup` / `bind group layout` | `Bind group mismatch` |
+| `Destination texture needs to have CopyDst` | `Invalid texture usage flags` |
+| fallback | `MotionGPU render error` |
 
-Unknown errors still get a generic MotionGPU classification.
+## Overlay behavior in `FragCanvas`
 
-## UI behavior
+By default, runtime errors are shown as fullscreen overlay via `Portal.svelte`.
 
-By default `FragCanvas` renders a full-screen diagnostic overlay (through internal `Portal.svelte`).
-
-| Prop | Default | Description |
+| Prop | Default | Effect |
 | --- | --- | --- |
-| `showErrorOverlay` | `true` | Enables/disables built-in overlay. |
-| `onError(report)` | `undefined` | Callback with normalized report. |
+| `showErrorOverlay` | `true` | Toggles built-in visual overlay |
+| `onError` | `undefined` | Callback with normalized report |
 
-Even with overlay disabled, `onError` still receives reports.
+Even when overlay is disabled, `onError` is still called.
 
-## Shader compile diagnostics
+## Shader compile diagnostics mapping
 
-Compiler errors include generated line number and mapped source location:
+`renderer.ts` reads `GPUShaderModule.getCompilationInfo()` and maps lines using material/shader source maps.
+
+Location labels can point to:
 
 - `user fragment line X`
 - `include "name" line X`
 - `define "NAME"`
 
-This is enabled by material preprocessing + shader line-map integration.
+This greatly reduces time to locate shader authoring mistakes.
 
-## Renderer retry behavior
+## Device loss and uncaptured errors
 
-If renderer creation fails for a given material signature, `FragCanvas` retries with exponential backoff (capped delay) and resets retry state when signature changes.
+Renderer listens for:
+
+- `device.lost` promise,
+- `uncapturederror` event.
+
+Once such error state is captured, next render call throws normalized error so `FragCanvas` can report it through standard path.
+
+## Retry strategy for initialization failures
+
+When renderer creation fails for current signature, `FragCanvas` retries with exponential backoff:
+
+- initial: `250ms`
+- doubles each attempt
+- cap: `8000ms`
+
+Retry state is reset when pipeline signature changes.
+
+## Production diagnostics recommendations
+
+1. Always provide `onError` and send reports to logs/telemetry.
+2. Keep overlay enabled in dev/staging.
+3. In production, disable overlay only if you provide custom fallback UI.
+4. Surface `phase` and `title` prominently in alerting.

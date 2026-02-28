@@ -4,70 +4,99 @@ layout: docs
 
 ## `useMotionGPU()`
 
-Available only inside `<FragCanvas>` subtree.
+`useMotionGPU()` reads runtime context provided by `FragCanvas`.
 
-### Runtime context shape
+Outside `FragCanvas`, it throws:
+
+- `useMotionGPU must be used inside <FragCanvas>`
+
+## Context shape
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `canvas` | `HTMLCanvasElement` | Runtime canvas element. |
-| `size` | `CurrentReadable<{ width; height }>` | Reactive canvas pixel size. |
-| `dpr` | `CurrentWritable<number>` | Runtime device pixel ratio store. |
-| `maxDelta` | `CurrentWritable<number>` | Delta clamp store used by scheduler. |
-| `renderMode` | `CurrentWritable<'always' or 'on-demand' or 'manual'>` | Current render mode store. |
-| `autoRender` | `CurrentWritable<boolean>` | Global render enable/disable store. |
-| `user` | `CurrentWritable<Record<namespace, unknown>>` | Shared user/plugin context store. |
-| `invalidate` | `(token?) => void` | Schedules render invalidation. |
-| `advance` | `() => void` | Triggers one render step in manual mode. |
-| `scheduler` | scheduler API object | Stage creation, diagnostics, profiling API. |
-
-Outside `FragCanvas`, it throws `useMotionGPU must be used inside <FragCanvas>`.
+| `canvas` | `HTMLCanvasElement \| undefined` | Runtime canvas reference. |
+| `size` | `CurrentReadable<{ width: number; height: number }>` | Reactive pixel size. |
+| `dpr` | `CurrentWritable<number>` | Runtime DPR multiplier store. |
+| `maxDelta` | `CurrentWritable<number>` | Scheduler delta clamp store. |
+| `renderMode` | `CurrentWritable<'always' \| 'on-demand' \| 'manual'>` | Mode store. |
+| `autoRender` | `CurrentWritable<boolean>` | Global render gate. |
+| `user` | `CurrentWritable<Record<string \| symbol, unknown>>` | Shared namespaced user data. |
+| `invalidate` | `() => void` | Mark frame invalid for on-demand flow. |
+| `advance` | `() => void` | Request one manual frame. |
+| `scheduler` | scheduler API subset | Stage, diagnostics, profiling controls. |
 
 ## `useFrame(...)`
 
-Registers frame tasks and auto-unsubscribes on component destroy.
+`useFrame` is hook-level access to scheduler task registration.
 
-Common pattern:
+Typical usage:
 
 ```ts
 useFrame('camera-update', (state) => {
-  state.setUniform('uTime', state.time);
+	state.setUniform('uTime', state.time);
 });
 ```
 
+`state` shape includes:
+
+| Field | Description |
+| --- | --- |
+| `time`, `delta` | frame timing values |
+| `setUniform(name, value)` | runtime uniform override |
+| `setTexture(name, value)` | runtime texture override |
+| `invalidate(token?)` | invalidation trigger |
+| `advance()` | manual step trigger |
+| `renderMode`, `autoRender` | current scheduler mode state |
+| `canvas` | active canvas element |
+
 ## `useTexture(...)`
 
-Reactive URL texture loading hook with cancellation, error state, and reload support.
+`useTexture` loads texture URLs and exposes current state through `CurrentReadable` stores.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `textures.current` | `LoadedTexture[] or null` | Loaded decoded resources. |
-| `loading.current` | `boolean` | In-flight loader state. |
-| `error.current` | `Error or null` | Last loader failure. |
-| `reload()` | `Promise<void>` | Abort and restart loading. |
+```ts
+const tex = useTexture(['/assets/a.png']);
+
+useFrame((state) => {
+	const first = tex.textures.current?.[0];
+	state.setTexture('uMain', first ? { source: first.source } : null);
+});
+```
 
 ## Advanced: `useMotionGPUUserContext(...)`
 
-Import from `@motion-core/motion-gpu/advanced`.
+Import path:
 
-### Modes
+```ts
+import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
+```
 
-| Call form | Result |
+Overloads:
+
+| Call | Result |
 | --- | --- |
-| no args | Full user store |
-| `namespace` | Scoped readable store |
-| `namespace + value` | Initialize or update namespace |
+| `useMotionGPUUserContext()` | full user store readable |
+| `useMotionGPUUserContext(namespace)` | namespaced readable |
+| `useMotionGPUUserContext(namespace, value, options?)` | set/merge/replace and return resolved value |
 
-### Conflict behavior (`existing` option)
+Conflict strategy (`options.existing`):
 
-| Value | Behavior |
+| Mode | Behavior |
 | --- | --- |
-| `skip` | Keep existing namespace value (default). |
-| `replace` | Replace existing value completely. |
-| `merge` | Shallow merge when old/new are plain objects. |
+| `skip` (default) | Keep existing value if namespace already exists |
+| `replace` | Always overwrite namespace value |
+| `merge` | Shallow-merge plain object entries; fallback to replace otherwise |
 
-## `CurrentWritable` utilities
+## `CurrentWritable` pattern
 
-Internal helper `currentWritable` creates Svelte stores with synchronous `.current` access.
+Many MotionGPU APIs expose `CurrentWritable<T>`:
 
-This pattern is used heavily in runtime context APIs for low-overhead reads.
+- Svelte store API (`subscribe`, `set`, `update`),
+- synchronous `.current` getter for zero-subscription reads.
+
+This pattern is used for performance-sensitive runtime state access.
+
+## Recommended integration patterns
+
+1. Keep render control (`renderMode`, `autoRender`) in dedicated runtime child component.
+2. Co-locate frame tasks near state owners and use explicit task keys for large scenes.
+3. Reserve `useMotionGPUUserContext` for plugin/module boundaries, not trivial local state.

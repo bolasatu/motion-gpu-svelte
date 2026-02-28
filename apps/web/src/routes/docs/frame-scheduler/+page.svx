@@ -2,85 +2,117 @@
 layout: docs
 ---
 
-## `useFrame`
+## Scheduler model
 
-`useFrame` registers a callback executed before renderer submission.
+`useFrame` tasks are managed by an internal `FrameRegistry` created by `FragCanvas`.
 
-### Overloads
+Execution hierarchy:
 
-| Signature | Description |
+1. stages (dependency-sorted),
+2. tasks inside each stage (dependency-sorted),
+3. each task can invalidate rendering depending on policy.
+
+## `useFrame` overloads
+
+| Signature | Purpose |
 | --- | --- |
 | `useFrame(callback, options?)` | Auto-generated task key. |
-| `useFrame(key, callback, options?)` | Explicit task key for ordering and debugging. |
+| `useFrame(key, callback, options?)` | Stable key for explicit ordering/debugging. |
 
-### Return
+Returned handle:
 
-| Field | Description |
+| Field | Type |
 | --- | --- |
-| `task` | Metadata with task `key` and `stage`. |
-| `start()` | Enables task execution. |
-| `stop()` | Disables task execution. |
-| `started` | Readable store for effective running state. |
+| `task` | `{ key, stage }` |
+| `start()` | enables task |
+| `stop()` | disables task |
+| `started` | readable store for effective running state |
 
-## Task ordering
+## `UseFrameOptions`
 
-Tasks can declare dependencies and are resolved with topological sort plus stable insertion-order fallback.
+| Option | Default | Behavior |
+| --- | --- | --- |
+| `autoStart` | `true` | Initial started flag. |
+| `autoInvalidate` | `true` | Enables default always-invalidate policy unless explicit invalidation is set. |
+| `invalidation` | implicit | Full invalidation policy override. |
+| `stage` | main stage | Task stage assignment. |
+| `before` / `after` | none | Task dependency edges. |
+| `running` | none | Dynamic gate checked each frame. |
 
-| Option | Meaning |
+## Invalidation policy model
+
+Supported policy forms:
+
+- `'never'`
+- `'always'`
+- `{ mode?: 'never' | 'always'; token?: FrameTaskInvalidationToken }`
+- `{ mode: 'on-change'; token: FrameTaskInvalidationToken }`
+
+`FrameTaskInvalidationToken` can be a direct token or a resolver function.
+
+### `on-change` semantics
+
+A task invalidates only when current resolved token differs from previous token.
+
+## Render modes
+
+| Mode | `shouldRender()` logic |
 | --- | --- |
-| `before` | Run before referenced tasks/stages. |
-| `after` | Run after referenced tasks/stages. |
+| `always` | `true` while `autoRender` is enabled |
+| `on-demand` | render if any invalidation is pending or `advance()` was requested |
+| `manual` | render only after `advance()` |
 
-## Stages
+Additional rules:
 
-Stages group tasks and support stage-level ordering.
+- switching to `on-demand` automatically injects a mode-change invalidation token,
+- `autoRender = false` hard-disables rendering regardless of mode,
+- `endFrame()` clears one-frame invalidation/advance flags.
 
-`createStage(key, { before, after, callback })`
+## Stage API
 
-Stage callback signature:
-
-```ts
-(state, runTasks) => void
-```
-
-This allows custom orchestration around grouped task execution.
-
-## Invalidation model
-
-### Render modes
-
-| Mode | Behavior |
-| --- | --- |
-| `always` | Render every frame. |
-| `on-demand` | Render only with pending invalidation or `advance()`. |
-| `manual` | Render only after explicit `advance()`. |
-
-### Per-task invalidation options
+`useMotionGPU().scheduler.createStage(key, options?)`
 
 | Option | Behavior |
 | --- | --- |
-| `autoInvalidate` | Default `true`; enables built-in invalidation behavior. |
-| `invalidation: 'never'` | Task never invalidates rendering. |
-| `invalidation: 'always'` | Task invalidates each frame execution. |
-| `invalidation: { mode: 'on-change', token }` | Invalidates only when token value changes. |
+| `before` / `after` | stage dependency edges |
+| `callback` | stage wrapper `(state, runTasks) => void` |
 
-## Useful behavior details
+Stage callback lets you gate or batch task execution.
 
-| Detail | Notes |
+## Timing and profiling
+
+Diagnostics/profiling collects per-frame timing snapshots:
+
+| API | Description |
 | --- | --- |
-| Initial frame | Scheduler starts with one pending invalidation. |
-| Mode switch | `setRenderMode('on-demand')` injects mode-change invalidation token. |
-| `autoRender = false` | Disables rendering regardless of mode. |
-| `maxDelta` | Clamps `delta` passed to frame callbacks. |
+| `setDiagnosticsEnabled(boolean)` | toggles timing collection for last run |
+| `getLastRunTimings()` | returns `{ total, stages }` or `null` |
+| `setProfilingEnabled(boolean)` | enables rolling history |
+| `setProfilingWindow(number)` | rolling frame count |
+| `getProfilingSnapshot()` | aggregate stats (`last`, `avg`, `min`, `max`, `count`) |
+| `resetProfiling()` | clears history |
 
-## Diagnostics and profiling
+Diagnostics and profiling currently share the same runtime timing path.
 
-| API | Purpose |
-| --- | --- |
-| `getSchedule()` | Returns resolved stage/task order. |
-| `setDiagnosticsEnabled(...)` | Enables/disables runtime timing collection. |
-| `getLastRunTimings()` | Last frame timing breakdown. |
-| `setProfilingEnabled(...)` | Enables/disables rolling profiler. |
-| `setProfilingWindow(...)` | Controls rolling window size. |
-| `resetProfiling()` | Clears profiling history. |
-| `getProfilingSnapshot()` | Returns rolling stats (`last`, `avg`, `min`, `max`, `count`). |
+## Delta clamping
+
+`maxDelta` clamps callback `state.delta` every frame.
+
+- default: `0.1`
+- must be finite and `> 0`
+- configurable via `FragCanvas` prop or `useMotionGPU().maxDelta.set(...)`
+
+## Schedule inspection
+
+`getSchedule()` returns resolved stage/task order snapshot:
+
+```ts
+{
+	stages: [
+		{ key: 'Symbol(motiongpu-main-stage)', tasks: ['camera', 'effects'] },
+		{ key: 'post', tasks: ['tone-mapping'] }
+	]
+}
+```
+
+This is useful for debugging dependency topology.

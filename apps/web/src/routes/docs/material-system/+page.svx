@@ -2,93 +2,124 @@
 layout: docs
 ---
 
-## Material contract
+## `defineMaterial(...)` contract
 
-Your fragment must declare exactly this shape:
+`defineMaterial` creates an immutable material declaration consumed by `FragCanvas`.
+
+```ts
+const material = defineMaterial({
+	fragment: `...`,
+	uniforms: { ... },
+	textures: { ... },
+	defines: { ... },
+	includes: { ... }
+});
+```
+
+Returned object and nested maps (`uniforms`, `textures`, `defines`, `includes`) are frozen.
+
+## Required fragment function
+
+The fragment must declare this signature:
 
 ```wgsl
 fn frag(uv: vec2f) -> vec4f
 ```
 
-If not, `defineMaterial` throws.
+If missing, material creation fails.
 
-## `defineMaterial(...)`
+## Uniform input model
 
-```ts
-const material = defineMaterial({
-  fragment: `...`,
-  uniforms: { ... },
-  textures: { ... },
-  defines: { ... },
-  includes: { ... }
-});
-```
-
-The result is immutable (`Object.freeze`) and safe for caching.
-
-## Uniforms
-
-### Supported runtime forms
-
-| Form | Interpreted type | Notes |
-| --- | --- | --- |
-| `number` | `f32` | Scalar shorthand. |
-| `[x, y]` | `vec2f` | Tuple shorthand. |
-| `[x, y, z]` | `vec3f` | Tuple shorthand. |
-| `[x, y, z, w]` | `vec4f` | Tuple shorthand. |
-| `{ type: 'f32', value }` | `f32` | Explicit typed form. |
-| `{ type: 'vec2f', value }` | `vec2f` | Explicit typed form. |
-| `{ type: 'vec3f', value }` | `vec3f` | Explicit typed form. |
-| `{ type: 'vec4f', value }` | `vec4f` | Explicit typed form. |
-| `{ type: 'mat4x4f', value }` | `mat4x4f` | Requires 16 values (`number[]` or `Float32Array`). |
-
-Uniform names must be WGSL-safe identifiers: `[A-Za-z_][A-Za-z0-9_]*`.
-
-## Defines
-
-### Allowed define values
-
-| Form | Notes |
+| Input form | Resolved type |
 | --- | --- |
-| `boolean` | Plain boolean define. |
-| `number` | Must be finite. |
-| `{ type: 'bool', value }` | Explicit typed define. |
-| `{ type: 'f32', value }` | Explicit typed define. |
-| `{ type: 'i32', value }` | Explicit typed define. |
-| `{ type: 'u32', value }` | Explicit typed define. |
+| `number` | `f32` |
+| `[x, y]` | `vec2f` |
+| `[x, y, z]` | `vec3f` |
+| `[x, y, z, w]` | `vec4f` |
+| `{ type: 'f32', value }` | `f32` |
+| `{ type: 'vec2f', value }` | `vec2f` |
+| `{ type: 'vec3f', value }` | `vec3f` |
+| `{ type: 'vec4f', value }` | `vec4f` |
+| `{ type: 'mat4x4f', value }` | `mat4x4f` (16 values required) |
 
-Defines are generated as WGSL `const` declarations and prepended deterministically (sorted by key).
+Uniform names must match WGSL-safe identifier format.
 
-## Includes
+## Uniform packing and layout
 
-`#include <name>` directives are expanded recursively from `includes` map.
+Layout is deterministic and sorted by uniform name. WGSL-like alignment rules are applied:
+
+| Type | Alignment | Size |
+| --- | --- | --- |
+| `f32` | 4 | 4 |
+| `vec2f` | 8 | 8 |
+| `vec3f` | 16 | 12 |
+| `vec4f` | 16 | 16 |
+| `mat4x4f` | 16 | 64 |
+
+Total buffer size is rounded up to 16-byte alignment (minimum 16 bytes).
+
+## Defines (`defines`)
+
+Defines are transformed into top-level WGSL `const` declarations and prepended in sorted key order.
+
+| Value form | Emitted WGSL |
+| --- | --- |
+| `boolean` | `const NAME: bool = ...;` |
+| `number` | `const NAME: f32 = ...;` |
+| `{ type: 'bool', value }` | bool constant |
+| `{ type: 'f32', value }` | f32 constant |
+| `{ type: 'i32', value }` | i32 constant |
+| `{ type: 'u32', value }` | u32 constant (`...u`) |
+
+Validation rules include:
+
+- numeric values must be finite,
+- `i32`/`u32` must be integer,
+- `u32` must be `>= 0`.
+
+## Includes (`includes`)
+
+`#include <name>` directives are expanded recursively before shader compilation.
 
 | Rule | Behavior |
 | --- | --- |
-| Include key format | Must be WGSL-safe identifier. |
-| Unknown include | Throws validation error. |
-| Circular reference | Throws validation error. |
+| Unknown include key | throws |
+| Circular include chain | throws with stack description |
+| Included lines | tracked in line map for diagnostics |
 
-## Material signature
+## Material signatures and cache
 
-`resolveMaterial` computes deterministic signature from:
+`resolveMaterial(material)` produces:
 
-| Source area | Used for signature |
+- preprocessed WGSL fragment,
+- fragment line map (generated line -> source location),
+- uniform layout,
+- sorted texture keys,
+- deterministic `signature`.
+
+Signature includes:
+
+1. preprocessed fragment string,
+2. uniform name/type layout sequence,
+3. texture key list,
+4. normalized texture sampling/upload config.
+
+### Why this matters
+
+Renderer rebuilds are keyed off this signature (plus output color space), not off live uniform value changes.
+
+## Material misuse guards
+
+| Invalid input | Result |
 | --- | --- |
-| Preprocessed fragment | WGSL after defines/includes expansion. |
-| Uniform layout | Uniform names and normalized types. |
-| Texture config | Texture keys + normalized texture definitions. |
+| Plain object not created with `defineMaterial` passed to renderer | throws |
+| Invalid identifier in uniforms/textures/defines/includes | throws |
+| Invalid uniform value shape | throws |
+| Missing fragment contract | throws |
 
-This signature drives renderer rebuild policy.
+## Practical authoring guidance
 
-## Line mapping for diagnostics
-
-Material preprocessing keeps generated-line to source-line mapping for:
-
-| Source type | Mapping preserved |
-| --- | --- |
-| Fragment source | yes |
-| Include source | yes |
-| Define source | yes |
-
-Shader compile errors can then be shown as user-facing source references.
+1. Keep material object stable (reuse same instance when possible).
+2. Put shape/type changes in `defineMaterial`, value changes in `useFrame`.
+3. Use defines for compile-time branches, uniforms for runtime animation.
+4. Use includes to share WGSL functions and keep fragments readable.
