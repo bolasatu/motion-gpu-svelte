@@ -24,6 +24,7 @@
 	let highlighted = $state<Record<string, ThemedToken[][]>>({});
 	let error = $state<string | null>(null);
 	let isReady = $state(false);
+	let previewPanel = $state<HTMLDivElement | null>(null);
 
 	let rafId: number | null = null;
 	let lastTs = 0;
@@ -54,8 +55,6 @@
 
 	const activeFile = $derived(normalizedFiles[activeIndex] ?? normalizedFiles[0]);
 	const activeLines = $derived(highlighted[activeFile.id] ?? []);
-	const lineCount = $derived(activeFile.lines.length);
-	const lineNumbers = $derived(Array.from({ length: lineCount }, (_, index) => index + 1));
 	const tabIndicatorStyle = $derived(`transform:translateX(${activeIndex * 100}%);`);
 	const activeTabId = $derived(`code-preview-tab-${activeFile.id}`);
 
@@ -162,6 +161,12 @@
 			stopAnimation();
 		};
 	});
+
+	$effect(() => {
+		void activeFile.id;
+		if (!previewPanel) return;
+		previewPanel.scrollTop = 0;
+	});
 </script>
 
 <div class="grid w-full text-background" role="region" aria-label="Code preview">
@@ -222,21 +227,22 @@
 					tabindex="0"
 					aria-live="off"
 					aria-labelledby={activeTabId}
+					bind:this={previewPanel}
 				>
-					<div class="grid min-w-max grid-cols-[3.25rem_auto] font-mono text-xs leading-5">
-						<div
-							class="bg-background-muted py-3 text-right text-xs text-foreground"
-							aria-hidden="true"
-						>
-							{#each lineNumbers as line (line)}
-								<div class="px-3 py-0.5">{line}</div>
-							{/each}
-						</div>
-						<div class="py-3">
-							<div class="grid [grid-template-areas:'code']">
-								{#key activeFile.id}
+					<div class="grid min-w-max font-mono text-xs leading-5 [grid-template-areas:'preview']">
+						{#key activeFile.id}
+							<div class="[grid-area:preview] grid min-w-max grid-cols-[3.25rem_auto]">
+								<div
+									class="bg-background-muted py-3 text-right text-xs text-foreground"
+									aria-hidden="true"
+								>
+									{#each activeFile.lines as _, lineIndex (`line-${lineIndex}`)}
+										<div class="px-3 py-0.5">{lineIndex + 1}</div>
+									{/each}
+								</div>
+
+								<div class="py-3">
 									<div
-										class="[grid-area:code]"
 										in:fly={{
 											x: 20,
 											duration: 360,
@@ -277,9 +283,9 @@
 											{/if}
 										</div>
 									</div>
-								{/key}
+								</div>
 							</div>
-						</div>
+						{/key}
 					</div>
 				</div>
 			{/if}
