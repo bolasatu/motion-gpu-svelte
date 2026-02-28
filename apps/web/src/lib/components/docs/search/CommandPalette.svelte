@@ -178,7 +178,7 @@
 										<div
 											class={cn(
 												'absolute top-0 bottom-0 left-3 w-px',
-												selectedIndex === index ? 'bg-accent/80' : 'bg-foreground/18'
+												selectedIndex === index ? 'bg-accent' : 'bg-foreground/18'
 											)}
 										></div>
 									{/if}
@@ -187,7 +187,7 @@
 										<p class="text-sm tracking-tight text-foreground">
 											{#each highlight(result.matchType === 'heading' ? (result.heading ?? result.title) : result.title, query) as part, partIndex (`title-${partIndex}-${part.text}`)}
 												{#if part.highlighted}
-													<span class="text-accent/80">{part.text}</span>
+													<span class="text-accent">{part.text}</span>
 												{:else}
 													{part.text}
 												{/if}
@@ -199,7 +199,7 @@
 										<p class="mt-1 line-clamp-1 font-fono text-xs text-foreground-muted">
 											{#each highlight(result.snippet, query) as part, partIndex (`snippet-${partIndex}-${part.text}`)}
 												{#if part.highlighted}
-													<span class="text-accent/80">{part.text}</span>
+													<span class="text-accent">{part.text}</span>
 												{:else}
 													{part.text}
 												{/if}

@@ -9,6 +9,7 @@
 	import { docsRouteGroups, getDocHref } from '$lib/docs/manifest';
 	import SearchTrigger from '../search/SearchTrigger.svelte';
 	import { cn } from '$lib/utils/cn';
+	import Logo from '$lib/assets/motiongpu-logo.svg?raw';
 
 	const homeRoute = '/' as const;
 	let isOpen = $state(false);
@@ -120,12 +121,18 @@
 <nav class="fixed top-3 left-1/2 z-80 w-full -translate-x-1/2 px-4 lg:hidden">
 	<div class="bg-background-muted/70 backdrop-blur-xl">
 		<div class="flex items-center justify-between gap-3 px-3 py-2">
-			<a
-				href={resolve(homeRoute)}
-				class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-			>
-				<span class="font-normal">MotionGPU</span>
-				<span class="text-foreground-muted">Docs</span>
+			<a href={resolve(homeRoute)} class="inline-flex items-center gap-2 p-2">
+				<div class="inline-flex items-center gap-1">
+					<span
+						class="inline-flex shrink-0 items-center text-accent [&>svg]:size-4 [&>svg]:fill-current"
+						aria-hidden="true"
+					>
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+						{@html Logo}
+					</span>
+					<p class="text-sm font-normal tracking-tight">Motion GPU</p>
+				</div>
+				<span class="text-xs text-foreground-muted">Docs</span>
 			</a>
 			<button
 				type="button"

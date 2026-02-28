@@ -6,6 +6,7 @@
 	import Close from 'carbon-icons-svelte/lib/Close.svelte';
 	import Menu from 'carbon-icons-svelte/lib/Menu.svelte';
 	import Button from '../ui/Button.svelte';
+	import Logo from '$lib/assets/motiongpu-logo.svg?raw';
 
 	const homeRoute = '/' as const;
 	const docsRoute = '/docs' as const;
@@ -123,9 +124,16 @@
 		<div class="relative flex items-center justify-between gap-3 px-3 py-2 sm:px-4">
 			<a
 				href={resolve(homeRoute)}
-				class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+				class="inline-flex items-center gap-1 px-2 py-2 text-sm tracking-tight text-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 			>
-				<span class="font-normal">MotionGPU</span>
+				<span
+					class="inline-flex shrink-0 items-center text-accent [&>svg]:size-4 [&>svg]:fill-current"
+					aria-hidden="true"
+				>
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html Logo}
+				</span>
+				<span class="font-normal">Motion GPU</span>
 			</a>
 
 			<div

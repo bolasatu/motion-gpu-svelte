@@ -86,7 +86,7 @@
 					>
 						<article class="grid min-h-72 bg-background p-4 sm:p-8">
 							<div class="flex items-start justify-between">
-								<div class="grid size-12 place-items-center bg-accent/80 text-foreground">
+								<div class="grid size-12 place-items-center bg-accent text-background">
 									{#if step.icon === 'material'}
 										<Code size={24} />
 									{:else if step.icon === 'inputs'}

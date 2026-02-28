@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import Logo from '$lib/assets/motiongpu-logo.svg?raw';
 
 	const menu = [
 		{ label: 'Home', route: '/' },
@@ -15,7 +16,16 @@
 <footer class="w-full">
 	<div class="w-full border-y border-border px-2 py-6 sm:px-6 sm:py-8">
 		<div class="flex w-full items-center justify-start gap-6">
-			<p class="text-xl tracking-tight">MotionGPU</p>
+			<div class="inline-flex items-center gap-1 px-2 py-2">
+				<span
+					class="inline-flex shrink-0 items-center text-accent [&>svg]:size-6 [&>svg]:fill-current"
+					aria-hidden="true"
+				>
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html Logo}
+				</span>
+				<p class="text-xl tracking-tight">Motion GPU</p>
+			</div>
 			<p class="font-fono text-sm text-foreground-muted">Svelte-first WebGPU Runtime</p>
 		</div>
 	</div>
@@ -92,10 +102,4 @@
 			>
 		</div>
 	</div>
-
-	<p
-		class="bg-linear-to-b from-foreground to-foreground-muted bg-clip-text px-2 pt-6 text-[clamp(4rem,16vw,16rem)] leading-none font-medium tracking-tight text-transparent sm:px-6"
-	>
-		MotionGPU
-	</p>
 </footer>

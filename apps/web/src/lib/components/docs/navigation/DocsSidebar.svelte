@@ -4,6 +4,7 @@
 	import { docsRouteGroups, getDocHref } from '$lib/docs/manifest';
 	import SearchTrigger from '../search/SearchTrigger.svelte';
 	import { cn } from '$lib/utils/cn';
+	import Logo from '$lib/assets/motiongpu-logo.svg?raw';
 
 	const homeRoute = '/' as const;
 	const currentPath = $derived(page.url.pathname);
@@ -12,8 +13,17 @@
 <aside class="flex h-full flex-col border-r border-border bg-background">
 	<div class="p-4">
 		<a href={resolve(homeRoute)} class="inline-flex items-center gap-2">
-			<span class="font-sans text-sm font-normal tracking-tight">MotionGPU</span>
-			<span class="text-sm text-foreground-muted">Docs</span>
+			<div class="inline-flex items-center gap-1">
+				<span
+					class="inline-flex shrink-0 items-center text-accent [&>svg]:size-4 [&>svg]:fill-current"
+					aria-hidden="true"
+				>
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html Logo}
+				</span>
+				<p class="text-sm font-normal tracking-tight">Motion GPU</p>
+			</div>
+			<span class="text-xs text-foreground-muted">Docs</span>
 		</a>
 		<div class="mt-4">
 			<SearchTrigger />
