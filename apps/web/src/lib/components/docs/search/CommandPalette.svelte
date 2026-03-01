@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, afterNavigate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
@@ -29,11 +29,8 @@
 		const result = results[index];
 		if (!result) return;
 		const href = resolve(result.href as '/');
-		if (result.anchor) {
-			window.location.href = `${href}${result.anchor}`;
-		} else {
-			void goto(href);
-		}
+		if (result.anchor) void goto(`${href}${result.anchor}`, { noScroll: true });
+		else void goto(href);
 		close();
 	}
 
@@ -84,6 +81,22 @@
 		return () => {
 			window.removeEventListener('keydown', handleGlobalShortcut);
 		};
+	});
+
+	afterNavigate(() => {
+		const hash = typeof location !== 'undefined' ? location.hash : '';
+		if (!hash) return;
+		const id = hash.slice(1);
+		let tries = 0;
+		const attempt = () => {
+			const el = document.getElementById(id);
+			if (el) {
+				el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+				return;
+			}
+			if (tries++ < 30) setTimeout(attempt, 50);
+		};
+		attempt();
 	});
 
 	$effect(() => {
