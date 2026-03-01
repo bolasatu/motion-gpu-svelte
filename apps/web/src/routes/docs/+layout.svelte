@@ -46,7 +46,7 @@
 	</aside>
 
 	<div id="docs-content-container" class="pt-20 lg:pt-0">
-		<div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-8 sm:py-10">
+		<div class="mx-auto w-full max-w-4xl px-4 py-8 sm:px-8 sm:py-10">
 			{#if data.currentDoc}
 				<header class="space-y-3 border-b border-border pb-6">
 					<h1 class="text-3xl tracking-tight sm:text-4xl">{data.currentDoc.title}</h1>
@@ -64,7 +64,7 @@
 		</div>
 	</div>
 
-	<aside class="hidden xl:block">
+	<aside class="hidden border-l border-border bg-background xl:block">
 		<div class="sticky top-0 h-dvh overflow-y-auto py-8">
 			<TableOfContents />
 		</div>

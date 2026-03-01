@@ -481,12 +481,13 @@
 </script>
 
 {#if headings.length > 0}
-	<nav class="sticky top-10 px-3">
-		<p class="mb-3 text-xs tracking-wide text-foreground-muted uppercase">On this page</p>
-		<div class="relative flex px-1">
-			<div
-				class="pointer-events-none absolute top-0 left-0 h-full w-10"
-				style={`
+	<nav class="sticky top-2 flex flex-col items-center px-3">
+		<div>
+			<p class="mb-3 text-xs tracking-wide text-foreground-muted uppercase">On this page</p>
+			<div class="relative flex px-1">
+				<div
+					class="pointer-events-none absolute top-0 left-0 h-full w-10"
+					style={`
                     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${svgWidth} ${lineHeight}' width='${svgWidth}' height='${lineHeight}' preserveAspectRatio='none'%3E%3Cpath d='${svgPath}' stroke='black' stroke-width='1' fill='none'/%3E%3C/svg%3E");
                     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${svgWidth} ${lineHeight}' width='${svgWidth}' height='${lineHeight}' preserveAspectRatio='none'%3E%3Cpath d='${svgPath}' stroke='black' stroke-width='1' fill='none'/%3E%3C/svg%3E");
                     mask-repeat: no-repeat;
@@ -496,40 +497,41 @@
                     mask-size: 100% 100%;
                     -webkit-mask-size: 100% 100%;
                 `}
-			>
-				<div class="absolute inset-0 h-full w-full bg-foreground/20"></div>
-				{#if indicatorHeight > 0}
-					<div
-						class="absolute left-0 w-full bg-accent transition-all duration-450 ease-out"
-						style={`
+				>
+					<div class="absolute inset-0 h-full w-full bg-foreground/20"></div>
+					{#if indicatorHeight > 0}
+						<div
+							class="absolute left-0 w-full bg-accent transition-all duration-450 ease-out"
+							style={`
                             top: ${indicatorTop}px;
                             bottom: ${Math.max(0, lineHeight - indicatorBottom)}px;
                         `}
-					></div>
-				{/if}
-			</div>
+						></div>
+					{/if}
+				</div>
 
-			<ol class="relative flex flex-col pl-3 text-sm" bind:this={linksWrapper}>
-				{#each headings as heading (heading.id)}
-					<li
-						class="transition-colors duration-150 ease-out"
-						style={`padding-left: ${(heading.level - 2) * 10}px`}
-					>
-						<a
-							href={`#${heading.id}`}
-							class={cn(
-								'block py-1.5 text-xs transition-colors duration-150 ease-out',
-								isLinkHighlighted(heading.id)
-									? 'text-accent'
-									: 'text-foreground-muted hover:text-foreground'
-							)}
-							use:registerLink={heading.id}
+				<ol class="relative flex flex-col pl-3 text-sm" bind:this={linksWrapper}>
+					{#each headings as heading (heading.id)}
+						<li
+							class="transition-colors duration-150 ease-out"
+							style={`padding-left: ${(heading.level - 2) * 10}px`}
 						>
-							{heading.text}
-						</a>
-					</li>
-				{/each}
-			</ol>
+							<a
+								href={`#${heading.id}`}
+								class={cn(
+									'block py-1.5 text-xs transition-colors duration-150 ease-out',
+									isLinkHighlighted(heading.id)
+										? 'text-accent'
+										: 'text-foreground-muted hover:text-foreground'
+								)}
+								use:registerLink={heading.id}
+							>
+								{heading.text}
+							</a>
+						</li>
+					{/each}
+				</ol>
+			</div>
 		</div>
 	</nav>
 {:else}
