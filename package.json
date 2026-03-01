@@ -3,7 +3,10 @@
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
-	"workspaces": ["apps/*", "packages/*"],
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
 	"scripts": {
 		"dev": "bun run dev:web",
 		"dev:web": "bun run build:motion-gpu && bun run --cwd apps/web dev",

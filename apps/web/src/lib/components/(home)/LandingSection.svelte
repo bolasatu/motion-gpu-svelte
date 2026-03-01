@@ -9,7 +9,7 @@
 
 	let { id, class: className = '', children }: Props = $props();
 	const sectionClass = $derived(
-		`flex w-full flex-col items-start justify-start bg-card p-4 sm:p-8 ${className}`.trim()
+		`flex w-full flex-col items-start justify-start bg-card p-4 sm:p-8 border border-border ${className}`.trim()
 	);
 </script>
 

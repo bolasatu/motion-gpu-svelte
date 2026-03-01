@@ -21,7 +21,7 @@
 	}: Props = $props();
 </script>
 
-<div class="flex w-full flex-col items-start justify-center gap-6">
+<div class="flex w-full flex-col items-start justify-center gap-3">
 	<Badge>{badge}</Badge>
 	<div class={gridClass}>
 		<h2 class={titleClass}>

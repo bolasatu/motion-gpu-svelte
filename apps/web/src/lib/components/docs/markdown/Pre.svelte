@@ -13,7 +13,7 @@
 <pre
 	{...rest}
 	data-md-pre
-	class={`verflow-x-auto bg-background px-4 font-mono text-sm text-foreground ${className}`.trim()}>
+	class={`overflow-x-auto bg-background px-4 font-mono text-sm text-foreground ${className}`.trim()}>
 	{@render children?.()}
 </pre>
 

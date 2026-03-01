@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { cubicOut } from 'svelte/easing';
-	import { blur, fly } from 'svelte/transition';
 	import type { ThemedToken } from 'shiki';
 	import Button from '../ui/Button.svelte';
 
@@ -26,9 +24,6 @@
 	let isReady = $state(false);
 	let previewPanel = $state<HTMLDivElement | null>(null);
 
-	let rafId: number | null = null;
-	let lastTs = 0;
-
 	function normalizeCode(code: string): string {
 		const normalized = code.replace(/\r\n?/g, '\n');
 		return normalized.endsWith('\n') ? normalized.slice(0, -1) : normalized;
@@ -47,15 +42,9 @@
 
 	const cyclePosMs = $derived(elapsedMs % totalCycleMs);
 	const activeIndex = $derived(cyclePosMs < cycleMs ? 0 : 1);
-	const progress = $derived(
-		cyclePosMs < cycleMs
-			? ([Math.min(1, cyclePosMs / cycleMs), 0] as [number, number])
-			: ([1, Math.min(1, (cyclePosMs - cycleMs) / cycleMs)] as [number, number])
-	);
 
 	const activeFile = $derived(normalizedFiles[activeIndex] ?? normalizedFiles[0]);
 	const activeLines = $derived(highlighted[activeFile.id] ?? []);
-	const tabIndicatorStyle = $derived(`transform:translateX(${activeIndex * 100}%);`);
 	const activeTabId = $derived(`code-preview-tab-${activeFile.id}`);
 
 	function tokenStyle(token: ThemedToken): string {
@@ -129,37 +118,8 @@
 		}
 	}
 
-	function animate(ts: number) {
-		if (lastTs === 0) lastTs = ts;
-		elapsedMs += ts - lastTs;
-		if (elapsedMs > totalCycleMs) {
-			elapsedMs %= totalCycleMs;
-		}
-		lastTs = ts;
-
-		rafId = requestAnimationFrame(animate);
-	}
-
-	function startAnimation() {
-		if (rafId !== null) return;
-		rafId = requestAnimationFrame(animate);
-	}
-
-	function stopAnimation() {
-		if (rafId !== null) {
-			cancelAnimationFrame(rafId);
-			rafId = null;
-		}
-		lastTs = 0;
-	}
-
 	onMount(() => {
 		void loadHighlightedTokens();
-		startAnimation();
-
-		return () => {
-			stopAnimation();
-		};
 	});
 
 	$effect(() => {
@@ -169,41 +129,44 @@
 	});
 </script>
 
-<div class="grid w-full text-background" role="region" aria-label="Code preview">
+<div
+	class="grid w-full border border-border text-background"
+	role="region"
+	aria-label="Code preview"
+>
 	<div class="grid items-center gap-2">
 		<div
-			class="relative grid w-full grid-cols-2 items-center overflow-hidden"
+			class="relative flex h-8 w-full items-center border-b border-border"
 			role="tablist"
 			aria-label="Preview files"
 		>
-			<div
-				aria-hidden="true"
-				class="pointer-events-none absolute inset-y-0 left-0 z-0 w-1/2 bg-background transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-				style={tabIndicatorStyle}
-			></div>
 			{#each files as file, index (file.id)}
-				<Button
-					type="button"
-					variant="ghost"
-					size="none"
-					role="tab"
-					id={`code-preview-tab-${file.id}`}
-					aria-selected={index === activeIndex}
-					aria-controls="code-preview-panel"
-					tabindex={index === activeIndex ? 0 : -1}
-					onclick={() => setActive(index)}
-					onkeydown={(event: KeyboardEvent) => handleTabKeydown(event, index)}
-					class={`relative z-10 w-full justify-center px-3 py-2 font-mono text-xs transition-colors duration-300 focus-visible:ring-offset-0 ${
-						index === activeIndex ? 'text-foreground' : 'text-foreground/70 hover:text-foreground'
-					}`}
-				>
-					{file.label}
-				</Button>
+				<div class="group inline-flex shrink-0 items-center">
+					<Button
+						type="button"
+						variant="ghost"
+						size="none"
+						role="tab"
+						id={`code-preview-tab-${file.id}`}
+						aria-selected={index === activeIndex}
+						aria-controls="code-preview-panel"
+						tabindex={index === activeIndex ? 0 : -1}
+						onclick={() => setActive(index)}
+						onkeydown={(event: KeyboardEvent) => handleTabKeydown(event, index)}
+						class={`relative z-10 justify-start border-t border-r px-3 py-2 font-mono text-xs font-[350] tracking-normal transition-colors  focus-visible:ring-offset-0 ${
+							index === activeIndex
+								? 'border-border bg-white text-foreground hover:bg-white'
+								: 'border-t-border/40 border-r-border bg-background text-foreground/70 hover:bg-background hover:text-foreground'
+						}`}
+					>
+						{file.label}
+					</Button>
+				</div>
 			{/each}
 		</div>
 	</div>
 
-	<div class="grid gap-3 bg-background p-4">
+	<div class="grid gap-3">
 		<div class="overflow-hidden bg-white">
 			{#if !isReady}
 				<div
@@ -222,7 +185,7 @@
 			{:else}
 				<div
 					id="code-preview-panel"
-					class="h-72 overflow-auto overscroll-none font-normal sm:h-96"
+					class="h-72 overflow-auto overscroll-none sm:h-96"
 					role="tabpanel"
 					tabindex="0"
 					aria-live="off"
@@ -231,39 +194,16 @@
 				>
 					<div class="grid min-w-max font-mono text-xs leading-5 [grid-template-areas:'preview']">
 						{#key activeFile.id}
-							<div class="[grid-area:preview] grid min-w-max grid-cols-[3.25rem_auto]">
-								<div
-									class="bg-background-muted py-3 text-right text-xs text-foreground"
-									aria-hidden="true"
-								>
+							<div class="grid min-w-max grid-cols-[3.25rem_auto] [grid-area:preview]">
+								<div class="py-3 text-right text-xs text-foreground" aria-hidden="true">
 									{#each activeFile.lines as _, lineIndex (`line-${lineIndex}`)}
 										<div class="px-3 py-0.5">{lineIndex + 1}</div>
 									{/each}
 								</div>
 
 								<div class="py-3">
-									<div
-										in:fly={{
-											x: 20,
-											duration: 360,
-											easing: cubicOut
-										}}
-										out:fly={{
-											x: -20,
-											duration: 360,
-											easing: cubicOut
-										}}
-									>
-										<div
-											in:blur={{
-												amount: 8,
-												duration: 300
-											}}
-											out:blur={{
-												amount: 8,
-												duration: 300
-											}}
-										>
+									<div>
+										<div>
 											{#if activeLines.length > 0}
 												{#each activeFile.lines as rawLine, lineIndex (`line-${lineIndex}`)}
 													<div class="px-4 whitespace-pre">
@@ -289,15 +229,6 @@
 					</div>
 				</div>
 			{/if}
-		</div>
-	</div>
-
-	<div class="mt-3 grid grid-cols-2 gap-3" aria-hidden="true">
-		<div class="h-1 w-full overflow-hidden bg-background">
-			<div class="h-full bg-foreground/35" style={`width:${(progress[0] * 100).toFixed(2)}%`}></div>
-		</div>
-		<div class="h-1 w-full overflow-hidden bg-background">
-			<div class="h-full bg-foreground/35" style={`width:${(progress[1] * 100).toFixed(2)}%`}></div>
 		</div>
 	</div>
 </div>

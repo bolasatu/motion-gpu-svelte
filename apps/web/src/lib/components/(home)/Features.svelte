@@ -48,18 +48,18 @@
 	</LandingSectionHeader>
 	<div class="mt-6 grid w-full grid-cols-1 gap-6 sm:mt-12 xl:grid-cols-3">
 		{#each cards as card (card.number)}
-			<article class="grid min-h-72 bg-background p-4 sm:min-h-96 sm:p-8">
+			<article class="grid min-h-72 border border-border bg-background p-4 sm:min-h-96 sm:p-8">
 				<div class="flex items-start justify-between">
-					<div class="grid size-12 place-items-center bg-accent text-background">
+					<div class="grid size-12 place-items-center text-foreground">
 						{#if card.icon === 'chart'}
-							<Blockchain size={24} />
+							<Blockchain size={32} />
 						{:else if card.icon === 'stack'}
-							<Layers size={24} />
+							<Layers size={32} />
 						{:else}
-							<Chart_3D size={24} />
+							<Chart_3D size={32} />
 						{/if}
 					</div>
-					<div class="bg-background-muted px-6 py-2 font-fono text-sm">
+					<div class="border border-border bg-background-muted px-6 py-2 font-fono text-sm">
 						{card.number}
 					</div>
 				</div>

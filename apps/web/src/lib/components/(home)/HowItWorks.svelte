@@ -84,22 +84,22 @@
 							? 'pl-14 sm:col-start-1 sm:pl-0'
 							: 'pl-14 sm:col-start-3 sm:pl-0'}
 					>
-						<article class="grid min-h-72 bg-background p-4 sm:p-8">
+						<article class="grid min-h-72 border border-border bg-background p-4 sm:p-8">
 							<div class="flex items-start justify-between">
-								<div class="grid size-12 place-items-center bg-accent text-background">
+								<div class="grid size-12 place-items-center text-foreground">
 									{#if step.icon === 'material'}
-										<Code size={24} />
+										<Code size={32} />
 									{:else if step.icon === 'inputs'}
-										<DataEnrichment size={24} />
+										<DataEnrichment size={32} />
 									{:else if step.icon === 'runtime'}
-										<Touch_1Down size={24} />
+										<Touch_1Down size={32} />
 									{:else if step.icon === 'passes'}
-										<ModelAlt size={24} />
+										<ModelAlt size={32} />
 									{:else}
-										<WarningAlt size={24} />
+										<WarningAlt size={32} />
 									{/if}
 								</div>
-								<div class="bg-background-muted px-6 py-2 font-fono text-sm">
+								<div class="border border-border bg-background-muted px-6 py-2 font-fono text-sm">
 									{step.number}
 								</div>
 							</div>

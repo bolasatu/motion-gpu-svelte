@@ -23,8 +23,8 @@
 </script>
 
 <LandingSection id="about">
-	<div class="grid w-full grid-cols-3 gap-6">
-		<div class="col-span-3 sm:col-span-2">
+	<div class="grid w-full grid-cols-2 gap-6">
+		<div class="col-span-2 sm:col-span-1">
 			<div class="flex w-full flex-col items-start justify-center gap-3">
 				<Badge>About</Badge>
 				<h2 class="max-w-2xl text-2xl tracking-tight text-balance sm:text-5xl">
@@ -40,7 +40,7 @@
 				<CodePreview files={previewFiles} />
 			</div>
 		</div>
-		<div class="col-span-3 min-h-72 overflow-hidden sm:col-span-1">
+		<div class="col-span-2 min-h-72 overflow-hidden sm:col-span-1">
 			<GlassPane
 				{image}
 				distortion={0.5}

@@ -16,7 +16,7 @@
 					link: 'h-auto p-0 text-foreground underline-offset-4 hover:underline'
 				},
 				size: {
-					sm: 'h-8 px-3 text-xs',
+					sm: 'h-8 px-5 text-xs',
 					md: 'h-10 px-5',
 					lg: 'h-11 px-6',
 					icon: 'size-10 p-0',
