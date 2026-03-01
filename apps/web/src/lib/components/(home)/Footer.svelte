@@ -40,7 +40,7 @@
 					<li>
 						<a
 							href={resolve(item.route as '/')}
-							class="text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+							class="text-sm text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 							>&#8627; {item.label}</a
 						>
 					</li>
@@ -48,7 +48,7 @@
 				<li>
 					<a
 						href="#features"
-						class="text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+						class="text-sm text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 						>&#8627; Features</a
 					>
 				</li>
@@ -64,7 +64,7 @@
 							href={item.href}
 							target="_blank"
 							rel="external noreferrer"
-							class="text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+							class="text-sm text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 							>&#8627; {item.label}</a
 						>
 					</li>

@@ -33,7 +33,7 @@
 	<nav class="flex-1 overflow-y-auto px-2 py-3">
 		{#each docsRouteGroups as group (group.id)}
 			<section class="mt-5 first:mt-0">
-				<p class="px-2 pb-1 font-mono text-[10px] text-foreground-muted uppercase">
+				<p class="px-2 pb-1 font-mono text-[10px] tracking-wide text-foreground-muted uppercase">
 					{group.title}
 				</p>
 				<ul class="grid gap-1 px-2">

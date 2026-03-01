@@ -10,6 +10,7 @@
 			variants: {
 				variant: {
 					primary: 'bg-foreground text-background hover:bg-foreground/90',
+					brand: 'bg-accent text-background hover:bg-accent/90',
 					secondary: 'bg-background-muted text-foreground hover:bg-background',
 					outline: 'border border-border text-foreground hover:bg-background',
 					ghost: 'text-foreground hover:bg-background',

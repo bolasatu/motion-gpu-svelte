@@ -5,6 +5,7 @@
 	import { fade, fly } from 'svelte/transition';
 	import Book from 'carbon-icons-svelte/lib/Book.svelte';
 	import Close from 'carbon-icons-svelte/lib/Close.svelte';
+	import WatsonHealth3DPrintMesh from 'carbon-icons-svelte/lib/WatsonHealth3DPrintMesh.svelte';
 	import LogoGithub from 'carbon-icons-svelte/lib/LogoGithub.svelte';
 	import Menu from 'carbon-icons-svelte/lib/Menu.svelte';
 	import Button from '../ui/Button.svelte';
@@ -12,6 +13,7 @@
 
 	const homeRoute = '/' as const;
 	const docsRoute = '/docs' as const;
+	const playgroundRoute = '/playground' as const;
 	const focusableSelectors = 'a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 	let mobileOpen = $state(false);
@@ -122,7 +124,7 @@
 	aria-label="Primary navigation"
 	class="fixed top-3 left-1/2 z-60 w-full -translate-x-1/2 px-4 sm:px-8"
 >
-	<div class="bg-background-muted/70 backdrop-blur-xl">
+	<div class="bg-background-muted/55 backdrop-blur-xl">
 		<div class="relative flex items-center justify-between gap-3 px-3 py-2 sm:px-4">
 			<a
 				href={resolve(homeRoute)}
@@ -182,6 +184,10 @@
 					<LogoGithub size={16} />
 					<span>GitHub</span>
 				</Button>
+				<Button variant="brand" href={resolve(playgroundRoute as '/playground')} size="sm">
+					<WatsonHealth3DPrintMesh size={16} />
+					<span>Playground</span>
+				</Button>
 			</div>
 
 			<button
@@ -220,7 +226,7 @@
 		aria-modal="true"
 		aria-label="Mobile navigation"
 		tabindex="-1"
-		class="fixed top-20 left-1/2 z-50 grid w-[min(92vw,30rem)] -translate-x-1/2 gap-2 bg-background-muted/70 p-3 backdrop-blur-xl sm:hidden"
+		class="fixed top-20 left-1/2 z-50 grid w-[min(92vw,30rem)] -translate-x-1/2 gap-2 bg-background-muted/55 p-3 backdrop-blur-xl sm:hidden"
 		onkeydown={handleMobilePanelKeydown}
 		bind:this={mobilePanel}
 		in:fly={{ y: reducedMotion ? 0 : -12, duration: reducedMotion ? 0 : 240, easing: cubicOut }}
@@ -231,7 +237,7 @@
 			onclick={handleMenuLinkSelect}
 			variant="ghost"
 			size="none"
-			class="justify-start rounded-xl px-3 py-2"
+			class="justify-start rounded-xl px-3 py-2 font-normal"
 		>
 			<span>Home</span>
 		</Button>
@@ -240,7 +246,7 @@
 			onclick={handleMenuLinkSelect}
 			variant="ghost"
 			size="none"
-			class="justify-start rounded-xl px-3 py-2"
+			class="justify-start rounded-xl px-3 py-2 font-normal"
 		>
 			<span>About</span>
 		</Button>
@@ -249,7 +255,7 @@
 			onclick={handleMenuLinkSelect}
 			variant="ghost"
 			size="none"
-			class="justify-start rounded-xl px-3 py-2"
+			class="justify-start rounded-xl px-3 py-2 font-normal"
 		>
 			<span>Features</span>
 		</Button>
@@ -258,7 +264,7 @@
 			onclick={handleMenuLinkSelect}
 			variant="ghost"
 			size="none"
-			class="justify-start rounded-xl px-3 py-2"
+			class="justify-start rounded-xl px-3 py-2 font-normal"
 		>
 			<span>Pipeline</span>
 		</Button>
@@ -282,6 +288,15 @@
 			>
 				<LogoGithub size={16} />
 				<span>GitHub</span>
+			</Button>
+			<Button
+				class="col-span-2"
+				variant="brand"
+				href={resolve(playgroundRoute as '/playground')}
+				size="sm"
+			>
+				<WatsonHealth3DPrintMesh size={16} />
+				<span>Playground</span>
 			</Button>
 		</div>
 	</div>

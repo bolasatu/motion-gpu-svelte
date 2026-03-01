@@ -119,7 +119,7 @@
 </script>
 
 <nav class="fixed top-3 left-1/2 z-80 w-full -translate-x-1/2 px-4 lg:hidden">
-	<div class="bg-background-muted/70 backdrop-blur-xl">
+	<div class="bg-background-muted/55 backdrop-blur-xl">
 		<div class="flex items-center justify-between gap-3 px-3 py-2">
 			<a href={resolve(homeRoute)} class="inline-flex items-center gap-2 p-2">
 				<div class="inline-flex items-center gap-1">
@@ -169,7 +169,7 @@
 		aria-modal="true"
 		aria-label="Mobile docs navigation"
 		tabindex="-1"
-		class="fixed top-20 left-1/2 z-85 grid w-[min(92vw,30rem)] -translate-x-1/2 gap-3 bg-background-muted/70 p-3 backdrop-blur-xl lg:hidden"
+		class="fixed top-20 left-1/2 z-85 grid w-[min(92vw,30rem)] -translate-x-1/2 gap-3 bg-background-muted/55 p-3 backdrop-blur-xl lg:hidden"
 		onkeydown={handlePanelKeydown}
 		bind:this={panel}
 		in:fly={{ y: reducedMotion ? 0 : -12, duration: reducedMotion ? 0 : 240, easing: cubicOut }}

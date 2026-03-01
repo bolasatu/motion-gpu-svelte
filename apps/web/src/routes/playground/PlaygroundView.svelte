@@ -384,7 +384,7 @@
 									Runtime log ({controller.status})
 								</summary>
 								<pre
-									class="max-h-32 overflow-auto border-t border-border bg-white px-3 py-2 font-mono text-[11px] leading-5 whitespace-pre-wrap text-foreground-muted">{controller.runtimeLogTail}</pre>
+									class="h-32 overflow-auto border-t border-border bg-white px-3 py-2 font-mono text-[11px] leading-5 whitespace-pre-wrap text-foreground-muted">{controller.runtimeLogTail}</pre>
 							</details>
 						{:else}
 							<p class="border-t border-border px-3 py-2 font-mono text-xs text-foreground-muted">

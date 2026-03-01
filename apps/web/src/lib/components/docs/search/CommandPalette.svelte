@@ -170,7 +170,7 @@
 										'group relative w-full border-b border-border px-3 py-2 text-left transition-colors',
 										isChild && 'pl-7',
 										selectedIndex === index
-											? 'bg-background-muted/65 text-foreground'
+											? 'bg-background-muted/55 text-foreground'
 											: 'bg-card text-foreground hover:bg-background'
 									)}
 								>
