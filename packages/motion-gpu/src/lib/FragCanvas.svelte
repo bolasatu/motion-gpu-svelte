@@ -489,7 +489,7 @@
 		--motiongpu-color-foreground-muted: #747474;
 		--motiongpu-color-card: #f4f4f4;
 		--motiongpu-color-accent: #ff6900;
-		--motiongpu-color-border: #e0e0e0;
+		--motiongpu-color-border: rgba(107, 107, 107, 0.15);
 		position: fixed;
 		inset: 0;
 		display: grid;
