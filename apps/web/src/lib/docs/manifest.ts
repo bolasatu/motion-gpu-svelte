@@ -18,18 +18,37 @@ export const docsRouteGroups: DocRouteGroup[] = [
 			{
 				slug: '',
 				title: 'Overview',
-				description: 'Core mental model and map of the MotionGPU documentation.'
+				description: 'Core mental model, package anatomy, and map of the MotionGPU documentation.'
 			},
 			{
 				slug: 'concepts-and-architecture',
 				title: 'Concepts and Architecture',
 				description:
-					'Core runtime goals and architecture: canvas ownership, material pipeline, renderer, and scheduler.'
+					'Design goals, runtime lifecycle, rebuild policy, data flow, and scheduling architecture.'
 			},
 			{
 				slug: 'getting-started',
 				title: 'Getting Started',
-				description: 'Install MotionGPU and build your first fullscreen shader runtime in Svelte 5.'
+				description:
+					'Install MotionGPU and build your first fullscreen shader runtime in Svelte 5, step by step.'
+			}
+		]
+	},
+	{
+		id: 'shader-authoring',
+		title: 'Shader Authoring',
+		entries: [
+			{
+				slug: 'writing-shaders',
+				title: 'Writing WGSL Shaders',
+				description:
+					'WGSL basics for MotionGPU: the fragment contract, built-in bindings, coordinate space, and common patterns.'
+			},
+			{
+				slug: 'shader-includes-and-defines',
+				title: 'Includes and Defines',
+				description:
+					'The #include preprocessor, typed define constants, expansion ordering, and source-map diagnostics.'
 			}
 		]
 	},
@@ -38,64 +57,106 @@ export const docsRouteGroups: DocRouteGroup[] = [
 		title: 'Runtime Systems',
 		entries: [
 			{
-				slug: 'material-system',
-				title: 'Material System',
+				slug: 'defining-materials',
+				title: 'Defining Materials',
 				description:
-					'Material contract, uniforms, includes, defines, and deterministic signature behavior.'
+					'The defineMaterial() API: validation, immutability, signature caching, and practical authoring guidance.'
 			},
 			{
-				slug: 'texture-system',
-				title: 'Texture System',
+				slug: 'uniforms',
+				title: 'Uniforms',
 				description:
-					'Texture declarations, update modes, mipmaps, and reactive URL loading with useTexture.'
+					'Uniform input forms, type inference, WGSL alignment and packing rules, and runtime updates with setUniform.'
+			},
+			{
+				slug: 'textures',
+				title: 'Texture Definitions',
+				description:
+					'TextureDefinition fields, source types, update modes, upload behavior, mipmaps, and sampler configuration.'
+			},
+			{
+				slug: 'texture-loading',
+				title: 'Loading Textures',
+				description:
+					'The useTexture hook: TextureLoadOptions, blob caching, abort and reload race safety, and reactive state.'
 			},
 			{
 				slug: 'frame-scheduler',
-				title: 'Frame Scheduler and Render Modes',
+				title: 'Frame Scheduler',
 				description:
-					'Task ordering, stage orchestration, render invalidation, and runtime profiling APIs.'
+					'useFrame overloads, UseFrameOptions, invalidation policies, and the FrameState callback API.'
+			},
+			{
+				slug: 'render-modes',
+				title: 'Render Modes and Scheduling',
+				description:
+					'always, on-demand, and manual render modes, the stages API, dependency ordering, and profiling.'
 			},
 			{
 				slug: 'render-passes',
-				title: 'Render Passes and Render Targets',
+				title: 'Render Passes',
 				description:
-					'Render graph planning, ping-pong flow, and built-in pass types for post-processing.'
+					'Render graph planning, slot semantics, BlitPass, CopyPass, ShaderPass, and pass lifecycle.'
 			},
 			{
-				slug: 'hooks-and-context',
-				title: 'Hooks and Context',
+				slug: 'render-targets',
+				title: 'Render Targets',
 				description:
-					'Runtime hooks for context access, per-frame updates, texture loading, and advanced user state.'
+					'RenderTargetDefinitionMap: resolution rules, scale and explicit dimensions, and format selection.'
 			}
 		]
 	},
 	{
-		id: 'reliability-and-reference',
-		title: 'Reliability and Reference',
+		id: 'context-and-hooks',
+		title: 'Context and Hooks',
 		entries: [
 			{
-				slug: 'error-handling-and-diagnostics',
+				slug: 'hooks-and-context',
+				title: 'Hooks and Context',
+				description:
+					'useMotionGPU() context shape, the CurrentWritable pattern, reactive store access, and integration patterns.'
+			},
+			{
+				slug: 'user-context',
+				title: 'User Context (Advanced)',
+				description:
+					'useMotionGPUUserContext overloads, conflict strategies (skip, replace, merge), and plugin state patterns.'
+			}
+		]
+	},
+	{
+		id: 'reference-and-reliability',
+		title: 'Reference and Reliability',
+		entries: [
+			{
+				slug: 'error-handling',
 				title: 'Error Handling and Diagnostics',
 				description:
-					'Normalized error reporting, diagnostics overlay behavior, and known failure classifications.'
+					'Normalized error reporting, classification patterns, overlay behavior, shader compile diagnostics, and retry strategy.'
+			},
+			{
+				slug: 'fragcanvas-reference',
+				title: 'FragCanvas Reference',
+				description:
+					'Complete FragCanvas props reference with types, defaults, lifecycle, error callbacks, and styling.'
 			},
 			{
 				slug: 'api-reference',
 				title: 'API Reference',
 				description:
-					'Complete reference of root and advanced exports, props, and material/runtime APIs.'
+					'Complete export tables for root and advanced entrypoints, type groups, FrameState, and RenderPassContext.'
 			},
 			{
 				slug: 'examples',
 				title: 'Examples',
 				description:
-					'Practical integration examples for animation loops, on-demand rendering, and pass pipelines.'
+					'Worked integration examples: animation loops, on-demand rendering, textures, post-processing, and more.'
 			},
 			{
-				slug: 'testing-and-internal-notes',
+				slug: 'testing-and-internals',
 				title: 'Testing and Internal Notes',
 				description:
-					'Test coverage scope, enforced runtime contracts, and key implementation details.'
+					'Test coverage map, enforced runtime contracts, implementation details, build commands, and caveats.'
 			}
 		]
 	}

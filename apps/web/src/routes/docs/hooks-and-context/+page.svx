@@ -2,101 +2,149 @@
 layout: docs
 ---
 
-## `useMotionGPU()`
+This page covers the `useMotionGPU()` hook for accessing the runtime context, the `CurrentWritable` pattern for synchronous value access, and recommended integration patterns.
 
-`useMotionGPU()` reads runtime context provided by `FragCanvas`.
+For advanced user-defined context, see [User Context (Advanced)](/docs/user-context).
 
-Outside `FragCanvas`, it throws:
+## useMotionGPU()
 
-- `useMotionGPU must be used inside <FragCanvas>`
+`useMotionGPU()` returns the `MotionGPUContext` — the primary API for reading runtime state and controlling rendering from within `FragCanvas` children.
 
-## Context shape
+```svelte
+<script lang="ts">
+  import { useMotionGPU } from '@motion-core/motion-gpu';
 
-| Field | Type | Description |
+  const gpu = useMotionGPU();
+</script>
+```
+
+Must be called inside a `<FragCanvas>` component tree. Calling it outside throws.
+
+## MotionGPUContext shape
+
+### Reactive stores
+
+| Store | Type | Description |
 | --- | --- | --- |
-| `canvas` | `HTMLCanvasElement \| undefined` | Runtime canvas reference. |
-| `size` | `CurrentReadable<{ width: number; height: number }>` | Reactive pixel size. |
-| `dpr` | `CurrentWritable<number>` | Runtime DPR multiplier store. |
-| `maxDelta` | `CurrentWritable<number>` | Scheduler delta clamp store. |
-| `renderMode` | `CurrentWritable<'always' \| 'on-demand' \| 'manual'>` | Mode store. |
-| `autoRender` | `CurrentWritable<boolean>` | Global render gate. |
-| `user` | `CurrentWritable<Record<string \| symbol, unknown>>` | Shared namespaced user data. |
-| `invalidate` | `() => void` | Mark frame invalid for on-demand flow. |
-| `advance` | `() => void` | Request one manual frame. |
-| `scheduler` | scheduler API subset | Stage, diagnostics, profiling controls. |
+| `gpu.size` | `CurrentReadable<{ width: number; height: number }>` | Canvas size in physical pixels |
+| `gpu.dpr` | `CurrentWritable<number>` | Device pixel ratio |
+| `gpu.maxDelta` | `CurrentWritable<number>` | Max frame delta (seconds) |
+| `gpu.renderMode` | `CurrentWritable<RenderMode>` | Current render mode |
+| `gpu.autoRender` | `CurrentWritable<boolean>` | Auto-render gate |
+| `gpu.user` | `CurrentWritable<Record<string \| symbol, unknown>>` | User-defined namespace store |
 
-## `useFrame(...)`
+### Direct values
 
-`useFrame` is hook-level access to scheduler task registration.
+| Property | Type | Description |
+| --- | --- | --- |
+| `gpu.canvas` | `HTMLCanvasElement \| undefined` | The active canvas element (undefined until mounted) |
 
-Typical usage:
+### Control methods
+
+| Method | Description |
+| --- | --- |
+| `gpu.invalidate()` | Request re-render in `on-demand` mode |
+| `gpu.advance()` | Request exactly one frame in `manual` mode |
+
+### Scheduler access
+
+| Method | Description |
+| --- | --- |
+| `gpu.scheduler.createStage(key, options)` | Creates a named execution stage |
+| `gpu.scheduler.getSchedule()` | Returns resolved stage/task order |
+| `gpu.scheduler.setDiagnosticsEnabled(flag)` | Enable/disable single-frame timing |
+| `gpu.scheduler.setProfilingEnabled(flag)` | Enable/disable rolling profiling |
+| `gpu.scheduler.setProfilingWindow(n)` | Set rolling window size |
+| `gpu.scheduler.getLastRunTimings()` | Last frame's timing data |
+| `gpu.scheduler.getProfilingSnapshot()` | Aggregate profiling stats |
+| `gpu.scheduler.resetProfiling()` | Clear profiling history |
+
+## The CurrentWritable / CurrentReadable pattern
+
+Standard Svelte stores require subscription to read values. In `useFrame` callbacks (which run 60 times per second), subscribing and unsubscribing per read is wasteful.
+
+`CurrentWritable<T>` and `CurrentReadable<T>` extend Svelte store contracts with a synchronous `.current` getter:
 
 ```ts
-useFrame('camera-update', (state) => {
-	state.setUniform('uTime', state.time);
-});
+// Standard Svelte store — requires subscription
+let value: number;
+const unsub = gpu.maxDelta.subscribe(v => { value = v; });
+// ... use value ...
+unsub();
+
+// CurrentWritable — zero-overhead synchronous read
+const value = gpu.maxDelta.current; // Instant, no subscription
 ```
 
-`state` shape includes:
+### API
 
-| Field | Description |
+| Method | Description |
 | --- | --- |
-| `time`, `delta` | frame timing values |
-| `setUniform(name, value)` | runtime uniform override |
-| `setTexture(name, value)` | runtime texture override |
-| `invalidate(token?)` | invalidation trigger |
-| `advance()` | manual step trigger |
-| `renderMode`, `autoRender` | current scheduler mode state |
-| `canvas` | active canvas element |
+| `.current` | Synchronous read of the latest value |
+| `.set(value)` | Update the value (writable only) |
+| `.subscribe(fn)` | Standard Svelte subscription |
 
-## `useTexture(...)`
+### When to use which
 
-`useTexture` loads texture URLs and exposes current state through `CurrentReadable` stores.
+| Context | Use |
+| --- | --- |
+| Inside `useFrame` callbacks | `.current` (runs 60+ times/sec) |
+| Svelte reactive blocks (`$effect`, templates) | Standard `$store` subscription |
+| One-off reads outside reactive blocks | `.current` |
 
-```ts
-const tex = useTexture(['/assets/a.png']);
+## Integration patterns
 
-useFrame((state) => {
-	const first = tex.textures.current?.[0];
-	state.setTexture('uMain', first ? { source: first.source } : null);
-});
+### Reading canvas size
+
+```svelte
+<script lang="ts">
+  import { useMotionGPU } from '@motion-core/motion-gpu';
+  const gpu = useMotionGPU();
+</script>
+
+<p>Canvas: {$gpu.size.width}×{$gpu.size.height} @ {$gpu.dpr}x</p>
 ```
 
-## Advanced: `useMotionGPUUserContext(...)`
+### Conditional rendering control
 
-Import path:
+```svelte
+<script lang="ts">
+  import { useMotionGPU } from '@motion-core/motion-gpu';
+  const gpu = useMotionGPU();
 
-```ts
-import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
+  function togglePause() {
+    gpu.autoRender.set(!gpu.autoRender.current);
+  }
+</script>
+
+<button onclick={togglePause}>
+  {$gpu.autoRender ? 'Pause' : 'Resume'}
+</button>
 ```
 
-Overloads:
+### On-demand with external triggers
 
-| Call | Result |
-| --- | --- |
-| `useMotionGPUUserContext()` | full user store readable |
-| `useMotionGPUUserContext(namespace)` | namespaced readable |
-| `useMotionGPUUserContext(namespace, value, options?)` | set/merge/replace and return resolved value |
+```svelte
+<script lang="ts">
+  import { useMotionGPU, useFrame } from '@motion-core/motion-gpu';
 
-Conflict strategy (`options.existing`):
+  const gpu = useMotionGPU();
 
-| Mode | Behavior |
-| --- | --- |
-| `skip` (default) | Keep existing value if namespace already exists |
-| `replace` | Always overwrite namespace value |
-| `merge` | Shallow-merge plain object entries; fallback to replace otherwise |
+  $effect(() => {
+    gpu.renderMode.set('on-demand');
+  });
 
-## `CurrentWritable` pattern
+  $effect(() => {
+    const canvas = gpu.canvas;
+    if (!canvas) return;
 
-Many MotionGPU APIs expose `CurrentWritable<T>`:
+    const handler = () => gpu.invalidate();
+    canvas.addEventListener('pointermove', handler);
+    return () => canvas.removeEventListener('pointermove', handler);
+  });
 
-- Svelte store API (`subscribe`, `set`, `update`),
-- synchronous `.current` getter for zero-subscription reads.
-
-This pattern is used for performance-sensitive runtime state access.
-
-## Recommended integration patterns
-
-1. Keep render control (`renderMode`, `autoRender`) in dedicated runtime child component.
-2. Co-locate frame tasks near state owners and use explicit task keys for large scenes.
-3. Reserve `useMotionGPUUserContext` for plugin/module boundaries, not trivial local state.
+  useFrame((state) => {
+    state.setUniform('uTime', state.time);
+  }, { autoInvalidate: false });
+</script>
+```

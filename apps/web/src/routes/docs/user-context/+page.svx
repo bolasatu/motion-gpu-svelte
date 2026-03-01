@@ -1,0 +1,152 @@
+---
+layout: docs
+---
+
+`useMotionGPUUserContext` is an advanced hook that enables **namespaced, reactive shared state** within the MotionGPU runtime. It is designed for plugin-like patterns where multiple independent components need to read and write shared data.
+
+This hook is exported from the **advanced entrypoint**:
+
+```ts
+import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
+```
+
+## Why use user context?
+
+Standard Svelte context (`setContext` / `getContext`) is **read-only once set** and tightly coupled to component hierarchy. `useMotionGPUUserContext` provides:
+
+- **Namespaced keys** — multiple plugins write to different namespaces without conflicts.
+- **Conflict strategies** — `skip`, `replace`, or `merge` when a namespace already exists.
+- **Reactive reads** — values are backed by the `user` store from `useMotionGPU()`.
+- **Write operations** — update values from any component in the tree.
+
+## Overloads
+
+### Read the entire user context
+
+```ts
+const allState = useMotionGPUUserContext();
+// Returns the full user context store (MotionGPUUserContext — writable store)
+```
+
+### Read a namespace
+
+```ts
+const orbit = useMotionGPUUserContext<{ enabled: boolean; speed: number }>('orbit-controls');
+// Returns a CurrentReadable store for key 'orbit-controls'
+```
+
+### Write a namespace
+
+```ts
+useMotionGPUUserContext('orbit-controls', () => ({
+  enabled: true,
+  speed: 1.0
+}), { existing: 'skip' });
+```
+
+The second argument is a **factory function** that produces the initial value. It is only called if needed (based on the conflict strategy).
+
+## SetMotionGPUUserContextOptions
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `existing` | `'skip'` \| `'replace'` \| `'merge'` | `'skip'` | What to do if the namespace already has a value |
+
+### Conflict strategies
+
+| Strategy | Behaviour |
+| --- | --- |
+| `'skip'` | If namespace exists, ignore the new value. Factory is not called. |
+| `'replace'` | Overwrite the namespace with the new value. |
+| `'merge'` | Shallow-merge new value into existing value (`{ ...existing, ...new }`). |
+
+## Return value
+
+The return value depends on the overload:
+
+| Overload | Return type |
+| --- | --- |
+| `useMotionGPUUserContext()` | `MotionGPUUserContext` (full writable store: `.current`, `.set`, `.update`, `.subscribe`) |
+| `useMotionGPUUserContext(namespace)` | `CurrentReadable<T \| undefined>` (reactive namespace view) |
+| `useMotionGPUUserContext(namespace, factory, options?)` | `T` (the effective value at namespace) |
+
+### Full context (store API)
+
+When called without arguments, you get the full `MotionGPUUserContext` — the current state and store methods:
+
+| Method | Description |
+| --- | --- |
+| `.current` | Current value of the entire context (object) |
+| `.set(value)` | Sets the entire context |
+| `.update(updater)` | Updates the context based on previous value |
+| `.subscribe(run)` | Standard Svelte subscription |
+
+## Practical patterns
+
+### Plugin initialization (skip if exists)
+
+```ts
+// PluginA.svelte — initializes only if no one else has set it
+useMotionGPUUserContext('config', () => ({
+  quality: 'high',
+  debugGrid: false
+}), { existing: 'skip' });
+```
+
+### Plugin override (replace)
+
+```ts
+// DebugPanel.svelte — force-sets debug config
+useMotionGPUUserContext('config', () => ({
+  quality: 'low',
+  debugGrid: true
+}), { existing: 'replace' });
+```
+
+### Partial updates (merge)
+
+```ts
+// QualityButton.svelte — updates only the quality field
+useMotionGPUUserContext('config', () => ({
+  quality: 'medium'
+}), { existing: 'merge' });
+```
+
+### Consuming shared state
+
+```svelte
+<script lang="ts">
+  import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
+  import { useFrame } from '@motion-core/motion-gpu';
+
+  type Config = { quality: string; debugGrid: boolean };
+  const config = useMotionGPUUserContext<Config>('config');
+
+  useFrame((state) => {
+    if (config.current?.debugGrid) {
+      // Apply debug grid logic
+    }
+  });
+</script>
+```
+
+### Full context access
+
+```svelte
+<script lang="ts">
+  import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
+
+  const ctx = useMotionGPUUserContext();
+
+  function reset() {
+    ctx.update((prev) => ({
+      ...prev,
+      config: { quality: 'high', debugGrid: false }
+    }));
+  }
+</script>
+```
+
+## Under the hood
+
+User context is stored in the `user` `CurrentWritable` store exposed by `useMotionGPU()`. The `useMotionGPUUserContext` hook is a convenience layer that provides namespacing and conflict resolution on top of this flat store.

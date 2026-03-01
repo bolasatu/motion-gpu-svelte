@@ -2,121 +2,221 @@
 layout: docs
 ---
 
-## Render graph planning
+MotionGPU supports post-processing through a **render graph** that sequences passes over ping-pong buffers. This page covers the render graph model, slot semantics, and the three built-in pass types.
 
-`planRenderGraph(passes, defaultClearColor)` turns runtime pass list into validated execution steps.
+For named render targets, see [Render Targets](/docs/render-targets).
 
-Each enabled pass resolves:
+## Render graph model
 
-- `input` (`source` or `target`)
-- `output` (`source`, `target`, or `canvas`)
-- `needsSwap`
-- `clear`, `clearColor`, `preserve`
+When you add passes to `FragCanvas`, the renderer builds an execution plan:
+
+1. The **base shader** renders your material's `fn frag(...)` into the `source` slot.
+2. Each **pass** reads from an input slot, processes the image, and writes to an output slot.
+3. After all passes execute, the **final output** is presented to the canvas.
+
+```svelte
+<FragCanvas {material} passes={[passA, passB, passC]} />
+```
+
+Without any passes, the base shader renders directly to the canvas.
+
+## Slot semantics
+
+| Slot | Purpose |
+| --- | --- |
+| `source` | Current scene/result surface |
+| `target` | Ping-pong companion (allocated when needed) |
+| `canvas` | Presentation surface (the user-visible canvas) |
+
+### Default ping-pong flow
+
+By default, passes read from `source`, write to `target`, and then **swap** the two:
+
+1. Base shader → `source`
+2. Pass A: reads `source`, writes `target` → **swap** → A's output is now in `source`
+3. Pass B: reads `source`, writes `target` → **swap** → B's output is now in `source`
+4. Final: `source` is blitted to `canvas`
+
+### Non-swapping passes
+
+If `needsSwap: false`, the pass writes to its output slot without swapping. This is useful for the final pass that writes directly to `canvas`:
+
+```ts
+const finalPass = new ShaderPass({
+  needsSwap: false,
+  input: 'source',
+  output: 'canvas',
+  fragment: `
+fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
+  return vec4f(pow(inputColor.rgb, vec3f(1.0 / 2.2)), inputColor.a);
+}
+`
+});
+```
 
 ## Validation rules
 
+`planRenderGraph(...)` validates the pass sequence before execution:
+
 | Rule | Error condition |
 | --- | --- |
-| `needsSwap: true` must be `source -> target` | Any other slot pairing with swap enabled |
-| Input slot must be available | Reading `target` before any pass writes it |
-| Disabled passes | Fully skipped from plan |
-
-## Slot model
-
-| Slot | Meaning |
-| --- | --- |
-| `source` | Current scene/result surface |
-| `target` | Ping-pong companion surface |
-| `canvas` | Presentation output surface |
-
-Without passes, final output is `canvas`.
-
-With default swapping passes, final output is usually `source` (and then blitted to canvas).
+| `needsSwap: true` must use `source → target` | Any other slot pairing with swap enabled |
+| Input slot must be available | Reading `target` before any pass has written to it |
+| Disabled passes (`enabled: false`) | Fully skipped from the plan |
 
 ## Built-in passes
 
-### `BlitPass`
+### BlitPass
 
-Fullscreen sample pass from `context.input` to `context.output`.
+Fullscreen texture sample pass. Copies `input` to `output` using a fragment shader with configurable filter mode.
 
-Defaults:
+```ts
+import { BlitPass } from '@motion-core/motion-gpu';
 
-| Field | Value |
-| --- | --- |
-| `enabled` | `true` |
-| `needsSwap` | `true` |
-| `input` | `'source'` |
-| `output` | `'target'` |
-| `clear` | `false` |
-| `preserve` | `true` |
-| `filter` | `'linear'` |
+const blit = new BlitPass({
+  filter: 'nearest' // Default: 'linear'
+});
+```
 
-### `CopyPass`
+| Option | Default | Description |
+| --- | --- | --- |
+| `enabled` | `true` | Whether this pass is active |
+| `needsSwap` | `true` | Whether to swap source/target after render |
+| `input` | `'source'` | Input slot |
+| `output` | `'target'` (if swap) | Output slot |
+| `clear` | `false` | Clear output before drawing |
+| `clearColor` | `[0,0,0,1]` | RGBA clear colour |
+| `preserve` | `true` | Preserve output after pass ends |
+| `filter` | `'linear'` | Texture sampling filter |
 
-Attempts `copyTextureToTexture` when safe, otherwise falls back to internal `BlitPass`.
+### CopyPass
 
-Direct copy path requires:
+Optimized texture copy with a fullscreen-blit fallback. Attempts `copyTextureToTexture` when possible — a GPU-side copy that avoids shader execution entirely.
 
-- no clear (`clear === false`),
-- preserve enabled,
-- source/target/canvas textures are distinct,
-- matching size and format.
+```ts
+import { CopyPass } from '@motion-core/motion-gpu';
 
-### `ShaderPass`
+const copy = new CopyPass();
+```
 
-Programmable post-process pass with required fragment function:
+**Direct copy conditions** (all must be true):
+- `clear === false`
+- `preserve === true`
+- Source and target are different textures
+- Neither is the canvas texture
+- Same width, height, and format
+
+When any condition fails, `CopyPass` falls back to an internal `BlitPass`.
+
+Options are identical to `BlitPass`.
+
+### ShaderPass
+
+Programmable post-process pass with custom WGSL fragment shader:
+
+```ts
+import { ShaderPass } from '@motion-core/motion-gpu';
+
+const vignette = new ShaderPass({
+  fragment: `
+fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
+  let dist = distance(uv, vec2f(0.5, 0.5));
+  let v = smoothstep(0.9, 0.35, dist);
+  return vec4f(inputColor.rgb * v, inputColor.a);
+}
+`
+});
+```
+
+#### Fragment contract
+
+The fragment **must** declare:
 
 ```wgsl
 fn shade(inputColor: vec4f, uv: vec2f) -> vec4f
 ```
 
-You can hot-swap shader source via `setFragment(fragment)`; pipeline cache is invalidated automatically.
+Where `inputColor` is the sampled result from the previous pass (or the base shader).
 
-## Render targets (`renderTargets`)
+#### Hot-swapping shaders
 
-Named map consumed by renderer per frame:
+You can change the shader at runtime:
 
 ```ts
-{
-	half: { scale: 0.5 },
-	bloom: { width: 640, height: 360, format: 'rgba16float' }
+vignette.setFragment(`
+fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
+  return inputColor; // Passthrough
 }
+`);
 ```
 
-Resolution rules:
+This invalidates the pipeline cache and recompiles the shader module on next render.
 
-| Field | Behavior |
+#### Options
+
+Same as `BlitPass`, plus:
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `fragment` | `string` | **Required.** WGSL shader with `fn shade(...)` |
+| `filter` | `GPUFilterMode` | Sampling filter for the input texture |
+
+## Pass lifecycle
+
+The renderer tracks each pass by object identity:
+
+| Event | Action |
 | --- | --- |
-| `width`/`height` present | explicit dimensions (floored, min 1) |
-| missing dimension | resolved as `canvasDimension * scale` |
-| missing `scale` | defaults to `1` |
-| missing `format` | defaults to canvas format |
+| Pass is new (first appearance in `passes` array) | `setSize(width, height)` is called |
+| Canvas or render target resizes | `setSize(width, height)` is called again |
+| Pass is removed from array | `dispose()` is called |
+| Renderer is destroyed | `dispose()` is called on all active passes |
 
-Invalid names/values throw during resolution.
+## Multi-pass example
 
-## Runtime pass lifecycle
+```ts
+import { ShaderPass } from '@motion-core/motion-gpu';
 
-Renderer tracks active pass identity and size:
+// Pass 1: Threshold bright pixels
+const bloomPrefilter = new ShaderPass({
+  fragment: `
+fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
+  let luma = dot(inputColor.rgb, vec3f(0.2126, 0.7152, 0.0722));
+  let threshold = step(0.8, luma);
+  return vec4f(inputColor.rgb * threshold, inputColor.a);
+}
+`
+});
 
-- `setSize(width, height)` is called when pass is new or size changed,
-- `dispose()` is called when pass is removed or renderer destroyed.
+// Pass 2: Gamma correction to canvas
+const gamma = new ShaderPass({
+  needsSwap: false,
+  input: 'source',
+  output: 'canvas',
+  fragment: `
+fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
+  return vec4f(pow(inputColor.rgb, vec3f(1.0 / 2.2)), inputColor.a);
+}
+`
+});
+```
 
-Pass list and target map can be static props or dynamic getters (`getPasses`, `getRenderTargets`) under the hood.
+```svelte
+<FragCanvas {material} passes={[bloomPrefilter, gamma]} />
+```
 
-## `RenderPassContext` essentials
+## RenderPassContext
+
+When implementing custom passes, the `render(context)` method receives:
 
 | Field | Description |
 | --- | --- |
-| `device` / `commandEncoder` | WebGPU command primitives |
-| `source`, `target`, `canvas` | current slot surfaces |
-| `input`, `output` | resolved surfaces for current pass |
-| `targets` | named resolved render targets |
-| `time`, `delta`, `width`, `height` | frame state |
-| `beginRenderPass(options?)` | helper that respects clear/preserve defaults |
-
-## Practical patterns
-
-1. Use `ShaderPass` for color grading, vignette, distortion, LUT-like logic.
-2. Use `CopyPass` when you mostly need transfer semantics with safe fallback.
-3. Use named render targets for downsample/blur pyramids.
-4. Keep pass ordering explicit; rely on `needsSwap: false` only when you control slot flow intentionally.
+| `device` | `GPUDevice` instance |
+| `commandEncoder` | Current frame's `GPUCommandEncoder` |
+| `source`, `target`, `canvas` | Slot surfaces (texture + view + dimensions + format) |
+| `input`, `output` | Resolved surfaces for this pass |
+| `targets` | Named render targets map |
+| `time`, `delta` | Frame timing |
+| `width`, `height` | Canvas dimensions |
+| `clear`, `clearColor`, `preserve` | Resolved flags |
+| `beginRenderPass(options?)` | Helper that creates a `GPURenderPassEncoder` with correct load/store ops |

@@ -2,117 +2,187 @@
 layout: docs
 ---
 
-## Scheduler model
+The frame scheduler manages all per-frame logic in MotionGPU. Every `useFrame` callback is registered as a **task** with ordering constraints and an invalidation policy. This page covers the `useFrame` API in depth.
 
-`useFrame` tasks are managed by an internal `FrameRegistry` created by `FragCanvas`.
+For render modes, stages, and profiling, see [Render Modes and Scheduling](/docs/render-modes).
 
-Execution hierarchy:
+## Basic usage
 
-1. stages (dependency-sorted),
-2. tasks inside each stage (dependency-sorted),
-3. each task can invalidate rendering depending on policy.
+```svelte
+<script lang="ts">
+  import { useFrame } from '@motion-core/motion-gpu';
 
-## `useFrame` overloads
+  useFrame((state) => {
+    state.setUniform('uTime', state.time);
+  });
+</script>
+```
 
-| Signature | Purpose |
+`useFrame` must be called inside a `<FragCanvas>` component tree. Calling it outside throws.
+
+## Overloads
+
+| Signature | Description |
 | --- | --- |
-| `useFrame(callback, options?)` | Auto-generated task key. |
-| `useFrame(key, callback, options?)` | Stable key for explicit ordering/debugging. |
+| `useFrame(callback, options?)` | Auto-generated task key |
+| `useFrame(key, callback, options?)` | Explicit stable key for ordering and debugging |
 
-Returned handle:
+```ts
+// Auto key
+useFrame((state) => { ... });
 
-| Field | Type |
-| --- | --- |
-| `task` | `{ key, stage }` |
-| `start()` | enables task |
-| `stop()` | disables task |
-| `started` | readable store for effective running state |
+// Explicit key
+useFrame('camera-update', (state) => { ... });
 
-## `UseFrameOptions`
+// With options
+useFrame('particles', (state) => { ... }, {
+  stage: particleStage,
+  autoInvalidate: false
+});
+```
 
-| Option | Default | Behavior |
+## Return value
+
+`useFrame` returns a handle for controlling the task:
+
+| Field | Type | Description |
 | --- | --- | --- |
-| `autoStart` | `true` | Initial started flag. |
-| `autoInvalidate` | `true` | Enables default always-invalidate policy unless explicit invalidation is set. |
-| `invalidation` | implicit | Full invalidation policy override. |
-| `stage` | main stage | Task stage assignment. |
-| `before` / `after` | none | Task dependency edges. |
-| `running` | none | Dynamic gate checked each frame. |
+| `task` | `{ key: FrameKey; stage: FrameKey }` | Task and stage identifiers |
+| `start()` | `() => void` | Enables the task (resumes execution) |
+| `stop()` | `() => void` | Disables the task (paused, not removed) |
+| `started` | `Readable<boolean>` | Reactive store for effective running state |
 
-## Invalidation policy model
+```ts
+const handle = useFrame('animation', (state) => {
+  state.setUniform('uTime', state.time);
+});
 
-Supported policy forms:
+// Pause animation
+handle.stop();
 
-- `'never'`
-- `'always'`
-- `{ mode?: 'never' | 'always'; token?: FrameTaskInvalidationToken }`
-- `{ mode: 'on-change'; token: FrameTaskInvalidationToken }`
+// Resume
+handle.start();
+```
 
-`FrameTaskInvalidationToken` can be a direct token or a resolver function.
+## FrameState callback API
+
+The `state` parameter passed to your callback provides everything you need for per-frame logic:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `time` | `number` | Elapsed time in seconds since first render |
+| `delta` | `number` | Time since last frame in seconds (clamped by `maxDelta`) |
+| `canvas` | `HTMLCanvasElement` | Active canvas element |
+| `renderMode` | `RenderMode` | Current render mode |
+| `autoRender` | `boolean` | Current auto-render state |
+| `setUniform(name, value)` | function | Set a runtime uniform override |
+| `setTexture(name, value)` | function | Set a runtime texture source |
+| `invalidate(token?)` | function | Trigger invalidation for on-demand mode |
+| `advance()` | function | Request one frame in manual mode |
+
+### Example: complete runtime component
+
+```svelte
+<script lang="ts">
+  import { useFrame, useMotionGPU } from '@motion-core/motion-gpu';
+
+  const gpu = useMotionGPU();
+  let mouseX = 0.5;
+  let mouseY = 0.5;
+
+  $effect(() => {
+    const canvas = gpu.canvas;
+    if (!canvas) return;
+
+    const onMove = (e: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = (e.clientX - rect.left) / rect.width;
+      mouseY = 1.0 - (e.clientY - rect.top) / rect.height;
+    };
+
+    canvas.addEventListener('pointermove', onMove);
+    return () => canvas.removeEventListener('pointermove', onMove);
+  });
+
+  useFrame((state) => {
+    state.setUniform('uTime', state.time);
+    state.setUniform('uMouse', [mouseX, mouseY]);
+  });
+</script>
+```
+
+## UseFrameOptions
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `autoStart` | `boolean` | `true` | Whether the task starts enabled |
+| `autoInvalidate` | `boolean` | `true` | Auto-invalidate every frame (for on-demand mode) |
+| `invalidation` | `FrameTaskInvalidation` | Implicit | Explicit invalidation policy override |
+| `stage` | `FrameKey \| FrameStage` | Main stage | Which stage to assign the task to |
+| `before` | task ref or list | `undefined` | This task must run **before** the specified task(s) |
+| `after` | task ref or list | `undefined` | This task must run **after** the specified task(s) |
+| `running` | `() => boolean` | `undefined` | Dynamic gate — task is skipped when this returns `false` |
+
+## Invalidation policies
+
+The invalidation policy controls whether a task's execution triggers a re-render in `on-demand` mode:
+
+### Simple policies
+
+| Value | Behaviour |
+| --- | --- |
+| `'never'` | Task never triggers invalidation |
+| `'always'` | Task always triggers invalidation |
+
+### Object policies
+
+```ts
+// Always invalidate with a token
+{ mode: 'always', token: 'my-task' }
+
+// Never invalidate
+{ mode: 'never' }
+
+// On-change: invalidate only when token value changes
+{ mode: 'on-change', token: () => someReactiveValue }
+```
 
 ### `on-change` semantics
 
-A task invalidates only when current resolved token differs from previous token.
-
-## Render modes
-
-| Mode | `shouldRender()` logic |
-| --- | --- |
-| `always` | `true` while `autoRender` is enabled |
-| `on-demand` | render if any invalidation is pending or `advance()` was requested |
-| `manual` | render only after `advance()` |
-
-Additional rules:
-
-- switching to `on-demand` automatically injects a mode-change invalidation token,
-- `autoRender = false` hard-disables rendering regardless of mode,
-- `endFrame()` clears one-frame invalidation/advance flags.
-
-## Stage API
-
-`useMotionGPU().scheduler.createStage(key, options?)`
-
-| Option | Behavior |
-| --- | --- |
-| `before` / `after` | stage dependency edges |
-| `callback` | stage wrapper `(state, runTasks) => void` |
-
-Stage callback lets you gate or batch task execution.
-
-## Timing and profiling
-
-Diagnostics/profiling collects per-frame timing snapshots:
-
-| API | Description |
-| --- | --- |
-| `setDiagnosticsEnabled(boolean)` | toggles timing collection for last run |
-| `getLastRunTimings()` | returns `{ total, stages }` or `null` |
-| `setProfilingEnabled(boolean)` | enables rolling history |
-| `setProfilingWindow(number)` | rolling frame count |
-| `getProfilingSnapshot()` | aggregate stats (`last`, `avg`, `min`, `max`, `count`) |
-| `resetProfiling()` | clears history |
-
-Diagnostics and profiling currently share the same runtime timing path.
-
-## Delta clamping
-
-`maxDelta` clamps callback `state.delta` every frame.
-
-- default: `0.1`
-- must be finite and `> 0`
-- configurable via `FragCanvas` prop or `useMotionGPU().maxDelta.set(...)`
-
-## Schedule inspection
-
-`getSchedule()` returns resolved stage/task order snapshot:
+With `on-change`, the scheduler compares the current resolved token against the previous frame's token. Invalidation fires **only when they differ**. This is ideal for state-driven updates:
 
 ```ts
-{
-	stages: [
-		{ key: 'Symbol(motiongpu-main-stage)', tasks: ['camera', 'effects'] },
-		{ key: 'post', tasks: ['tone-mapping'] }
-	]
-}
+useFrame('background', (state) => {
+  state.setUniform('uColor', currentColor);
+}, {
+  autoInvalidate: false,
+  invalidation: {
+    mode: 'on-change',
+    token: () => currentColor.join(',')
+  }
+});
 ```
 
-This is useful for debugging dependency topology.
+## Task ordering with dependencies
+
+Use `before` and `after` to control execution order within a stage:
+
+```ts
+const physics = useFrame('physics', (state) => {
+  // Update physics simulation
+});
+
+const render = useFrame('render-update', (state) => {
+  // Read physics results
+}, {
+  after: physics.task
+});
+```
+
+Dependencies are resolved via topological sort. Circular dependencies throw.
+
+## Lifecycle
+
+- `useFrame` automatically **unregisters** the task when the component is destroyed (via Svelte's `onDestroy`).
+- The `stop()` / `start()` methods pause/resume without unregistering — the task remains in the schedule but is skipped.
+- The `running` gate is checked each frame — a stopped task or a task with `running: () => false` is simply skipped, not removed.

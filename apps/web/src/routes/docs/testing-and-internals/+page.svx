@@ -1,0 +1,110 @@
+---
+layout: docs
+---
+
+This page documents the test coverage, enforced runtime contracts, key implementation details for maintainers, and build/validation commands.
+
+## Test coverage map
+
+Tests live in `packages/motion-gpu/src/tests/`:
+
+| Area | What is tested |
+| --- | --- |
+| **Public API** | Root and advanced export contracts — every public symbol is verified to exist and have the correct type. |
+| **FragCanvas** | WebGPU-unavailable behaviour, error callback invocation, overlay toggling, prop validation. |
+| **Context hooks** | `useMotionGPU` and `useFrame` throw when called outside `FragCanvas`. Context shape and exposed controls. |
+| **Scheduler** | Task ordering, topological sort, invalidation modes (`always`, `never`, `on-change`), stage callbacks, diagnostics/profiling data shapes. |
+| **Material** | Contract validation (`fn frag(...)` required), includes/defines expansion, signature determinism, deep-freeze behaviour, caching. |
+| **Uniforms** | Type inference from value shapes, layout alignment (`std140`-style), buffer packing, sorted order, invalid input rejection. |
+| **Textures** | Defaults (`flipY: true`, `filter: 'linear'`), size helpers, update mode resolution (video → `perFrame`), mipmap level calculation, video detection heuristics. |
+| **Texture loader** | URL loading, cache key computation, reference counting, cancellation/abort semantics, retry behaviour, `ImageBitmap` disposal. |
+| **Render graph** | Slot validation rules, plan generation for various pass configurations, disabled pass skipping. |
+| **Passes** | Default option values, `ShaderPass` contract enforcement (`fn shade(...)` required), shader hot-swap support. |
+| **Error report** | Classification pattern matching, normalized output shape, source block extraction for WGSL errors, hint generation. |
+| **Recompile policy** | Pipeline signature changes from shader/layout/texture changes, non-changes from uniform value updates. |
+
+## Key runtime guarantees verified by tests
+
+| Guarantee | Why it matters |
+| --- | --- |
+| `useMotionGPU` and `useFrame` require `FragCanvas` ancestor | Prevents undefined runtime context usage outside the component tree. |
+| `defineMaterial` freezes output | Material snapshots are cache-safe and deterministic — no accidental mutation. |
+| Pipeline signature ignores pure uniform value changes | Avoids expensive recompiles when only animation values change. |
+| `useTexture` abort/reload semantics are race-safe | Prevents stale async results from overwriting fresh texture data. |
+| `ShaderPass` contract enforcement | Keeps the `fn shade(inputColor, uv)` interface stable and validated upfront. |
+| Uniform layout follows consistent sorted order | Ensures buffer packing is deterministic across material instances with the same shape. |
+| Render graph validates slot usage | Prevents nonsensical pass configurations (e.g., reading `target` before anything writes to it). |
+| Define and include name validation | Catches invalid WGSL identifiers at definition time, not at shader compile time. |
+
+## Internal implementation details
+
+These notes are for maintainers working on the library internals:
+
+### Uniform buffer updates
+
+- **Frame uniforms** (`time`, `delta`, `resolution`) are written to the beginning of the buffer every frame.
+- **Material uniforms** use dirty-range detection: only byte ranges that actually changed are written to the GPU queue.
+- The uniform buffer is always at least 16 bytes (WebGPU minimum binding size).
+
+### Texture lifecycle
+
+- Each texture binding maintains a **fallback 1×1 texture** so the shader always has a valid binding.
+- Reallocation happens when the texture format, size, or source object reference changes.
+- Dynamic upload policy is resolved from the `TextureUpdateMode` chain (runtime override → definition → automatic fallback).
+- `ImageBitmap` textures are uploaded via `copyExternalImageToTexture`.
+
+### Pass lifecycle
+
+- Pass instances are **identity-tracked** by the renderer (tracked by object reference).
+- `setSize(width, height)` is called when a pass first appears in the array or when the canvas/target resolution changes.
+- `dispose()` is called when a pass is removed from the array or when the renderer is destroyed.
+
+### Render target lifecycle
+
+- Resolved definitions are **signature-compared** each frame: `key:format:widthxheight`.
+- Only targets with changed signatures trigger reallocation.
+- Removed targets are destroyed immediately.
+
+### Diagnostics and profiling
+
+- The scheduler stores last-run timings and an optional rolling window of frame times.
+- `setDiagnosticsEnabled(false)` clears all timing state.
+- Profiling snapshot computes `avg`, `min`, `max` from the rolling window.
+
+## Build and validation commands
+
+### Package (`packages/motion-gpu`)
+
+```bash
+bun run build     # Build the library
+bun run test      # Run all tests
+bun run check     # Svelte + TypeScript type checking
+bun run lint      # ESLint
+```
+
+### Documentation app (`apps/web`)
+
+```bash
+bun run dev       # Start dev server
+bun run build     # Production build
+bun run check     # Svelte + TypeScript type checking
+bun run lint      # ESLint
+```
+
+## Practical caveats
+
+| Caveat | Guidance |
+| --- | --- |
+| WebGPU availability varies by browser/platform | Always handle initialization failures. Test with `onError`. |
+| `autoRender = false` overrides all render modes | The RAF loop still runs, but no GPU work happens. |
+| `onInvalidate` texture mode is context-sensitive | Pair with an explicit invalidation token for predictable behaviour. |
+| Handcrafted material objects are unsupported | Always use `defineMaterial(...)` — the renderer checks for the internal frozen structure. |
+| Changing defines or includes requires a new material | These are baked into the shader source and trigger full pipeline rebuilds. |
+| `mat4x4f` uniform type must use explicit form | Cannot be inferred from a 16-element array — use `{ type: 'mat4x4f', value: [...] }`. |
+
+## Suggested future hardening areas
+
+1. Integration tests for dynamic pass list churn under load.
+2. Stress tests for frequent render target topology changes.
+3. Browser-matrix smoke tests for WebGPU feature differences across vendors.
+4. Performance benchmarks for uniform buffer update patterns.

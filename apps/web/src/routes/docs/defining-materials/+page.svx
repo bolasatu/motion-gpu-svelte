@@ -1,0 +1,149 @@
+---
+layout: docs
+---
+
+`defineMaterial` is the entry point for creating materials in MotionGPU. It validates your inputs, freezes the result, and produces an immutable `FragMaterial` that `FragCanvas` uses to build the WebGPU rendering pipeline.
+
+## Basic usage
+
+```ts
+import { defineMaterial } from '@motion-core/motion-gpu';
+
+const material = defineMaterial({
+  fragment: `
+fn frag(uv: vec2f) -> vec4f {
+  return vec4f(uv.x, uv.y, 0.5, 1.0);
+}
+`
+});
+```
+
+## Input fields
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `fragment` | `string` | **Yes** | WGSL fragment source containing `fn frag(uv: vec2f) -> vec4f` |
+| `uniforms` | `UniformMap` | No | Named uniform declarations with initial values |
+| `textures` | `TextureDefinitionMap` | No | Named texture declarations with sampler/upload config |
+| `defines` | `MaterialDefines` | No | Compile-time constants injected as `const` |
+| `includes` | `MaterialIncludes` | No | Named WGSL source chunks for `#include` expansion |
+
+## Fragment contract
+
+The fragment source **must** contain this function signature:
+
+```wgsl
+fn frag(uv: vec2f) -> vec4f
+```
+
+The regex that validates this is: `/\bfn\s+frag\s*\(\s*uv\s*:\s*vec2f\s*\)\s*->\s*vec4f/`
+
+If the signature is not found, `defineMaterial` throws immediately with a descriptive error.
+
+## What `defineMaterial` does internally
+
+1. **Validates the fragment contract** — checks for `fn frag(uv: vec2f) -> vec4f`.
+2. **Normalizes uniforms** — validates identifier names, infers types from values, sorts alphabetically.
+3. **Normalizes textures** — validates identifier names, applies default config values.
+4. **Normalizes defines** — validates identifier names, checks value constraints (finite numbers, integer checks for `i32`/`u32`, non-negative for `u32`).
+5. **Normalizes includes** — validates identifier names, checks for non-empty source strings.
+6. **Deep-freezes** the entire output object and all nested maps.
+
+## Immutability
+
+The returned `FragMaterial` is frozen with `Object.freeze`. This means:
+
+- You **cannot** modify the material after creation.
+- The `uniforms`, `textures`, `defines`, and `includes` sub-objects are also frozen.
+- To change a material, create a new one with `defineMaterial(...)`.
+
+This immutability is critical for MotionGPU's caching: the material signature is computed once and used to detect when the renderer needs rebuilding.
+
+## Material signatures
+
+When `FragCanvas` resolves a material, it computes a **deterministic signature** from:
+
+1. The **preprocessed fragment** (after include/define expansion).
+2. The **uniform layout** (sorted name/type sequence).
+3. The **texture key list** (sorted).
+4. The **normalized texture sampling/upload config** for each texture.
+
+This signature is combined with `outputColorSpace` to form the final **pipeline signature**. Only changes in this combined signature trigger a renderer rebuild.
+
+### What triggers rebuilds vs. buffer updates
+
+| Change | Triggers rebuild? |
+| --- | --- |
+| Fragment shader text change | **Yes** |
+| Adding/removing a uniform | **Yes** |
+| Adding/removing a texture | **Yes** |
+| Changing texture sampler config | **Yes** |
+| Changing a define value | **Yes** |
+| Changing `outputColorSpace` on `FragCanvas` | **Yes** |
+| Changing a uniform **value** at runtime | No — buffer update only |
+| Changing a texture **source** at runtime | No — upload only |
+
+## Full example with all fields
+
+```ts
+const material = defineMaterial({
+  fragment: `
+#include <sdf>
+
+fn frag(uv: vec2f) -> vec4f {
+  let aspect = motiongpuFrame.resolution.x / motiongpuFrame.resolution.y;
+  var p = uv - 0.5;
+  p.x *= aspect;
+
+  let d = sdCircle(p, 0.2 + 0.05 * sin(motiongpuUniforms.uTime * 3.0));
+  let edge = smoothstep(EDGE_WIDTH, 0.0, abs(d));
+
+  let texColor = textureSample(uBackground, uBackgroundSampler, uv);
+  let finalColor = mix(texColor.rgb, motiongpuUniforms.uColor, edge);
+  return vec4f(finalColor, 1.0);
+}
+`,
+  uniforms: {
+    uTime: 0,
+    uColor: [0.2, 0.8, 1.0]
+  },
+  textures: {
+    uBackground: {
+      filter: 'linear',
+      addressModeU: 'repeat',
+      addressModeV: 'repeat'
+    }
+  },
+  defines: {
+    EDGE_WIDTH: 0.003
+  },
+  includes: {
+    sdf: `
+fn sdCircle(p: vec2f, r: f32) -> f32 {
+  return length(p) - r;
+}
+`
+  }
+});
+```
+
+## Misuse guards
+
+| Invalid input | Result |
+| --- | --- |
+| Object not created with `defineMaterial` passed to renderer | Throws |
+| Invalid identifier in uniforms/textures/defines/includes | Throws |
+| Invalid uniform value shape (e.g., 5-element array) | Throws |
+| Missing fragment contract (`fn frag(...)`) | Throws |
+| Non-finite define number | Throws |
+| Fractional `i32` or `u32` define | Throws |
+| Negative `u32` define | Throws |
+| Empty include source | Throws |
+
+## Practical guidance
+
+1. **Keep material objects stable** — reuse the same instance. Creating a new material with the same content still matches the same signature, but unnecessary allocations add overhead.
+2. **Put shape/type changes in `defineMaterial`** — uniform types and texture bindings should be declared upfront.
+3. **Put value changes in `useFrame`** — animation, interaction, and dynamic state go through `state.setUniform()` and `state.setTexture()`.
+4. **Use defines for compile-time branches** — the compiler can eliminate dead code paths.
+5. **Use includes for shared utility code** — noise functions, SDF helpers, colour transforms.

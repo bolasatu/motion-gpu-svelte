@@ -2,134 +2,156 @@
 layout: docs
 ---
 
+Complete reference of all public exports from `@motion-core/motion-gpu` and `@motion-core/motion-gpu/advanced`.
+
 ## Package metadata
 
 | Field | Value |
 | --- | --- |
 | Package name | `@motion-core/motion-gpu` |
 | Current version | `0.1.0` |
-| Module type | `ESM` |
+| Module type | ESM |
 | Peer dependency | `svelte ^5` |
 
 ## Root exports (`@motion-core/motion-gpu`)
 
 | Export | Kind | Summary |
 | --- | --- | --- |
-| `FragCanvas` | Svelte component | Main runtime orchestrator. |
-| `defineMaterial` | function | Validates and freezes material definitions. |
-| `BlitPass` | class | Fullscreen sample pass. |
-| `CopyPass` | class | Copy pass with direct copy optimization + blit fallback. |
-| `ShaderPass` | class | Programmable post-process pass (`shade` contract). |
-| `useMotionGPU` | hook | Reads runtime context. |
-| `useFrame` | hook | Registers scheduler tasks. |
-| `useTexture` | hook | Loads URL textures reactively. |
+| `FragCanvas` | Svelte component | Main runtime orchestrator. See [FragCanvas Reference](/docs/fragcanvas-reference). |
+| `defineMaterial` | function | Validates and freezes material definitions. See [Defining Materials](/docs/defining-materials). |
+| `BlitPass` | class | Fullscreen texture sample pass. See [Render Passes](/docs/render-passes). |
+| `CopyPass` | class | Copy pass with direct-copy optimisation + blit fallback. See [Render Passes](/docs/render-passes). |
+| `ShaderPass` | class | Programmable post-process pass. See [Render Passes](/docs/render-passes). |
+| `useMotionGPU` | hook | Reads runtime context. See [Hooks and Context](/docs/hooks-and-context). |
+| `useFrame` | hook | Registers scheduler tasks. See [Frame Scheduler](/docs/frame-scheduler). |
+| `useTexture` | hook | Loads URL textures reactively. See [Loading Textures](/docs/texture-loading). |
 
 ## Advanced exports (`@motion-core/motion-gpu/advanced`)
 
+Re-exports everything from root, plus:
+
 | Export | Kind | Summary |
 | --- | --- | --- |
-| `useMotionGPUUserContext` | hook | Namespaced shared runtime user state. |
-| `MotionGPUUserContext` | type | User context store type. |
-| `FrameProfilingSnapshot` etc. | types | Extended scheduler diagnostics/profiling typing. |
+| `useMotionGPUUserContext` | hook | Namespaced shared runtime user state. See [User Context](/docs/user-context). |
+| `MotionGPUUserContext` | type | Writable user context store type. |
+| `MotionGPUUserNamespace` | type | Namespace key type (`string \| symbol`). |
+| `SetMotionGPUUserContextOptions` | type | Conflict strategy options. |
+| `FrameProfilingSnapshot` | type | Rolling profiling data shape. |
+| `FrameRunTimings` | type | Single-frame timing data shape. |
+| `FrameScheduleSnapshot` | type | Schedule inspection result shape. |
+| `FrameStage` | type | Stage metadata. |
+| `FrameStageCallback` | type | Stage wrapper callback type. |
+| `FrameKey` | type | Stable task/stage key type. |
+| `FrameTask` | type | Registered task metadata. |
+| `FrameTaskInvalidation` | type | Task invalidation policy. |
+| `FrameTaskInvalidationToken` | type | Invalidation token type. |
+| `RenderPassContext` | type | Context passed to render passes. |
+| `RenderTarget` | type | Runtime render target handle. |
+| `UniformLayout` | type | Resolved uniform buffer layout. |
+| `UniformLayoutEntry` | type | Single uniform layout entry. |
 
-## `FragCanvas` props
+## `defineMaterial(input)` signature
 
-| Prop | Type | Default |
-| --- | --- | --- |
-| `material` | `FragMaterial` | required |
-| `renderTargets` | `RenderTargetDefinitionMap` | `{}` |
-| `passes` | `RenderPass[]` | `[]` |
-| `clearColor` | `[number, number, number, number]` | `[0, 0, 0, 1]` |
-| `outputColorSpace` | `'srgb' \| 'linear'` | `'srgb'` |
-| `renderMode` | `'always' \| 'on-demand' \| 'manual'` | `'always'` |
-| `autoRender` | `boolean` | `true` |
-| `maxDelta` | `number` | `0.1` |
-| `adapterOptions` | `GPURequestAdapterOptions` | `undefined` |
-| `deviceDescriptor` | `GPUDeviceDescriptor` | `undefined` |
-| `dpr` | `number` | `window.devicePixelRatio` (or `1` SSR) |
-| `showErrorOverlay` | `boolean` | `true` |
-| `onError` | `(report: MotionGPUErrorReport) => void` | `undefined` |
-| `class` | `string` | `''` |
-| `style` | `string` | `''` |
-| `children` | `Snippet` | `undefined` |
-
-## `defineMaterial(input)`
-
-### Input
+### Input: `FragMaterialInput`
 
 | Field | Type | Required |
 | --- | --- | --- |
-| `fragment` | `string` | yes |
-| `uniforms` | `UniformMap` | no |
-| `textures` | `TextureDefinitionMap` | no |
-| `defines` | `MaterialDefines` | no |
-| `includes` | `MaterialIncludes` | no |
+| `fragment` | `string` | Yes |
+| `uniforms` | `UniformMap` | No |
+| `textures` | `TextureDefinitionMap` | No |
+| `defines` | `MaterialDefines` | No |
+| `includes` | `MaterialIncludes` | No |
 
-### Output
+### Output: `FragMaterial`
 
-`FragMaterial` (immutable, validated, cache-friendly).
+Immutable, validated, deep-frozen. Contains:
+- `fragment` — preprocessed WGSL source
+- `uniforms` — normalized uniform map
+- `textures` — normalized texture definition map
+- `defines` — normalized defines
+- `includes` — normalized includes
+- `signature` — deterministic string for cache comparison
 
-## `useFrame`
-
-### Signatures
+## `useFrame` signatures
 
 ```ts
-useFrame(callback, options?)
-useFrame(key, callback, options?)
+useFrame(callback: (state: FrameState) => void, options?: UseFrameOptions)
+useFrame(key: FrameKey, callback: (state: FrameState) => void, options?: UseFrameOptions)
 ```
 
 ### `UseFrameOptions`
 
+| Field | Type | Default |
+| --- | --- | --- |
+| `autoStart` | `boolean` | `true` |
+| `autoInvalidate` | `boolean` | `true` |
+| `invalidation` | `FrameTaskInvalidation` | Implicit |
+| `stage` | `FrameKey \| FrameStage` | Main stage |
+| `before` | task ref or list | `undefined` |
+| `after` | task ref or list | `undefined` |
+| `running` | `() => boolean` | `undefined` |
+
+### Return: `UseFrameHandle`
+
 | Field | Type |
 | --- | --- |
-| `autoStart` | `boolean` |
-| `autoInvalidate` | `boolean` |
-| `invalidation` | `FrameTaskInvalidation` |
-| `stage` | `FrameKey \| FrameStage` |
-| `before` | task ref or list |
-| `after` | task ref or list |
-| `running` | `() => boolean` |
+| `task` | `{ key: FrameKey; stage: FrameKey }` |
+| `start` | `() => void` |
+| `stop` | `() => void` |
+| `started` | `Readable<boolean>` |
 
-### Return type
+## `FrameState` (useFrame callback parameter)
 
-```ts
-{
-	task: { key: FrameKey; stage: FrameKey };
-	start: () => void;
-	stop: () => void;
-	started: Readable<boolean>;
-}
-```
+| Field | Type |
+| --- | --- |
+| `time` | `number` |
+| `delta` | `number` |
+| `canvas` | `HTMLCanvasElement` |
+| `renderMode` | `RenderMode` |
+| `autoRender` | `boolean` |
+| `setUniform` | `(name: string, value: UniformValue) => void` |
+| `setTexture` | `(name: string, value: TextureValue) => void` |
+| `invalidate` | `(token?: FrameInvalidationToken) => void` |
+| `advance` | `() => void` |
 
-## `useMotionGPU`
+## `useMotionGPU()` return: `MotionGPUContext`
 
-Returns `MotionGPUContext` with:
+| Field | Type |
+| --- | --- |
+| `canvas` | `HTMLCanvasElement \| undefined` |
+| `size` | `CurrentReadable<{ width: number; height: number }>` |
+| `dpr` | `CurrentWritable<number>` |
+| `maxDelta` | `CurrentWritable<number>` |
+| `renderMode` | `CurrentWritable<RenderMode>` |
+| `autoRender` | `CurrentWritable<boolean>` |
+| `user` | `CurrentWritable<Record<string \| symbol, unknown>>` |
+| `invalidate` | `() => void` |
+| `advance` | `() => void` |
+| `scheduler` | Scheduler API |
 
-- reactive stores: `size`, `dpr`, `maxDelta`, `renderMode`, `autoRender`, `user`,
-- control methods: `invalidate`, `advance`,
-- scheduler API: stage creation + diagnostics/profiling controls.
-
-## `useTexture(urlInput, options?)`
+## `useTexture(urlInput, options?)` signature
 
 ### URL input
 
-- `string[]`
-- `() => string[]`
-
-### Options (`TextureLoadOptions`)
-
-| Field | Type |
+| Form | Type |
 | --- | --- |
-| `colorSpace` | `'srgb' \| 'linear'` |
-| `requestInit` | `RequestInit` |
-| `decode` | `TextureDecodeOptions` |
-| `signal` | `AbortSignal` |
-| `update` | `TextureUpdateMode` |
-| `flipY` | `boolean` |
-| `premultipliedAlpha` | `boolean` |
-| `generateMipmaps` | `boolean` |
+| Static | `string[]` |
+| Dynamic | `() => string[]` |
 
-### Return (`UseTextureResult`)
+### `TextureLoadOptions`
+
+| Field | Type | Default |
+| --- | --- | --- |
+| `colorSpace` | `'srgb' \| 'linear'` | `'srgb'` |
+| `requestInit` | `RequestInit` | `undefined` |
+| `decode` | `TextureDecodeOptions` | Auto |
+| `signal` | `AbortSignal` | `undefined` |
+| `update` | `TextureUpdateMode` | `undefined` |
+| `flipY` | `boolean` | `undefined` |
+| `premultipliedAlpha` | `boolean` | `undefined` |
+| `generateMipmaps` | `boolean` | `undefined` |
+
+### Return: `UseTextureResult`
 
 | Field | Type |
 | --- | --- |
@@ -138,14 +160,12 @@ Returns `MotionGPUContext` with:
 | `error` | `CurrentReadable<Error \| null>` |
 | `reload` | `() => Promise<void>` |
 
-## Advanced `useMotionGPUUserContext`
-
-### Signatures
+## `useMotionGPUUserContext` signatures
 
 ```ts
-useMotionGPUUserContext()
-useMotionGPUUserContext(namespace)
-useMotionGPUUserContext(namespace, value, options?)
+useMotionGPUUserContext(): MotionGPUUserContext
+useMotionGPUUserContext<T>(namespace: MotionGPUUserNamespace): CurrentReadable<T | undefined>
+useMotionGPUUserContext<T>(namespace: MotionGPUUserNamespace, factory: () => T, options?: SetMotionGPUUserContextOptions): T
 ```
 
 ### `SetMotionGPUUserContextOptions`
@@ -156,22 +176,46 @@ useMotionGPUUserContext(namespace, value, options?)
 
 ## Core type groups
 
-| Group | Key types |
+### Uniforms
+
+| Type | Description |
 | --- | --- |
-| Uniforms | `UniformType`, `UniformValue`, `UniformMap`, `UniformLayout` |
-| Textures | `TextureValue`, `TextureDefinition`, `TextureMap`, `TextureUpdateMode` |
-| Passes | `RenderPass`, `RenderPassContext`, `RenderTargetDefinitionMap` |
-| Scheduler | `RenderMode`, `FrameState`, `FrameInvalidationToken`, `FrameRunTimings` |
-| Diagnostics | `MotionGPUErrorReport`, `MotionGPUErrorPhase` |
+| `UniformType` | `'f32' \| 'vec2f' \| 'vec3f' \| 'vec4f' \| 'mat4x4f'` |
+| `UniformValue` | `number \| [number, number] \| [number, number, number] \| [number, number, number, number] \| TypedUniform<...>` |
+| `UniformMap` | `Record<string, UniformValue \| { type: UniformType; value: UniformValue }>` |
+| `UniformLayout` | `{ name, type, alignment, size, offset }` |
 
-`MotionGPUErrorReport` includes optional `source` for shader compile diagnostics:
+### Textures
 
-```ts
-{
-	component: string;
-	location: string;
-	line: number;
-	column?: number;
-	snippet: Array<{ number: number; code: string; highlight: boolean }>;
-} | null
-```
+| Type | Description |
+| --- | --- |
+| `TextureValue` | `TextureData \| TextureSource \| null` |
+| `TextureDefinition` | Sampler config, update mode, colour space, etc. |
+| `TextureDefinitionMap` | `Record<string, TextureDefinition>` |
+| `TextureUpdateMode` | `'once' \| 'onInvalidate' \| 'perFrame'` |
+
+### Passes
+
+| Type | Description |
+| --- | --- |
+| `RenderPass` | Interface with `render(context)`, `setSize(w, h)`, `dispose()` |
+| `RenderPassContext` | Context object passed to `render()` |
+| `RenderTargetDefinitionMap` | `Record<string, { width?, height?, scale?, format? }>` |
+
+### Scheduler
+
+| Type | Description |
+| --- | --- |
+| `RenderMode` | `'always' \| 'on-demand' \| 'manual'` |
+| `FrameState` | Callback parameter with timing, canvas, and runtime API |
+| `FrameKey` | `string \| symbol` |
+| `FrameInvalidationToken` | `string \| number \| symbol` |
+| `FrameRunTimings` | Single-frame measurement |
+| `FrameProfilingSnapshot` | Rolling stats (`last`, `avg`, `min`, `max`, `count`) |
+
+### Diagnostics
+
+| Type | Description |
+| --- | --- |
+| `MotionGPUErrorReport` | Normalized error report with title, message, hint, details, source |
+| `MotionGPUErrorPhase` | `'initialization' \| 'render'` |

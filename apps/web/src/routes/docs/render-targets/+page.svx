@@ -1,0 +1,124 @@
+---
+layout: docs
+---
+
+Render targets are named off-screen textures that passes can read from and write to. They allow techniques like downsampled blur pyramids, multi-resolution effects, and intermediate computation buffers.
+
+## Declaring render targets
+
+Render targets are declared as a `renderTargets` prop on `FragCanvas`:
+
+```svelte
+<FragCanvas
+  {material}
+  renderTargets={{
+    half: { scale: 0.5 },
+    bloom: { width: 640, height: 360, format: 'rgba16float' }
+  }}
+  passes={passes}
+/>
+```
+
+The map keys become the names used to access targets in passes.
+
+## RenderTargetDefinition fields
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `width` | `number` | `undefined` | Explicit width in pixels (floored, minimum 1) |
+| `height` | `number` | `undefined` | Explicit height in pixels (floored, minimum 1) |
+| `scale` | `number` | `1` | Scale factor relative to canvas size |
+| `format` | `GPUTextureFormat` | Canvas format | Texture format |
+
+## Resolution rules
+
+Each dimension is resolved independently:
+
+1. If `width` or `height` is **explicitly set**, that value is used (`Math.max(1, Math.floor(value))`).
+2. If a dimension is **not set**, it is computed as `Math.max(1, Math.floor(canvasDimension * scale))`.
+3. If `scale` is not set, it defaults to `1` (full canvas resolution).
+
+### Examples
+
+| Definition | Canvas 1920×1080 | Result |
+| --- | --- | --- |
+| `{ scale: 0.5 }` | 1920×1080 | 960×540 |
+| `{ scale: 0.25 }` | 1920×1080 | 480×270 |
+| `{ width: 256, height: 256 }` | any | 256×256 |
+| `{ width: 512 }` | 1920×1080 | 512×1080 |
+| `{}` | 1920×1080 | 1920×1080 |
+
+## Naming rules
+
+Target keys must be WGSL-safe identifiers: `[A-Za-z_][A-Za-z0-9_]*`. Invalid names throw during resolution.
+
+## Validation
+
+| Condition | Result |
+| --- | --- |
+| `scale <= 0` | Throws |
+| `scale` is `NaN` or `Infinity` | Throws |
+| `width <= 0` or `height <= 0` | Throws |
+| `width` / `height` is `NaN` or `Infinity` | Throws |
+| Invalid key identifier | Throws |
+
+## Accessing targets in passes
+
+Render targets are available in the `RenderPassContext` via the `targets` field:
+
+```ts
+render(context: RenderPassContext): void {
+  const bloomTarget = context.targets.bloom;
+  if (bloomTarget) {
+    // Use bloomTarget.texture, bloomTarget.view, etc.
+  }
+}
+```
+
+Named targets are accessed through `context.targets` inside custom passes.
+
+## Lifecycle
+
+The renderer manages render target textures automatically:
+
+| Event | Action |
+| --- | --- |
+| New target added | GPU texture allocated |
+| Canvas resizes (for scaled targets) | Texture reallocated at new resolution |
+| Target definition changes | Texture reallocated |
+| Target removed from map | GPU texture destroyed |
+| Renderer destroyed | All target textures destroyed |
+
+### Signature-based change detection
+
+Render target definitions are compared each frame using a **deterministic signature**: `key:format:widthxheight`. Only targets whose signature changed are reallocated — stable targets keep their existing GPU texture.
+
+## Practical patterns
+
+### Half-resolution blur
+
+```ts
+const renderTargets = {
+  halfRes: { scale: 0.5 }
+};
+
+// Use halfRes as an intermediate for blur passes
+```
+
+### Fixed-resolution computation buffer
+
+```ts
+const renderTargets = {
+  compute: { width: 256, height: 256, format: 'rgba16float' }
+};
+```
+
+### HDR intermediate
+
+```ts
+const renderTargets = {
+  hdr: { format: 'rgba16float' }
+};
+
+// Full canvas resolution but in 16-bit float for high dynamic range
+```
