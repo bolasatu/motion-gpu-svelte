@@ -47,7 +47,9 @@ describe('error report', () => {
 						sourceLocation: { kind: 'fragment', line: 3 }
 					}
 				],
-				fragmentSource: ['fn frag(uv: vec2f) -> vec4f {', '\tlet x = uv.x;', '\tuv.x;', '}'].join('\n'),
+				fragmentSource: ['fn frag(uv: vec2f) -> vec4f {', '\tlet x = uv.x;', '\tuv.x;', '}'].join(
+					'\n'
+				),
 				includeSources: {},
 				materialSource: { component: 'GlassPaneScene.svelte' }
 			}

@@ -389,15 +389,17 @@ export const createPlaygroundController = () => {
 	};
 
 	const files: FileSystemTree = buildDirectoryTree(initialWorkerFiles) as FileSystemTree;
+	const ESC = String.fromCharCode(27);
+	const BEL = String.fromCharCode(7);
 
 	const stripAnsi = (value: string) =>
 		value
 			// Remove CSI sequences (colors, cursor movement, clear line, etc.).
-			.replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '')
+			.replace(new RegExp(`${ESC}\\[[0-?]*[ -/]*[@-~]`, 'g'), '')
 			// Remove OSC sequences (for terminal hyperlinks/window titles).
-			.replace(/\u001b\][^\u0007]*(?:\u0007|\u001b\\)/g, '')
+			.replace(new RegExp(`${ESC}\\][^${BEL}]*(?:${BEL}|${ESC}\\\\)`, 'g'), '')
 			// Remove single-character ESC control sequences (for example "ESC c" reset).
-			.replace(/\u001b[@-Z\\-_]/g, '');
+			.replace(new RegExp(`${ESC}[@-Z\\\\-_]`, 'g'), '');
 
 	const normalizeLogChunk = (chunk: string) =>
 		stripAnsi(

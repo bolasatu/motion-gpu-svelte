@@ -40,9 +40,7 @@
 						class="flex max-h-44 min-h-0 flex-col overflow-hidden border-b border-border bg-card lg:max-h-none lg:border-r lg:border-b-0"
 					>
 						<div class="border-b border-border px-3 py-2">
-							<p class="font-mono text-[10px] tracking-wide text-foreground-muted uppercase">
-								Files
-							</p>
+							<p class="text-xs text-foreground-muted">Files</p>
 						</div>
 						<div class="min-h-0 flex-1 overflow-auto py-1">
 							{#each controller.visibleFileTreeRows as row (row.path)}
@@ -69,7 +67,7 @@
 									<button
 										type="button"
 										onclick={() => controller.openFile(row.path)}
-										class={`flex w-full items-center gap-2 px-2 py-1.5 text-left font-mono text-xs transition-colors ${
+										class={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors ${
 											controller.activeFilePath === row.path
 												? 'bg-background-muted text-foreground'
 												: 'text-foreground-muted hover:bg-background-muted/55 hover:text-foreground'
@@ -145,17 +143,19 @@
 					</p>
 				{/if}
 
-				<section class="border-t border-border bg-card px-3 py-2">
+				<section class="border-t border-border bg-card">
 					{#if controller.runtimeLog}
 						<details>
-							<summary class="cursor-pointer font-mono text-xs text-foreground-muted">
+							<summary class="cursor-pointer px-3 py-2 font-mono text-xs text-foreground-muted">
 								Runtime log ({controller.status})
 							</summary>
 							<pre
-								class="mt-2 max-h-32 overflow-auto font-mono text-[11px] leading-5 whitespace-pre-wrap text-foreground-muted">{controller.runtimeLogTail}</pre>
+								class="max-h-32 overflow-auto border-t border-border bg-white px-3 py-2 font-mono text-[11px] leading-5 whitespace-pre-wrap text-foreground-muted">{controller.runtimeLogTail}</pre>
 						</details>
 					{:else}
-						<p class="font-mono text-xs text-foreground-muted">{controller.status}</p>
+						<p class="border-t border-border px-3 font-mono text-xs text-foreground-muted">
+							{controller.status}
+						</p>
 					{/if}
 				</section>
 			</section>
@@ -171,7 +171,7 @@
 						></iframe>
 					{:else}
 						<div
-							class="flex h-full w-full items-center justify-center p-6 text-center font-mono text-sm text-foreground-muted"
+							class="flex h-full w-full items-center justify-center p-6 text-center text-sm text-foreground-muted"
 						>
 							Booting runtime and waiting for preview...
 						</div>

@@ -135,7 +135,10 @@ export function getShaderCompilationDiagnostics(
 	if (record.kind !== 'shader-compilation') {
 		return null;
 	}
-	if (!Array.isArray(record.diagnostics) || !record.diagnostics.every(isShaderCompilationDiagnostic)) {
+	if (
+		!Array.isArray(record.diagnostics) ||
+		!record.diagnostics.every(isShaderCompilationDiagnostic)
+	) {
 		return null;
 	}
 	if (typeof record.fragmentSource !== 'string') {

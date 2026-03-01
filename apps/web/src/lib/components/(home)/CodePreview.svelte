@@ -196,7 +196,7 @@
 						{#key activeFile.id}
 							<div class="grid min-w-max grid-cols-[3.25rem_auto] [grid-area:preview]">
 								<div class="py-3 text-right text-xs text-foreground" aria-hidden="true">
-									{#each activeFile.lines as _, lineIndex (`line-${lineIndex}`)}
+									{#each activeFile.lines as lineText, lineIndex (`line-${lineIndex}-${lineText.length}`)}
 										<div class="px-3 py-0.5">{lineIndex + 1}</div>
 									{/each}
 								</div>

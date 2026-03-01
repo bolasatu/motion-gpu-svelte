@@ -219,7 +219,9 @@ function captureMaterialSourceFromStack(): MaterialSourceMetadata | null {
 	return null;
 }
 
-function resolveSourceMetadata(source: MaterialSourceMetadata | undefined): MaterialSourceMetadata | null {
+function resolveSourceMetadata(
+	source: MaterialSourceMetadata | undefined
+): MaterialSourceMetadata | null {
 	const captured = captureMaterialSourceFromStack();
 	const component = source?.component ?? captured?.component;
 	const file = source?.file ?? captured?.file;
