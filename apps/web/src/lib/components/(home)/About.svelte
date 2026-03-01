@@ -30,7 +30,7 @@
 				<h2 class="max-w-2xl text-2xl tracking-tight text-balance sm:text-5xl">
 					Build richer visuals with less GPU chaos.
 				</h2>
-				<p class="max-w-2xl font-fono text-sm text-balance text-foreground-muted">
+				<p class="max-w-2xl text-base text-balance text-foreground-muted">
 					MotionGPU is a Svelte-first WebGPU runtime focused on predictable behavior, readable
 					errors, and maintainable shader architecture.
 				</p>

@@ -26,7 +26,7 @@
 				</span>
 				<p class="text-xl tracking-tight">Motion GPU</p>
 			</div>
-			<p class="font-fono text-sm text-foreground-muted">Svelte-first WebGPU Runtime</p>
+			<p class="text-base text-foreground-muted">Svelte-first WebGPU Runtime</p>
 		</div>
 	</div>
 
@@ -34,8 +34,8 @@
 		class="w-full border-b border-border px-2 py-6 sm:px-6 sm:py-8 lg:grid lg:grid-cols-4 lg:gap-6"
 	>
 		<div class="grid gap-2">
-			<h3 class="font-fono text-xs tracking-wide uppercase">Menu</h3>
-			<ul class="grid gap-1 font-fono tracking-tight">
+			<h3 class="font-mono text-xs tracking-wide uppercase">Menu</h3>
+			<ul class="grid gap-1 tracking-tight">
 				{#each menu as item (item.label)}
 					<li>
 						<a
@@ -56,8 +56,8 @@
 		</div>
 
 		<div class="mt-6 grid gap-2 lg:mt-0">
-			<h3 class="font-fono text-xs tracking-wide uppercase">Follow</h3>
-			<ul class="grid gap-1 font-fono tracking-tight">
+			<h3 class="font-mono text-xs tracking-wide uppercase">Follow</h3>
+			<ul class="grid gap-1 tracking-tight">
 				{#each follow as item (item.label)}
 					<li>
 						<a
@@ -73,31 +73,31 @@
 		</div>
 
 		<div class="mt-6 grid gap-2 lg:mt-0">
-			<h3 class="font-fono text-xs tracking-wide uppercase">Project</h3>
-			<p class="font-fono text-sm text-foreground-muted">MIT licensed and open source.</p>
+			<h3 class="font-mono text-xs tracking-wide uppercase">Project</h3>
+			<p class="text-sm text-foreground-muted">MIT licensed and open source.</p>
 			<a
 				href="https://github.com/motion-core/motion-gpu/blob/main/LICENSE"
 				target="_blank"
 				rel="noreferrer"
-				class="w-fit font-fono text-sm text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+				class="w-fit text-sm text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>&#8627; License</a
 			>
 		</div>
 
 		<div class="mt-6 grid gap-2 lg:mt-0">
-			<h3 class="font-fono text-xs tracking-wide uppercase">Contact</h3>
+			<h3 class="font-mono text-xs tracking-wide uppercase">Contact</h3>
 			<a
 				href="https://github.com/motion-core/motion-gpu/issues"
 				target="_blank"
 				rel="noreferrer"
-				class="w-fit font-fono text-sm text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+				class="w-fit text-sm text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>Issues</a
 			>
 			<a
 				href="https://github.com/motion-core/motion-gpu/discussions"
 				target="_blank"
 				rel="noreferrer"
-				class="w-fit font-fono text-sm text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+				class="w-fit text-sm text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>Discussions</a
 			>
 		</div>

@@ -59,14 +59,14 @@
 							<Chart_3D size={32} />
 						{/if}
 					</div>
-					<div class="border border-border bg-background-muted px-6 py-2 font-fono text-sm">
+					<div class="border border-border bg-background-muted px-6 py-2 font-mono text-sm">
 						{card.number}
 					</div>
 				</div>
 
 				<div class="mt-auto grid gap-4">
 					<h3 class="text-xl tracking-tight sm:text-2xl">{card.title}</h3>
-					<p class="font-fono text-sm text-foreground-muted">{card.description}</p>
+					<p class="text-base text-foreground-muted">{card.description}</p>
 				</div>
 			</article>
 		{/each}

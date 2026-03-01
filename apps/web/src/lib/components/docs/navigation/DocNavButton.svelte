@@ -19,6 +19,6 @@
 		align === 'right' && 'text-right'
 	)}
 >
-	<p class="font-fono text-xs tracking-wide text-foreground-muted uppercase">{label}</p>
+	<p class="text-xs tracking-wide text-foreground-muted uppercase">{label}</p>
 	<p class="text-base tracking-tight text-foreground">{title}</p>
 </a>

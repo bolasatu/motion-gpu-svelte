@@ -50,7 +50,7 @@
 			{#if data.currentDoc}
 				<header class="space-y-3 border-b border-border pb-6">
 					<h1 class="text-3xl tracking-tight sm:text-4xl">{data.currentDoc.title}</h1>
-					<p class="max-w-3xl font-fono text-sm leading-relaxed text-foreground-muted">
+					<p class="max-w-3xl text-base leading-relaxed text-foreground-muted">
 						{data.currentDoc.description}
 					</p>
 				</header>

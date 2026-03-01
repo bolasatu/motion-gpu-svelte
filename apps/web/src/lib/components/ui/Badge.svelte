@@ -2,6 +2,6 @@
 	let { children } = $props();
 </script>
 
-<div class="font-fono text-xs text-foreground">
+<div class="font-mono text-xs text-foreground">
 	{@render children()}
 </div>

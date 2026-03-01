@@ -16,7 +16,7 @@
 		description,
 		gridClass = 'grid w-full grid-cols-3 gap-6',
 		titleClass = 'col-span-3 max-w-2xl text-2xl tracking-tight text-balance sm:col-span-2 sm:text-5xl',
-		descriptionClass = 'col-span-3 font-fono text-sm text-foreground-muted sm:col-span-1',
+		descriptionClass = 'col-span-3 text-base text-foreground-muted sm:col-span-1',
 		children
 	}: Props = $props();
 </script>

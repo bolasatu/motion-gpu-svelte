@@ -12,7 +12,7 @@
 
 <ol
 	{...rest}
-	class={`max-w-[78ch] list-decimal pl-5 font-fono text-sm leading-relaxed text-foreground-muted ${className}`.trim()}
+	class={`max-w-[78ch] list-decimal pl-5 text-sm leading-relaxed text-foreground-muted ${className}`.trim()}
 >
 	{@render children?.()}
 </ol>

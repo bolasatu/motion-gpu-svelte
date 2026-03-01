@@ -63,7 +63,7 @@
 				<span class="block">A transparent pipeline.</span>
 				<span class="block">Step by step.</span>
 			</h2>
-			<p class="col-span-3 font-fono text-sm text-foreground-muted sm:col-span-1">
+			<p class="col-span-3 text-base text-foreground-muted sm:col-span-1">
 				From first shader line to production diagnostics, each step keeps rendering behavior
 				explicit and composable.
 			</p>
@@ -99,14 +99,14 @@
 										<WarningAlt size={32} />
 									{/if}
 								</div>
-								<div class="border border-border bg-background-muted px-6 py-2 font-fono text-sm">
+								<div class="border border-border bg-background-muted px-6 py-2 font-mono text-sm">
 									{step.number}
 								</div>
 							</div>
 
 							<div class="mt-auto grid gap-4">
 								<h3 class="text-xl tracking-tight sm:text-2xl">{step.title}</h3>
-								<p class="font-fono text-sm text-foreground-muted">{step.description}</p>
+								<p class="text-base text-foreground-muted">{step.description}</p>
 							</div>
 						</article>
 					</div>

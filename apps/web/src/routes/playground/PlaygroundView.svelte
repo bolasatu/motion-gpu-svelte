@@ -37,10 +37,10 @@
 			<section class="flex min-h-0 flex-col overflow-hidden bg-card lg:col-span-3">
 				<div class="min-h-0 flex-1 overflow-hidden lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
 					<aside
-						class="flex min-h-0 max-h-44 flex-col overflow-hidden border-b border-border bg-card lg:max-h-none lg:border-r lg:border-b-0"
+						class="flex max-h-44 min-h-0 flex-col overflow-hidden border-b border-border bg-card lg:max-h-none lg:border-r lg:border-b-0"
 					>
 						<div class="border-b border-border px-3 py-2">
-							<p class="font-fono text-[10px] tracking-wide text-foreground-muted uppercase">
+							<p class="font-mono text-[10px] tracking-wide text-foreground-muted uppercase">
 								Files
 							</p>
 						</div>
@@ -50,7 +50,7 @@
 									<button
 										type="button"
 										onclick={() => controller.toggleDirectory(row.path)}
-										class="flex w-full items-center gap-2 px-2 py-1.5 text-left font-fono text-xs text-foreground-muted transition-colors hover:bg-background-muted/55 hover:text-foreground"
+										class="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-foreground-muted transition-colors hover:bg-background-muted/55 hover:text-foreground"
 										style={`padding-left: ${8 + row.depth * 12}px`}
 									>
 										<span class="inline-flex w-3 items-center justify-center text-foreground/60">
@@ -138,7 +138,7 @@
 
 				{#if controller.syncError}
 					<p
-						class="border-t border-border bg-card px-3 py-2 font-fono text-xs text-red-500"
+						class="border-t border-border bg-card px-3 py-2 font-mono text-xs text-red-500"
 						role="alert"
 					>
 						{controller.syncError}
@@ -148,14 +148,14 @@
 				<section class="border-t border-border bg-card px-3 py-2">
 					{#if controller.runtimeLog}
 						<details>
-							<summary class="cursor-pointer font-fono text-xs text-foreground-muted">
+							<summary class="cursor-pointer font-mono text-xs text-foreground-muted">
 								Runtime log ({controller.status})
 							</summary>
 							<pre
 								class="mt-2 max-h-32 overflow-auto font-mono text-[11px] leading-5 whitespace-pre-wrap text-foreground-muted">{controller.runtimeLogTail}</pre>
 						</details>
 					{:else}
-						<p class="font-fono text-xs text-foreground-muted">{controller.status}</p>
+						<p class="font-mono text-xs text-foreground-muted">{controller.status}</p>
 					{/if}
 				</section>
 			</section>
@@ -171,7 +171,7 @@
 						></iframe>
 					{:else}
 						<div
-							class="flex h-full w-full items-center justify-center p-6 text-center font-fono text-sm text-foreground-muted"
+							class="flex h-full w-full items-center justify-center p-6 text-center font-mono text-sm text-foreground-muted"
 						>
 							Booting runtime and waiting for preview...
 						</div>
@@ -180,7 +180,7 @@
 
 				{#if controller.errorMessage}
 					<p
-						class="border-t border-border bg-card px-3 py-2 font-fono text-xs whitespace-pre-wrap text-red-500"
+						class="border-t border-border bg-card px-3 py-2 font-mono text-xs whitespace-pre-wrap text-red-500"
 						role="alert"
 					>
 						{controller.errorMessage}

@@ -482,7 +482,7 @@
 
 {#if headings.length > 0}
 	<nav class="sticky top-10 px-3">
-		<p class="mb-3 font-fono text-xs tracking-wide text-foreground-muted uppercase">On this page</p>
+		<p class="mb-3 text-xs tracking-wide text-foreground-muted uppercase">On this page</p>
 		<div class="relative flex px-1">
 			<div
 				class="pointer-events-none absolute top-0 left-0 h-full w-10"
@@ -518,7 +518,7 @@
 						<a
 							href={`#${heading.id}`}
 							class={cn(
-								'block py-1.5 font-fono text-xs transition-colors duration-150 ease-out',
+								'block py-1.5 text-xs transition-colors duration-150 ease-out',
 								isLinkHighlighted(heading.id)
 									? 'text-accent'
 									: 'text-foreground-muted hover:text-foreground'
@@ -533,5 +533,5 @@
 		</div>
 	</nav>
 {:else}
-	<p class="px-3 font-fono text-xs text-foreground-muted">No headings</p>
+	<p class="px-3 text-xs text-foreground-muted">No headings</p>
 {/if}

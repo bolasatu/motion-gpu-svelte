@@ -12,7 +12,7 @@
 
 <p
 	{...rest}
-	class={`max-w-[78ch] font-fono text-sm leading-relaxed text-foreground-muted ${className}`.trim()}
+	class={`max-w-[78ch] text-sm leading-relaxed text-foreground-muted ${className}`.trim()}
 >
 	{@render children?.()}
 </p>

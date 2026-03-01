@@ -143,25 +143,25 @@
 			>
 				<a
 					href="#home"
-					class="inline-flex items-center gap-2 px-2 py-2 font-fono text-sm tracking-tight text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>
 					Home
 				</a>
 				<a
 					href="#about"
-					class="inline-flex items-center gap-2 px-2 py-2 font-fono text-sm tracking-tight text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>
 					About
 				</a>
 				<a
 					href="#features"
-					class="inline-flex items-center gap-2 px-2 py-2 font-fono text-sm tracking-tight text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>
 					Features
 				</a>
 				<a
 					href="#how-it-works"
-					class="inline-flex items-center gap-2 px-2 py-2 font-fono text-sm tracking-tight text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground-muted transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>
 					Pipeline
 				</a>
@@ -186,7 +186,7 @@
 
 			<button
 				type="button"
-				class="inline-flex size-10 items-center justify-center gap-2 font-fono text-sm whitespace-nowrap text-foreground transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none sm:hidden"
+				class="inline-flex size-10 items-center justify-center gap-2 text-sm whitespace-nowrap text-foreground transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none sm:hidden"
 				aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
 				aria-expanded={mobileOpen}
 				aria-controls="mobile-menubar-panel"

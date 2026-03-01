@@ -12,7 +12,7 @@
 
 <blockquote
 	{...rest}
-	class={`max-w-[78ch] border-l-2 border-accent/70 pl-3 font-fono text-sm leading-relaxed text-foreground-muted ${className}`.trim()}
+	class={`max-w-[78ch] border-l-2 border-accent/70 pl-3 text-sm leading-relaxed text-foreground-muted ${className}`.trim()}
 >
 	{@render children?.()}
 </blockquote>

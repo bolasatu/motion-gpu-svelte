@@ -136,7 +136,7 @@
 			</a>
 			<button
 				type="button"
-				class="inline-flex size-10 items-center justify-center gap-2 font-fono text-sm whitespace-nowrap text-foreground transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+				class="inline-flex size-10 items-center justify-center gap-2 font-mono text-sm whitespace-nowrap text-foreground transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				aria-label={isOpen ? 'Close docs menu' : 'Open docs menu'}
 				aria-expanded={isOpen}
 				aria-controls="mobile-docs-panel"
@@ -180,7 +180,7 @@
 		<nav class="max-h-[min(62vh,35rem)] overflow-y-auto pr-1">
 			{#each docsRouteGroups as group (group.id)}
 				<section class="mt-4 first:mt-0">
-					<p class="px-3 pb-1 font-fono text-[10px] text-foreground-muted uppercase">
+					<p class="px-3 pb-1 font-mono text-[10px] text-foreground-muted uppercase">
 						{group.title}
 					</p>
 					<ul class="grid gap-1">

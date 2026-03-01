@@ -144,11 +144,11 @@
 				<input
 					bind:this={inputRef}
 					bind:value={query}
-					class="h-12 w-full bg-transparent font-fono text-sm text-foreground placeholder:text-foreground-muted focus:outline-none"
+					class="h-12 w-full bg-transparent text-sm text-foreground placeholder:text-foreground-muted focus:outline-none"
 					placeholder="Search MotionGPU docs"
 					aria-label="Search MotionGPU docs"
 				/>
-				<span class="border border-border px-1.5 py-0.5 font-fono text-[10px] text-foreground-muted"
+				<span class="border border-border px-1.5 py-0.5 font-mono text-[10px] text-foreground-muted"
 					>ESC</span
 				>
 			</div>
@@ -196,7 +196,7 @@
 									{/if}
 
 									{#if result.snippet}
-										<p class="mt-1 line-clamp-1 font-fono text-xs text-foreground-muted">
+										<p class="mt-1 line-clamp-1 text-xs text-foreground-muted">
 											{#each highlight(result.snippet, query) as part, partIndex (`snippet-${partIndex}-${part.text}`)}
 												{#if part.highlighted}
 													<span class="text-accent">{part.text}</span>
@@ -210,13 +210,13 @@
 							{/each}
 						</div>
 					{:else if query.trim()}
-						<p class="px-3 py-6 font-fono text-sm text-foreground-muted">No results found.</p>
+						<p class="px-3 py-6 text-sm text-foreground-muted">No results found.</p>
 					{/if}
 				</div>
 			</div>
 
 			<div class="border-t border-border px-3 py-2">
-				<p class="font-fono text-xs text-foreground-muted">
+				<p class="font-mono text-xs text-foreground-muted">
 					Use ↑ ↓ to navigate and Enter to open.
 				</p>
 			</div>

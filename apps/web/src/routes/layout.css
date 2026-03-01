@@ -9,14 +9,6 @@
 }
 
 @font-face {
-	font-family: 'Aeonik Fono';
-	src: url('/fonts/aeonikfono.woff2') format('woff2');
-	font-weight: 200 900;
-	font-style: normal;
-	font-display: swap;
-}
-
-@font-face {
 	font-family: 'Aeonik Mono';
 	src: url('/fonts/aeonikmono.woff2') format('woff2');
 	font-weight: 200 900;
@@ -38,7 +30,6 @@
 @theme {
 	--font-sans: 'Aeonik Pro';
 	--font-mono: 'Aeonik Mono';
-	--font-fono: 'Aeonik Fono';
 	--color-background: var(--background);
 	--color-background-muted: var(--background-muted);
 	--color-background-dark: var(--background-dark);

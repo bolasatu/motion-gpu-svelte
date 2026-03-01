@@ -12,7 +12,7 @@
 
 <th
 	{...rest}
-	class={`px-3 py-2 font-fono text-xs font-medium tracking-wide text-foreground uppercase ${className}`.trim()}
+	class={`px-3 py-2 text-xs font-medium tracking-wide text-foreground uppercase ${className}`.trim()}
 >
 	{@render children?.()}
 </th>
