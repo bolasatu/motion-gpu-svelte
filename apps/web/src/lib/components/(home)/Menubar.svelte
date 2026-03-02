@@ -124,7 +124,7 @@
 	aria-label="Primary navigation"
 	class="fixed top-3 left-1/2 z-60 w-full -translate-x-1/2 px-4 sm:px-8"
 >
-	<div class="bg-background-muted/55 backdrop-blur-xl">
+	<div class="border border-border bg-background-muted/55 backdrop-blur-xl">
 		<div class="relative flex items-center justify-between gap-3 px-3 py-2 sm:px-4">
 			<a
 				href={resolve(homeRoute)}
@@ -226,7 +226,7 @@
 		aria-modal="true"
 		aria-label="Mobile navigation"
 		tabindex="-1"
-		class="fixed top-20 left-1/2 z-50 grid w-[min(92vw,30rem)] -translate-x-1/2 gap-2 bg-background-muted/55 p-3 backdrop-blur-xl sm:hidden"
+		class="fixed top-20 left-1/2 z-50 grid w-[min(92vw,30rem)] -translate-x-1/2 gap-2 border border-border bg-background-muted/55 p-3 backdrop-blur-xl sm:hidden"
 		onkeydown={handleMobilePanelKeydown}
 		bind:this={mobilePanel}
 		in:fly={{ y: reducedMotion ? 0 : -12, duration: reducedMotion ? 0 : 240, easing: cubicOut }}

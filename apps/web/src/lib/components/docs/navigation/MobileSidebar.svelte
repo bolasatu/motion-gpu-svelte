@@ -119,7 +119,7 @@
 </script>
 
 <nav class="fixed top-3 left-1/2 z-80 w-full -translate-x-1/2 px-4 lg:hidden">
-	<div class="bg-background-muted/55 backdrop-blur-xl">
+	<div class="border border-border bg-background-muted/55 backdrop-blur-xl">
 		<div class="flex items-center justify-between gap-3 px-3 py-2">
 			<a href={resolve(homeRoute)} class="inline-flex items-center gap-2 p-2">
 				<div class="inline-flex items-center gap-1">

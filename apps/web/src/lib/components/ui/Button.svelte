@@ -12,7 +12,7 @@
 					primary: 'bg-foreground text-background hover:bg-foreground/90',
 					brand: 'bg-accent text-background hover:bg-accent/90',
 					secondary: 'bg-background-muted text-foreground hover:bg-background',
-					outline: 'border border-border text-foreground hover:bg-card',
+					outline: 'border border-border text-foreground hover:bg-background-muted/55',
 					ghost: 'text-foreground hover:bg-background',
 					link: 'h-auto p-0 text-foreground underline-offset-4 hover:underline'
 				},

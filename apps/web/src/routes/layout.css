@@ -24,7 +24,7 @@
 	--color-foreground-muted: oklch(0.509 0 0);
 	--color-card: oklch(0.9672 0 0);
 	--color-accent: oklch(0.6996 0.201959 44.4414);
-	--color-border: oklch(0.4592 0 0 / 0.15);
+	--color-border: oklch(0.8578 0 0);
 }
 
 @theme {

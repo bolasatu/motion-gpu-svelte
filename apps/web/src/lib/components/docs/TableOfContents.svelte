@@ -498,7 +498,7 @@
                     -webkit-mask-size: 100% 100%;
                 `}
 				>
-					<div class="absolute inset-0 h-full w-full bg-foreground/20"></div>
+					<div class="absolute inset-0 h-full w-full bg-border"></div>
 					{#if indicatorHeight > 0}
 						<div
 							class="absolute left-0 w-full bg-accent transition-all duration-450 ease-out"

@@ -59,7 +59,7 @@
 							<Chart_3D size={32} />
 						{/if}
 					</div>
-					<div class="border border-border bg-background-muted px-6 py-2 font-mono text-sm">
+					<div class="font-mono text-base">
 						{card.number}
 					</div>
 				</div>

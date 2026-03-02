@@ -73,7 +73,7 @@
 	<div class="relative mt-6 w-full sm:mt-12">
 		<div
 			aria-hidden="true"
-			class="absolute top-0 bottom-0 left-5 w-px bg-background-muted sm:left-1/2 sm:-translate-x-1/2"
+			class="absolute top-0 bottom-0 left-5 w-px bg-border sm:left-1/2 sm:-translate-x-1/2"
 		></div>
 
 		<div class="grid gap-6">
@@ -99,7 +99,7 @@
 										<WarningAlt size={32} />
 									{/if}
 								</div>
-								<div class="border border-border bg-background-muted px-6 py-2 font-mono text-sm">
+								<div class="font-mono text-base">
 									{step.number}
 								</div>
 							</div>

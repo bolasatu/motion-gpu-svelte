@@ -6,21 +6,17 @@
 </script>
 
 <section
-	class="flex w-full items-center justify-center bg-foreground/95 px-4 py-14 text-background sm:px-8 sm:py-20"
+	class="flex w-full items-center justify-center bg-card px-4 py-14 text-foreground sm:px-8 sm:py-20"
 >
 	<div class="grid max-w-3xl place-items-center gap-5 text-center">
 		<h2 class="max-w-3xl text-4xl tracking-tight text-balance sm:text-6xl">
 			Build sharper visuals with a runtime that stays in control.
 		</h2>
-		<p class="max-w-xl text-base text-pretty text-background opacity-80">
+		<p class="max-w-xl text-base text-pretty text-foreground-muted">
 			Start with the docs to learn the API, then explore the repository for examples and internals.
 		</p>
 		<div class="mt-2 flex flex-wrap justify-center gap-3">
-			<Button
-				href={resolve('/docs' as '/')}
-				variant="secondary"
-				class="bg-card text-foreground hover:bg-card/90"
-			>
+			<Button href={resolve('/docs' as '/')} variant="primary">
 				<Book size={16} />
 				<span>Open docs</span>
 			</Button>
@@ -29,7 +25,6 @@
 				target="_blank"
 				rel="noreferrer"
 				variant="outline"
-				class="border-card/10 text-background hover:bg-background/10"
 			>
 				<LogoGithub size={16} />
 				<span>View GitHub</span>
