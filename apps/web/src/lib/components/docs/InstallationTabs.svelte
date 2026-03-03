@@ -58,41 +58,43 @@
 	});
 </script>
 
-<div class="relative my-6 w-full rounded-lg border border-border bg-background shadow-sm">
-	<div class="flex items-center justify-between rounded-t-lg border-b border-border bg-card-muted">
-		<div class="flex items-center">
-			{#each packageManagers as pm (pm)}
-				<button
-					onclick={() => (packageManagerStore.active = pm)}
-					class={cn(
-						'relative px-4 py-2.5 text-sm font-medium transition-colors outline-none select-none',
-						packageManagerStore.active === pm
-							? 'text-foreground'
-							: 'text-foreground/45 hover:text-foreground/70'
-					)}
-				>
-					{pm}
-					{#if packageManagerStore.active === pm}
-						<div class="absolute bottom-0 left-0 h-0.5 w-full bg-accent"></div>
-					{/if}
-				</button>
-			{/each}
+<div class="inset-shadow my-6 rounded-lg border border-border bg-background-inset p-1">
+	<div class="relative w-full rounded-md border border-border bg-background shadow-md">
+		<div class="flex items-center justify-between rounded-t-md border-b border-border">
+			<div class="flex items-center">
+				{#each packageManagers as pm (pm)}
+					<button
+						onclick={() => (packageManagerStore.active = pm)}
+						class={cn(
+							'relative px-4 py-2.5 text-sm font-medium transition-colors outline-none select-none',
+							packageManagerStore.active === pm ? 'text-foreground' : 'text-foreground/70'
+						)}
+					>
+						{pm}
+						{#if packageManagerStore.active === pm}
+							<div class="absolute bottom-0 left-0 h-0.5 w-full bg-accent"></div>
+						{/if}
+					</button>
+				{/each}
+			</div>
+
+			<CopyCodeButton code={activeCommand} class="mr-2" />
 		</div>
 
-		<CopyCodeButton code={activeCommand} class="mr-2" />
-	</div>
-
-	<div class="min-h-12.5 p-4">
-		{#if highlightedCommands[packageManagerStore.active]}
-			<ShikiCodeBlock
-				code=""
-				htmlLight={highlightedCommands[packageManagerStore.active]!.light}
-				unstyled={true}
-			/>
-		{:else}
-			<code class="block font-mono text-sm leading-relaxed whitespace-pre text-foreground">
-				{activeCommand}
-			</code>
-		{/if}
+		<div
+			class="min-h-12.5 p-4 [&>div]:mt-0 [&>div]:rounded-none [&>div]:border-0 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:[box-shadow:none]!"
+		>
+			{#if highlightedCommands[packageManagerStore.active]}
+				<ShikiCodeBlock
+					code=""
+					htmlLight={highlightedCommands[packageManagerStore.active]!.light}
+					unstyled={true}
+				/>
+			{:else}
+				<code class="block font-mono text-sm leading-relaxed whitespace-pre text-foreground">
+					{activeCommand}
+				</code>
+			{/if}
+		</div>
 	</div>
 </div>
