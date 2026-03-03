@@ -1,137 +1,130 @@
 <script lang="ts">
-  import { page } from "$app/state";
-  import { slide } from "svelte/transition";
-  import { docsNavigation } from "$lib/config/navigation";
-  import { brandingConfig } from "$lib/config/branding";
-  import { siteConfig } from "$lib/config/site";
-  import { cn } from "$lib/utils/cn";
-  import SearchTrigger from "../search/SearchTrigger.svelte";
-  import ScrollArea from "$lib/components/ui/ScrollArea.svelte";
-  import ChevronRight from "carbon-icons-svelte/lib/ChevronRight.svelte";
-  import LogoGithub from "carbon-icons-svelte/lib/LogoGithub.svelte";
+	import { page } from '$app/state';
+	import { slide } from 'svelte/transition';
+	import { docsNavigation } from '$lib/config/navigation';
+	import { brandingConfig } from '$lib/config/branding';
+	import { siteConfig } from '$lib/config/site';
+	import { cn } from '$lib/utils/cn';
+	import SearchTrigger from '../search/SearchTrigger.svelte';
+	import ScrollArea from '$lib/components/ui/ScrollArea.svelte';
+	import ChevronRight from 'carbon-icons-svelte/lib/ChevronRight.svelte';
+	import LogoGithub from 'carbon-icons-svelte/lib/LogoGithub.svelte';
 
-  const currentPath = $derived(page.url.pathname);
-  const githubUrl = siteConfig.links.github;
+	const currentPath = $derived(page.url.pathname);
+	const githubUrl = siteConfig.links.github;
 
-  let expandedGroups = $state<Record<string, boolean>>({});
+	let expandedGroups = $state<Record<string, boolean>>({});
 
-  function toggleGroup(slug: string) {
-    expandedGroups[slug] = !expandedGroups[slug];
-  }
+	function toggleGroup(slug: string) {
+		expandedGroups[slug] = !expandedGroups[slug];
+	}
 
-  $effect(() => {
-    const allDocs = [...docsNavigation];
-    for (const doc of allDocs) {
-      if (doc.items?.length) {
-        const isChildActive = doc.items.some(
-          (item) => `/docs/${item.slug}` === currentPath,
-        );
-        if (isChildActive && expandedGroups[doc.slug] === undefined) {
-          expandedGroups[doc.slug] = true;
-        }
-      }
-    }
-  });
+	$effect(() => {
+		const allDocs = [...docsNavigation];
+		for (const doc of allDocs) {
+			if (doc.items?.length) {
+				const isChildActive = doc.items.some((item) => `/docs/${item.slug}` === currentPath);
+				if (isChildActive && expandedGroups[doc.slug] === undefined) {
+					expandedGroups[doc.slug] = true;
+				}
+			}
+		}
+	});
 </script>
 
 <aside class="flex h-dvh flex-col bg-background">
-  <div class="flex flex-col gap-8 p-4">
-    <a href="/" class="flex items-center gap-2">
-      <span
-        class="inline-flex shrink-0 items-center text-accent [&>svg]:size-6 [&>svg]:fill-current"
-        aria-hidden="true"
-      >
-        {@html brandingConfig.logoRaw}
-      </span>
-      <span class="text-xl font-medium text-foreground font-display"
-        >{brandingConfig.name}</span
-      >
-    </a>
+	<div class="flex flex-col gap-8 p-4">
+		<a href="/" class="flex items-center gap-2">
+			<span
+				class="inline-flex shrink-0 items-center text-accent [&>svg]:size-6 [&>svg]:fill-current"
+				aria-hidden="true"
+			>
+				{@html brandingConfig.logoRaw}
+			</span>
+			<span class="font-display text-xl font-medium text-foreground">{brandingConfig.name}</span>
+		</a>
 
-    <SearchTrigger />
-  </div>
+		<SearchTrigger />
+	</div>
 
-  <ScrollArea
-    class="flex-1"
-    viewportClass="p-4"
-    viewportStyle="mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);"
-  >
-    <nav class="flex flex-col gap-1">
-      <h4
-        class="mb-2 ml-2 text-xs font-medium tracking-wider text-foreground/45 uppercase font-display"
-      >
-        Docs
-      </h4>
-      {#each docsNavigation as doc (doc.slug)}
-        {#if doc.items?.length}
-          {@const isGroupActive =
-            expandedGroups[doc.slug] ??
-            doc.items.some((item) => `/docs/${item.slug}` === currentPath)}
-          <button
-            onclick={() => toggleGroup(doc.slug)}
-            class={cn(
-              "flex w-full items-center justify-between rounded-md px-3 py-1.5 text-sm transition-all duration-150 ease-out hover:bg-card-muted hover:text-foreground",
-              isGroupActive ? "text-foreground" : "text-foreground/70",
-            )}
-          >
-            <span>{doc.name}</span>
-            <ChevronRight
-              class={cn(
-                "size-4 transition-transform duration-150",
-                isGroupActive && "rotate-90",
-              )}
-            />
-          </button>
-          {#if isGroupActive}
-            <div
-              transition:slide={{ duration: 150 }}
-              class="flex flex-col gap-1 overflow-hidden pl-4"
-            >
-              {#each doc.items as item (item.slug)}
-                {@const href = `/docs/${item.slug}`}
-                {@const isActive = currentPath === href}
-                <a
-                  {href}
-                  class={cn(
-                    "block rounded-lg px-3 py-1.5 text-sm transition-all duration-150 ease-out",
-                    isActive
-                      ? "bg-accent/10 text-accent"
-                      : "text-foreground/70 hover:bg-card-muted hover:text-foreground",
-                  )}
-                >
-                  {item.name}
-                </a>
-              {/each}
-            </div>
-          {/if}
-        {:else}
-          {@const href = `/docs/${doc.slug}`}
-          {@const isActive = currentPath === href}
-          <a
-            {href}
-            class={cn(
-              "block rounded-lg px-3 py-1.5 text-sm transition-all duration-150 ease-out",
-              isActive
-                ? "bg-accent/10 text-accent"
-                : "text-foreground/70 hover:bg-card-muted hover:text-foreground",
-            )}
-          >
-            {doc.name}
-          </a>
-        {/if}
-      {/each}
-    </nav>
-  </ScrollArea>
+	<ScrollArea
+		class="flex-1"
+		viewportClass="p-4"
+		viewportStyle="mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);"
+	>
+		<nav class="flex flex-col gap-1">
+			<h4
+				class="font-display mb-2 ml-2 text-xs font-medium tracking-wider text-foreground/45 uppercase"
+			>
+				Docs
+			</h4>
+			{#each docsNavigation as doc (doc.slug)}
+				{#if doc.items?.length}
+					{@const isGroupActive =
+						expandedGroups[doc.slug] ??
+						doc.items.some((item) => `/docs/${item.slug}` === currentPath)}
+					<button
+						onclick={() => toggleGroup(doc.slug)}
+						class={cn(
+							'flex w-full items-center justify-between rounded-md px-3 py-1.5 text-sm transition-all duration-150 ease-out hover:bg-card-muted hover:text-foreground',
+							isGroupActive ? 'text-foreground' : 'text-foreground/70'
+						)}
+					>
+						<span>{doc.name}</span>
+						<ChevronRight
+							class={cn('size-4 transition-transform duration-150', isGroupActive && 'rotate-90')}
+						/>
+					</button>
+					{#if isGroupActive}
+						<div
+							transition:slide={{ duration: 150 }}
+							class="flex flex-col gap-1 overflow-hidden pl-4"
+						>
+							{#each doc.items as item (item.slug)}
+								{@const href = `/docs/${item.slug}`}
+								{@const isActive = currentPath === href}
+								<a
+									{href}
+									class={cn(
+										'block rounded-lg px-3 py-1.5 text-sm transition-all duration-150 ease-out',
+										isActive
+											? 'bg-accent/10 text-accent'
+											: 'text-foreground/70 hover:bg-card-muted hover:text-foreground'
+									)}
+								>
+									{item.name}
+								</a>
+							{/each}
+						</div>
+					{/if}
+				{:else}
+					{@const href = `/docs/${doc.slug}`}
+					{@const isActive = currentPath === href}
+					<a
+						{href}
+						class={cn(
+							'block rounded-lg px-3 py-1.5 text-sm transition-all duration-150 ease-out',
+							isActive
+								? 'bg-accent/10 text-accent'
+								: 'text-foreground/70 hover:bg-card-muted hover:text-foreground'
+						)}
+					>
+						{doc.name}
+					</a>
+				{/if}
+			{/each}
+		</nav>
+	</ScrollArea>
 
-  <div class="flex items-center gap-2 p-4">
-    <a
-      class="inline-flex size-7 items-center justify-center gap-2 rounded-md text-sm font-medium text-foreground transition-colors duration-150 ease-out hover:bg-card-muted hover:text-foreground"
-      href={githubUrl}
-      target="_blank"
-      rel="noreferrer"
-      aria-label="Open Motion GPU on GitHub"
-    >
-      <LogoGithub class="size-4 flex-none" />
-    </a>
-  </div>
+	<div class="flex items-center gap-2 p-4">
+		<a
+			class="inline-flex size-7 items-center justify-center gap-2 rounded-md text-sm font-medium text-foreground transition-colors duration-150 ease-out hover:bg-card-muted hover:text-foreground"
+			href={githubUrl}
+			target="_blank"
+			rel="noreferrer"
+			aria-label="Open Motion GPU on GitHub"
+		>
+			<LogoGithub class="size-4 flex-none" />
+		</a>
+	</div>
 </aside>

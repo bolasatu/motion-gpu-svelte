@@ -1,6 +1,6 @@
-import logo from "$lib/assets/motiongpu-logo.svg?raw";
+import logo from '$lib/assets/motiongpu-logo.svg?raw';
 
 export const brandingConfig = {
-  logoRaw: logo,
-  name: "Motion GPU",
+	logoRaw: logo,
+	name: 'Motion GPU'
 };

@@ -1,45 +1,36 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-  import { cn } from "$lib/utils/cn";
+	import type { Snippet } from 'svelte';
+	import { cn } from '$lib/utils/cn';
 
-  type ComponentProps = {
-    class?: string;
-    children?: Snippet;
-    [prop: string]: unknown;
-  };
+	type ComponentProps = {
+		class?: string;
+		children?: Snippet;
+		[prop: string]: unknown;
+	};
 
-  const {
-    children,
-    class: className = "",
-    ...restProps
-  }: ComponentProps = $props();
+	const { children, class: className = '', ...restProps }: ComponentProps = $props();
 
-  const isBlock = (classValue: string | undefined, dataTheme: unknown) => {
-    if (dataTheme !== undefined) return true;
-    if (!classValue) return false;
+	const isBlock = (classValue: string | undefined, dataTheme: unknown) => {
+		if (dataTheme !== undefined) return true;
+		if (!classValue) return false;
 
-    return classValue
-      .split(/\s+/)
-      .some((token) => token.startsWith("language-"));
-  };
+		return classValue.split(/\s+/).some((token) => token.startsWith('language-'));
+	};
 </script>
 
-{#if isBlock(typeof className === "string" ? className : undefined, restProps["data-theme"])}
-  <code
-    {...restProps}
-    class={cn(
-      "block text-sm leading-relaxed whitespace-pre font-mono",
-      className,
-    )}
-  >
-    {@render children?.()}
-  </code>
+{#if isBlock(typeof className === 'string' ? className : undefined, restProps['data-theme'])}
+	<code
+		{...restProps}
+		class={cn('block font-mono text-sm leading-relaxed whitespace-pre', className)}
+	>
+		{@render children?.()}
+	</code>
 {:else}
-  <div
-    class="border border-border relative inline-block w-fit rounded-md bg-card-light px-1.5 py-0.5 text-xs font-medium whitespace-nowrap text-foreground shadow-sm font-mono"
-  >
-    <code {...restProps} class={cn("", className)}>
-      {@render children?.()}
-    </code>
-  </div>
+	<div
+		class="relative inline-block w-fit rounded-md border border-border bg-card-light px-1.5 py-0.5 font-mono text-xs font-medium whitespace-nowrap text-foreground shadow-sm"
+	>
+		<code {...restProps} class={cn('', className)}>
+			{@render children?.()}
+		</code>
+	</div>
 {/if}

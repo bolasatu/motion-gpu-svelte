@@ -1,26 +1,19 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-  import { cn } from "$lib/utils/cn";
+	import type { Snippet } from 'svelte';
+	import { cn } from '$lib/utils/cn';
 
-  type ComponentProps = {
-    class?: string;
-    children?: Snippet;
-    [prop: string]: unknown;
-  };
+	type ComponentProps = {
+		class?: string;
+		children?: Snippet;
+		[prop: string]: unknown;
+	};
 
-  const {
-    children,
-    class: className = "",
-    ...restProps
-  }: ComponentProps = $props();
+	const { children, class: className = '', ...restProps }: ComponentProps = $props();
 </script>
 
 <strong
-  {...restProps}
-  class={cn(
-    "text-sm font-medium text-foreground font-display text-pretty",
-    className,
-  )}
+	{...restProps}
+	class={cn('font-display text-sm font-medium text-pretty text-foreground', className)}
 >
-  {@render children?.()}
+	{@render children?.()}
 </strong>

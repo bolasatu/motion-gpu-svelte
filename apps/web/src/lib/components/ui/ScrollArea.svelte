@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import { cn } from "$lib/utils/cn";
-	import type { Snippet } from "svelte";
+	import { onMount } from 'svelte';
+	import { cn } from '$lib/utils/cn';
+	import type { Snippet } from 'svelte';
 
 	type Props = {
 		class?: string;
@@ -12,14 +12,7 @@
 		viewportStyle?: string;
 	};
 
-	let {
-		class: className,
-		id,
-		children,
-		style,
-		viewportClass,
-		viewportStyle,
-	}: Props = $props();
+	let { class: className, id, children, style, viewportClass, viewportStyle }: Props = $props();
 
 	let viewport: HTMLDivElement;
 	let isDragging = $state(false);
@@ -69,9 +62,9 @@
 		startY = e.clientY;
 		startScrollTop = viewport.scrollTop;
 
-		document.addEventListener("mousemove", onDragMove);
-		document.addEventListener("mouseup", onDragEnd);
-		document.body.style.userSelect = "none";
+		document.addEventListener('mousemove', onDragMove);
+		document.addEventListener('mouseup', onDragEnd);
+		document.body.style.userSelect = 'none';
 	}
 
 	function onDragMove(e: MouseEvent) {
@@ -93,9 +86,9 @@
 
 	function onDragEnd() {
 		isDragging = false;
-		document.removeEventListener("mousemove", onDragMove);
-		document.removeEventListener("mouseup", onDragEnd);
-		document.body.style.userSelect = "";
+		document.removeEventListener('mousemove', onDragMove);
+		document.removeEventListener('mouseup', onDragEnd);
+		document.body.style.userSelect = '';
 	}
 
 	onMount(() => {
@@ -116,13 +109,13 @@
 	});
 </script>
 
-<div class={cn("relative flex flex-col overflow-hidden", className)} {style}>
+<div class={cn('relative flex flex-col overflow-hidden', className)} {style}>
 	<div
 		bind:this={viewport}
 		{id}
 		class={cn(
-			"scrollbar-hide min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto",
-			viewportClass,
+			'scrollbar-hide min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto',
+			viewportClass
 		)}
 		style={viewportStyle}
 		onscroll={handleScroll}
@@ -133,10 +126,8 @@
 	{#if isVisible}
 		<div
 			class={cn(
-				"absolute top-0 right-0 bottom-0 w-2.5 p-px transition-opacity duration-300",
-				isScrolling || isDragging || isHoveringTrack
-					? "opacity-100"
-					: "opacity-0",
+				'absolute top-0 right-0 bottom-0 w-2.5 p-px transition-opacity duration-300',
+				isScrolling || isDragging || isHoveringTrack ? 'opacity-100' : 'opacity-0'
 			)}
 			onmouseenter={() => (isHoveringTrack = true)}
 			onmouseleave={() => (isHoveringTrack = false)}
@@ -149,8 +140,8 @@
 				aria-valuenow={thumbTop}
 				tabindex="0"
 				class={cn(
-					"relative rounded-full bg-foreground/10 transition-colors duration-150 hover:bg-foreground/30 active:bg-foreground/50",
-					isDragging && "bg-foreground/50",
+					'relative rounded-full bg-foreground/10 transition-colors duration-150 hover:bg-foreground/30 active:bg-foreground/50',
+					isDragging && 'bg-foreground/50'
 				)}
 				style:height="{thumbHeight}px"
 				style:transform="translate3d(0, {thumbTop}px, 0)"

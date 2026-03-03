@@ -1,27 +1,20 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-  import { cn } from "$lib/utils/cn";
+	import type { Snippet } from 'svelte';
+	import { cn } from '$lib/utils/cn';
 
-  type ComponentProps = {
-    class?: string;
-    children?: Snippet;
-    [prop: string]: unknown;
-  };
+	type ComponentProps = {
+		class?: string;
+		children?: Snippet;
+		[prop: string]: unknown;
+	};
 
-  const {
-    children,
-    class: className = "",
-    ...restProps
-  }: ComponentProps = $props();
+	const { children, class: className = '', ...restProps }: ComponentProps = $props();
 </script>
 
-<div class="border border-border relative my-8 rounded-lg bg-card shadow-sm">
-  <div class="w-full overflow-x-auto rounded-lg">
-    <table
-      {...restProps}
-      class={cn("w-full text-base [&_code]:text-sm", className)}
-    >
-      {@render children?.()}
-    </table>
-  </div>
+<div class="relative my-8 rounded-lg border border-border bg-card shadow-sm">
+	<div class="w-full overflow-x-auto rounded-lg">
+		<table {...restProps} class={cn('w-full text-base [&_code]:text-sm', className)}>
+			{@render children?.()}
+		</table>
+	</div>
 </div>

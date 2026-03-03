@@ -1,27 +1,27 @@
-import { writable, type Readable } from "svelte/store";
+import { writable, type Readable } from 'svelte/store';
 
 /**
  * Readable store with synchronous access to the latest value.
  */
 export interface CurrentReadable<T> extends Readable<T> {
-  /**
-   * Latest store value.
-   */
-  readonly current: T;
+	/**
+	 * Latest store value.
+	 */
+	readonly current: T;
 }
 
 /**
  * Writable extension of {@link CurrentReadable}.
  */
 export interface CurrentWritable<T> extends CurrentReadable<T> {
-  /**
-   * Sets next value.
-   */
-  set: (value: T) => void;
-  /**
-   * Updates value based on previous value.
-   */
-  update: (updater: (value: T) => T) => void;
+	/**
+	 * Sets next value.
+	 */
+	set: (value: T) => void;
+	/**
+	 * Updates value based on previous value.
+	 */
+	update: (updater: (value: T) => T) => void;
 }
 
 /**
@@ -32,26 +32,26 @@ export interface CurrentWritable<T> extends CurrentReadable<T> {
  * @returns Current-aware writable store.
  */
 export function currentWritable<T>(
-  initialValue: T,
-  onChange?: (value: T) => void,
+	initialValue: T,
+	onChange?: (value: T) => void
 ): CurrentWritable<T> {
-  let current = initialValue;
-  const store = writable(initialValue);
+	let current = initialValue;
+	const store = writable(initialValue);
 
-  const set = (value: T) => {
-    current = value;
-    store.set(value);
-    onChange?.(value);
-  };
+	const set = (value: T) => {
+		current = value;
+		store.set(value);
+		onChange?.(value);
+	};
 
-  return {
-    get current() {
-      return current;
-    },
-    subscribe: store.subscribe,
-    set,
-    update(updater) {
-      set(updater(current));
-    },
-  };
+	return {
+		get current() {
+			return current;
+		},
+		subscribe: store.subscribe,
+		set,
+		update(updater) {
+			set(updater(current));
+		}
+	};
 }

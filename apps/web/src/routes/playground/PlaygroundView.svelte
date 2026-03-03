@@ -1,612 +1,571 @@
 <script lang="ts">
-  import { resolve } from "$app/paths";
-  import Logo from "$lib/assets/motiongpu-logo.svg?raw";
-  import ChevronDown from "carbon-icons-svelte/lib/ChevronDown.svelte";
-  import ChevronRight from "carbon-icons-svelte/lib/ChevronRight.svelte";
-  import Close from "carbon-icons-svelte/lib/Close.svelte";
-  import Document from "carbon-icons-svelte/lib/Document.svelte";
-  import Folder from "carbon-icons-svelte/lib/Folder.svelte";
-  import LogoSvelte from "carbon-icons-svelte/lib/LogoSvelte.svelte";
-  import Return from "carbon-icons-svelte/lib/Return.svelte";
-  import OpenPanelFilledLeft from "carbon-icons-svelte/lib/OpenPanelFilledLeft.svelte";
-  import OpenPanelLeft from "carbon-icons-svelte/lib/OpenPanelLeft.svelte";
+	import { resolve } from '$app/paths';
+	import Logo from '$lib/assets/motiongpu-logo.svg?raw';
+	import ChevronDown from 'carbon-icons-svelte/lib/ChevronDown.svelte';
+	import ChevronRight from 'carbon-icons-svelte/lib/ChevronRight.svelte';
+	import Close from 'carbon-icons-svelte/lib/Close.svelte';
+	import Document from 'carbon-icons-svelte/lib/Document.svelte';
+	import Folder from 'carbon-icons-svelte/lib/Folder.svelte';
+	import LogoSvelte from 'carbon-icons-svelte/lib/LogoSvelte.svelte';
+	import Return from 'carbon-icons-svelte/lib/Return.svelte';
+	import OpenPanelFilledLeft from 'carbon-icons-svelte/lib/OpenPanelFilledLeft.svelte';
+	import OpenPanelLeft from 'carbon-icons-svelte/lib/OpenPanelLeft.svelte';
 
-  import "monaco-editor/min/vs/editor/editor.main.css";
-  import type { PlaygroundController } from "./playground-controller.svelte";
+	import 'monaco-editor/min/vs/editor/editor.main.css';
+	import type { PlaygroundController } from './playground-controller.svelte';
 
-  let { controller }: { controller: PlaygroundController } = $props();
-  let isTreeVisible = $state(true);
-  let workspaceHost: HTMLDivElement | null = null;
-  let sidebarHost: HTMLElement | null = null;
-  let treeWidth = $state(256);
-  let previewWidth = $state(420);
-  let mobileTreeHeight = $state(0);
-  let activeResizeHandle: HTMLButtonElement | null = null;
-  let activeResize = $state<{
-    target: "tree" | "preview";
-    pointerId: number;
-    startX: number;
-    startTreeWidth: number;
-    startPreviewWidth: number;
-  } | null>(null);
+	let { controller }: { controller: PlaygroundController } = $props();
+	let isTreeVisible = $state(true);
+	let workspaceHost: HTMLDivElement | null = null;
+	let sidebarHost: HTMLElement | null = null;
+	let treeWidth = $state(256);
+	let previewWidth = $state(420);
+	let mobileTreeHeight = $state(0);
+	let activeResizeHandle: HTMLButtonElement | null = null;
+	let activeResize = $state<{
+		target: 'tree' | 'preview';
+		pointerId: number;
+		startX: number;
+		startTreeWidth: number;
+		startPreviewWidth: number;
+	} | null>(null);
 
-  const RESIZER_SIZE = 1;
-  const MIN_TREE_WIDTH = 180;
-  const MIN_EDITOR_WIDTH = 380;
-  const MIN_PREVIEW_WIDTH = 260;
+	const RESIZER_SIZE = 1;
+	const MIN_TREE_WIDTH = 180;
+	const MIN_EDITOR_WIDTH = 380;
+	const MIN_PREVIEW_WIDTH = 260;
 
-  const isSvelteFile = (path: string) => path.endsWith(".svelte");
-  const clamp = (value: number, min: number, max: number) =>
-    Math.min(Math.max(value, min), max);
-  const getWorkspaceWidth = () => workspaceHost?.clientWidth ?? 0;
-  const isDesktopViewport = () =>
-    typeof window !== "undefined" &&
-    window.matchMedia("(min-width: 1024px)").matches;
+	const isSvelteFile = (path: string) => path.endsWith('.svelte');
+	const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+	const getWorkspaceWidth = () => workspaceHost?.clientWidth ?? 0;
+	const isDesktopViewport = () =>
+		typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
 
-  const getMaxTreeWidth = (
-    workspaceWidth: number,
-    nextPreviewWidth = previewWidth,
-  ) =>
-    Math.max(
-      MIN_TREE_WIDTH,
-      workspaceWidth -
-        RESIZER_SIZE -
-        RESIZER_SIZE -
-        nextPreviewWidth -
-        MIN_EDITOR_WIDTH,
-    );
+	const getMaxTreeWidth = (workspaceWidth: number, nextPreviewWidth = previewWidth) =>
+		Math.max(
+			MIN_TREE_WIDTH,
+			workspaceWidth - RESIZER_SIZE - RESIZER_SIZE - nextPreviewWidth - MIN_EDITOR_WIDTH
+		);
 
-  const getMaxPreviewWidth = (
-    workspaceWidth: number,
-    nextTreeWidth = treeWidth,
-  ) => {
-    const treeAndHandleWidth = isTreeVisible ? nextTreeWidth + RESIZER_SIZE : 0;
-    return Math.max(
-      MIN_PREVIEW_WIDTH,
-      workspaceWidth - treeAndHandleWidth - RESIZER_SIZE - MIN_EDITOR_WIDTH,
-    );
-  };
+	const getMaxPreviewWidth = (workspaceWidth: number, nextTreeWidth = treeWidth) => {
+		const treeAndHandleWidth = isTreeVisible ? nextTreeWidth + RESIZER_SIZE : 0;
+		return Math.max(
+			MIN_PREVIEW_WIDTH,
+			workspaceWidth - treeAndHandleWidth - RESIZER_SIZE - MIN_EDITOR_WIDTH
+		);
+	};
 
-  const clampPanelWidths = () => {
-    const workspaceWidth = getWorkspaceWidth();
-    if (workspaceWidth <= 0) return;
+	const clampPanelWidths = () => {
+		const workspaceWidth = getWorkspaceWidth();
+		if (workspaceWidth <= 0) return;
 
-    if (isTreeVisible) {
-      treeWidth = clamp(
-        treeWidth,
-        MIN_TREE_WIDTH,
-        getMaxTreeWidth(workspaceWidth),
-      );
-    }
+		if (isTreeVisible) {
+			treeWidth = clamp(treeWidth, MIN_TREE_WIDTH, getMaxTreeWidth(workspaceWidth));
+		}
 
-    previewWidth = clamp(
-      previewWidth,
-      MIN_PREVIEW_WIDTH,
-      getMaxPreviewWidth(workspaceWidth, isTreeVisible ? treeWidth : 0),
-    );
-  };
+		previewWidth = clamp(
+			previewWidth,
+			MIN_PREVIEW_WIDTH,
+			getMaxPreviewWidth(workspaceWidth, isTreeVisible ? treeWidth : 0)
+		);
+	};
 
-  const workspaceColumns = $derived.by(() => {
-    const treeColumn = isTreeVisible ? `${Math.round(treeWidth)}px` : "0px";
-    const treeResizerColumn = isTreeVisible ? `${RESIZER_SIZE}px` : "0px";
-    const previewResizerColumn = `${RESIZER_SIZE}px`;
-    const previewColumn = `${Math.round(previewWidth)}px`;
-    return `${treeColumn} ${treeResizerColumn} minmax(0,1fr) ${previewResizerColumn} ${previewColumn}`;
-  });
-  const workspaceRows = $derived.by(() => {
-    const isMobile =
-      typeof window !== "undefined" &&
-      !window.matchMedia("(min-width: 1024px)").matches;
-    const treeRow = isMobile
-      ? isTreeVisible
-        ? `${mobileTreeHeight}px`
-        : "0px"
-      : "minmax(0,1fr)";
-    return `${treeRow} minmax(0,1fr) minmax(0,1fr)`;
-  });
-  const toggleTree = () => {
-    isTreeVisible = !isTreeVisible;
-    if (typeof window !== "undefined") {
-      requestAnimationFrame(() => {
-        clampPanelWidths();
-      });
-    }
-  };
+	const workspaceColumns = $derived.by(() => {
+		const treeColumn = isTreeVisible ? `${Math.round(treeWidth)}px` : '0px';
+		const treeResizerColumn = isTreeVisible ? `${RESIZER_SIZE}px` : '0px';
+		const previewResizerColumn = `${RESIZER_SIZE}px`;
+		const previewColumn = `${Math.round(previewWidth)}px`;
+		return `${treeColumn} ${treeResizerColumn} minmax(0,1fr) ${previewResizerColumn} ${previewColumn}`;
+	});
+	const workspaceRows = $derived.by(() => {
+		const isMobile =
+			typeof window !== 'undefined' && !window.matchMedia('(min-width: 1024px)').matches;
+		const treeRow = isMobile ? (isTreeVisible ? `${mobileTreeHeight}px` : '0px') : 'minmax(0,1fr)';
+		return `${treeRow} minmax(0,1fr) minmax(0,1fr)`;
+	});
+	const toggleTree = () => {
+		isTreeVisible = !isTreeVisible;
+		if (typeof window !== 'undefined') {
+			requestAnimationFrame(() => {
+				clampPanelWidths();
+			});
+		}
+	};
 
-  const beginResize = (target: "tree" | "preview", event: PointerEvent) => {
-    if (event.button !== 0 || !workspaceHost || !isDesktopViewport()) return;
-    if (target === "tree" && !isTreeVisible) return;
-    const handle = event.currentTarget;
-    if (!(handle instanceof HTMLButtonElement)) return;
+	const beginResize = (target: 'tree' | 'preview', event: PointerEvent) => {
+		if (event.button !== 0 || !workspaceHost || !isDesktopViewport()) return;
+		if (target === 'tree' && !isTreeVisible) return;
+		const handle = event.currentTarget;
+		if (!(handle instanceof HTMLButtonElement)) return;
 
-    event.preventDefault();
-    try {
-      handle.setPointerCapture(event.pointerId);
-    } catch {
-      // Ignore if the browser cannot capture this pointer.
-    }
-    activeResizeHandle = handle;
-    activeResize = {
-      target,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startTreeWidth: treeWidth,
-      startPreviewWidth: previewWidth,
-    };
-    document.body.classList.add("playground-resizing");
-  };
+		event.preventDefault();
+		try {
+			handle.setPointerCapture(event.pointerId);
+		} catch {
+			// Ignore if the browser cannot capture this pointer.
+		}
+		activeResizeHandle = handle;
+		activeResize = {
+			target,
+			pointerId: event.pointerId,
+			startX: event.clientX,
+			startTreeWidth: treeWidth,
+			startPreviewWidth: previewWidth
+		};
+		document.body.classList.add('playground-resizing');
+	};
 
-  const updateResize = (event: PointerEvent) => {
-    if (
-      !activeResize ||
-      !workspaceHost ||
-      event.pointerId !== activeResize.pointerId
-    )
-      return;
+	const updateResize = (event: PointerEvent) => {
+		if (!activeResize || !workspaceHost || event.pointerId !== activeResize.pointerId) return;
 
-    const workspaceWidth = getWorkspaceWidth();
-    if (workspaceWidth <= 0) return;
+		const workspaceWidth = getWorkspaceWidth();
+		if (workspaceWidth <= 0) return;
 
-    const deltaX = event.clientX - activeResize.startX;
+		const deltaX = event.clientX - activeResize.startX;
 
-    if (activeResize.target === "tree") {
-      treeWidth = clamp(
-        activeResize.startTreeWidth + deltaX,
-        MIN_TREE_WIDTH,
-        getMaxTreeWidth(workspaceWidth),
-      );
-      previewWidth = clamp(
-        previewWidth,
-        MIN_PREVIEW_WIDTH,
-        getMaxPreviewWidth(workspaceWidth, treeWidth),
-      );
-      return;
-    }
+		if (activeResize.target === 'tree') {
+			treeWidth = clamp(
+				activeResize.startTreeWidth + deltaX,
+				MIN_TREE_WIDTH,
+				getMaxTreeWidth(workspaceWidth)
+			);
+			previewWidth = clamp(
+				previewWidth,
+				MIN_PREVIEW_WIDTH,
+				getMaxPreviewWidth(workspaceWidth, treeWidth)
+			);
+			return;
+		}
 
-    previewWidth = clamp(
-      activeResize.startPreviewWidth - deltaX,
-      MIN_PREVIEW_WIDTH,
-      getMaxPreviewWidth(workspaceWidth),
-    );
-  };
+		previewWidth = clamp(
+			activeResize.startPreviewWidth - deltaX,
+			MIN_PREVIEW_WIDTH,
+			getMaxPreviewWidth(workspaceWidth)
+		);
+	};
 
-  const endResize = (event?: PointerEvent) => {
-    if (!activeResize) return;
-    if (event && event.pointerId !== activeResize.pointerId) return;
-    const pointerId = activeResize.pointerId;
+	const endResize = (event?: PointerEvent) => {
+		if (!activeResize) return;
+		if (event && event.pointerId !== activeResize.pointerId) return;
+		const pointerId = activeResize.pointerId;
 
-    activeResize = null;
-    if (activeResizeHandle?.hasPointerCapture(pointerId)) {
-      activeResizeHandle.releasePointerCapture(pointerId);
-    }
-    activeResizeHandle = null;
-    document.body.classList.remove("playground-resizing");
-  };
+		activeResize = null;
+		if (activeResizeHandle?.hasPointerCapture(pointerId)) {
+			activeResizeHandle.releasePointerCapture(pointerId);
+		}
+		activeResizeHandle = null;
+		document.body.classList.remove('playground-resizing');
+	};
 
-  const resizeByKeyboard = (
-    target: "tree" | "preview",
-    event: KeyboardEvent,
-  ) => {
-    if (!isDesktopViewport()) return;
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+	const resizeByKeyboard = (target: 'tree' | 'preview', event: KeyboardEvent) => {
+		if (!isDesktopViewport()) return;
+		if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 
-    event.preventDefault();
-    const workspaceWidth = getWorkspaceWidth();
-    if (workspaceWidth <= 0) return;
-    const step = event.shiftKey ? 48 : 16;
-    const direction = event.key === "ArrowRight" ? 1 : -1;
+		event.preventDefault();
+		const workspaceWidth = getWorkspaceWidth();
+		if (workspaceWidth <= 0) return;
+		const step = event.shiftKey ? 48 : 16;
+		const direction = event.key === 'ArrowRight' ? 1 : -1;
 
-    if (target === "tree") {
-      treeWidth = clamp(
-        treeWidth + direction * step,
-        MIN_TREE_WIDTH,
-        getMaxTreeWidth(workspaceWidth),
-      );
-      previewWidth = clamp(
-        previewWidth,
-        MIN_PREVIEW_WIDTH,
-        getMaxPreviewWidth(workspaceWidth, treeWidth),
-      );
-      return;
-    }
+		if (target === 'tree') {
+			treeWidth = clamp(
+				treeWidth + direction * step,
+				MIN_TREE_WIDTH,
+				getMaxTreeWidth(workspaceWidth)
+			);
+			previewWidth = clamp(
+				previewWidth,
+				MIN_PREVIEW_WIDTH,
+				getMaxPreviewWidth(workspaceWidth, treeWidth)
+			);
+			return;
+		}
 
-    previewWidth = clamp(
-      previewWidth - direction * step,
-      MIN_PREVIEW_WIDTH,
-      getMaxPreviewWidth(workspaceWidth),
-    );
-  };
+		previewWidth = clamp(
+			previewWidth - direction * step,
+			MIN_PREVIEW_WIDTH,
+			getMaxPreviewWidth(workspaceWidth)
+		);
+	};
 
-  $effect(() => {
-    const host = workspaceHost;
-    if (!host || typeof ResizeObserver === "undefined") return;
+	$effect(() => {
+		const host = workspaceHost;
+		if (!host || typeof ResizeObserver === 'undefined') return;
 
-    clampPanelWidths();
+		clampPanelWidths();
 
-    const observer = new ResizeObserver(() => {
-      clampPanelWidths();
-    });
-    observer.observe(host);
+		const observer = new ResizeObserver(() => {
+			clampPanelWidths();
+		});
+		observer.observe(host);
 
-    return () => observer.disconnect();
-  });
+		return () => observer.disconnect();
+	});
 
-  $effect(() => {
-    if (typeof window === "undefined") return;
+	$effect(() => {
+		if (typeof window === 'undefined') return;
 
-    const onPointerMove = (event: PointerEvent) => updateResize(event);
-    const onPointerUp = (event: PointerEvent) => endResize(event);
+		const onPointerMove = (event: PointerEvent) => updateResize(event);
+		const onPointerUp = (event: PointerEvent) => endResize(event);
 
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointercancel", onPointerUp);
+		window.addEventListener('pointermove', onPointerMove);
+		window.addEventListener('pointerup', onPointerUp);
+		window.addEventListener('pointercancel', onPointerUp);
 
-    return () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("pointercancel", onPointerUp);
-      document.body.classList.remove("playground-resizing");
-    };
-  });
-  $effect(() => {
-    if (typeof window === "undefined") return;
-    const mql = window.matchMedia("(max-width: 1023px)");
-    const recompute = () => {
-      if (mql.matches) {
-        mobileTreeHeight = sidebarHost?.scrollHeight ?? 0;
-      } else {
-        mobileTreeHeight = 0;
-      }
-    };
-    recompute();
-    const onChange = () => recompute();
-    window.addEventListener("resize", onChange);
-    mql.addEventListener?.("change", onChange);
-    return () => {
-      window.removeEventListener("resize", onChange);
-      mql.removeEventListener?.("change", onChange);
-    };
-  });
+		return () => {
+			window.removeEventListener('pointermove', onPointerMove);
+			window.removeEventListener('pointerup', onPointerUp);
+			window.removeEventListener('pointercancel', onPointerUp);
+			document.body.classList.remove('playground-resizing');
+		};
+	});
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const mql = window.matchMedia('(max-width: 1023px)');
+		const recompute = () => {
+			if (mql.matches) {
+				mobileTreeHeight = sidebarHost?.scrollHeight ?? 0;
+			} else {
+				mobileTreeHeight = 0;
+			}
+		};
+		recompute();
+		const onChange = () => recompute();
+		window.addEventListener('resize', onChange);
+		mql.addEventListener?.('change', onChange);
+		return () => {
+			window.removeEventListener('resize', onChange);
+			mql.removeEventListener?.('change', onChange);
+		};
+	});
 </script>
 
 <main class="flex h-dvh min-h-0 flex-col overflow-hidden">
-  <div
-    class="flex h-9 items-center justify-between border-b border-border bg-card-light px-2 sm:px-3"
-  >
-    <div
-      class="inline-flex items-center gap-1 py-2 text-sm tracking-tight text-foreground transition-colors hover:text-foreground"
-    >
-      <a
-        href={resolve("/" as const)}
-        class="inline-flex items-center gap-1 py-1.5 text-xs tracking-tight text-foreground/70 duration-150 ease-out transition-colors hover:text-foreground"
-        aria-label="Back to Home"
-        title="Back to Home"
-      >
-        <Return size={16} />
-        Return to the homepage
-      </a>
-    </div>
-    <div class="flex items-center gap-1">
-      <button
-        type="button"
-        class={`layout-toggle ${isTreeVisible ? "layout-toggle--active" : ""}`}
-        onclick={toggleTree}
-        aria-label="Toggle file tree"
-        title="Toggle file tree"
-      >
-        {#if isTreeVisible}
-          <OpenPanelFilledLeft size={16} />
-        {:else}
-          <OpenPanelLeft size={16} />
-        {/if}
-      </button>
-    </div>
-  </div>
+	<div
+		class="flex h-9 items-center justify-between border-b border-border bg-card-light px-2 sm:px-3"
+	>
+		<div
+			class="inline-flex items-center gap-1 py-2 text-sm tracking-tight text-foreground transition-colors hover:text-foreground"
+		>
+			<a
+				href={resolve('/' as const)}
+				class="inline-flex items-center gap-1 py-1.5 text-xs tracking-tight text-foreground/70 transition-colors duration-150 ease-out hover:text-foreground"
+				aria-label="Back to Home"
+				title="Back to Home"
+			>
+				<Return size={16} />
+				Return to the homepage
+			</a>
+		</div>
+		<div class="flex items-center gap-1">
+			<button
+				type="button"
+				class={`layout-toggle ${isTreeVisible ? 'layout-toggle--active' : ''}`}
+				onclick={toggleTree}
+				aria-label="Toggle file tree"
+				title="Toggle file tree"
+			>
+				{#if isTreeVisible}
+					<OpenPanelFilledLeft size={16} />
+				{:else}
+					<OpenPanelLeft size={16} />
+				{/if}
+			</button>
+		</div>
+	</div>
 
-  <div
-    bind:this={workspaceHost}
-    class={`playground-workspace min-h-0 flex-1 ${
-      activeResize ? "playground-workspace--resizing" : ""
-    }`}
-    style={`--playground-columns: ${workspaceColumns}; --playground-rows: ${workspaceRows};`}
-  >
-    <aside
-      inert={!isTreeVisible}
-      aria-hidden={!isTreeVisible}
-      class={`playground-sidebar flex min-h-0 flex-col overflow-hidden bg-card-light lg:max-h-none ${
-        isTreeVisible ? "" : "playground-sidebar--collapsed"
-      } `}
-      bind:this={sidebarHost}
-    >
-      <div
-        class="flex items-center gap-1 border-b border-border px-3 py-2 text-sm whitespace-nowrap"
-      >
-        <span
-          class="flex items-center text-accent [&>svg]:size-4 [&>svg]:fill-current"
-          aria-hidden="true"
-        >
-          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-          {@html Logo}
-        </span>
-        <span class="font-medium"
-          >MotionGPU <span class="text-xs text-accent">playground</span></span
-        >
-      </div>
-      <div class="min-h-0 flex-1 overflow-auto py-1">
-        {#each controller.visibleFileTreeRows as row (row.path)}
-          {#if row.kind === "directory"}
-            <button
-              type="button"
-              onclick={() => controller.toggleDirectory(row.path)}
-              class="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-foreground/70 transition-colors duration-150 ease-out hover:bg-card-muted hover:text-foreground"
-              style={`padding-left: ${8 + row.depth * 12}px`}
-            >
-              <span
-                class="inline-flex w-3 items-center justify-center text-foreground/60"
-              >
-                {#if controller.collapsedDirs[row.path]}
-                  <ChevronRight size={16} />
-                {:else}
-                  <ChevronDown size={16} />
-                {/if}
-              </span>
-              <span class="inline-flex items-center text-foreground/55">
-                <Folder size={16} />
-              </span>
-              <span class="truncate">{row.name}</span>
-            </button>
-          {:else}
-            <button
-              type="button"
-              onclick={() => controller.openFile(row.path)}
-              class={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors duration-150 ease-out ${
-                controller.activeFilePath === row.path
-                  ? "bg-card-muted text-foreground"
-                  : "text-foreground/70 hover:bg-card-muted hover:text-foreground"
-              }`}
-              style={`padding-left: ${8 + row.depth * 12}px`}
-            >
-              <span class="inline-flex items-center text-foreground/55">
-                {#if isSvelteFile(row.path)}
-                  <LogoSvelte size={16} />
-                {:else}
-                  <Document size={16} />
-                {/if}
-              </span>
-              <span class="truncate">{row.name}</span>
-            </button>
-          {/if}
-        {/each}
-      </div>
-    </aside>
-    <button
-      type="button"
-      aria-label="Resize file tree panel"
-      aria-hidden={!isTreeVisible}
-      tabindex={isTreeVisible ? 0 : -1}
-      class={`panel-resizer ${activeResize?.target === "tree" ? "panel-resizer--active" : ""} ${
-        isTreeVisible ? "" : "panel-resizer--hidden"
-      }`}
-      onpointerdown={(event) => beginResize("tree", event)}
-      onkeydown={(event) => resizeByKeyboard("tree", event)}
-    ></button>
+	<div
+		bind:this={workspaceHost}
+		class={`playground-workspace min-h-0 flex-1 ${
+			activeResize ? 'playground-workspace--resizing' : ''
+		}`}
+		style={`--playground-columns: ${workspaceColumns}; --playground-rows: ${workspaceRows};`}
+	>
+		<aside
+			inert={!isTreeVisible}
+			aria-hidden={!isTreeVisible}
+			class={`playground-sidebar flex min-h-0 flex-col overflow-hidden bg-card-light lg:max-h-none ${
+				isTreeVisible ? '' : 'playground-sidebar--collapsed'
+			} `}
+			bind:this={sidebarHost}
+		>
+			<div
+				class="flex items-center gap-1 border-b border-border px-3 py-2 text-sm whitespace-nowrap"
+			>
+				<span
+					class="flex items-center text-accent [&>svg]:size-4 [&>svg]:fill-current"
+					aria-hidden="true"
+				>
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+					{@html Logo}
+				</span>
+				<span class="font-medium"
+					>MotionGPU <span class="text-xs text-accent">playground</span></span
+				>
+			</div>
+			<div class="min-h-0 flex-1 overflow-auto py-1">
+				{#each controller.visibleFileTreeRows as row (row.path)}
+					{#if row.kind === 'directory'}
+						<button
+							type="button"
+							onclick={() => controller.toggleDirectory(row.path)}
+							class="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-foreground/70 transition-colors duration-150 ease-out hover:bg-card-muted hover:text-foreground"
+							style={`padding-left: ${8 + row.depth * 12}px`}
+						>
+							<span class="inline-flex w-3 items-center justify-center text-foreground/60">
+								{#if controller.collapsedDirs[row.path]}
+									<ChevronRight size={16} />
+								{:else}
+									<ChevronDown size={16} />
+								{/if}
+							</span>
+							<span class="inline-flex items-center text-foreground/55">
+								<Folder size={16} />
+							</span>
+							<span class="truncate">{row.name}</span>
+						</button>
+					{:else}
+						<button
+							type="button"
+							onclick={() => controller.openFile(row.path)}
+							class={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors duration-150 ease-out ${
+								controller.activeFilePath === row.path
+									? 'bg-card-muted text-foreground'
+									: 'text-foreground/70 hover:bg-card-muted hover:text-foreground'
+							}`}
+							style={`padding-left: ${8 + row.depth * 12}px`}
+						>
+							<span class="inline-flex items-center text-foreground/55">
+								{#if isSvelteFile(row.path)}
+									<LogoSvelte size={16} />
+								{:else}
+									<Document size={16} />
+								{/if}
+							</span>
+							<span class="truncate">{row.name}</span>
+						</button>
+					{/if}
+				{/each}
+			</div>
+		</aside>
+		<button
+			type="button"
+			aria-label="Resize file tree panel"
+			aria-hidden={!isTreeVisible}
+			tabindex={isTreeVisible ? 0 : -1}
+			class={`panel-resizer ${activeResize?.target === 'tree' ? 'panel-resizer--active' : ''} ${
+				isTreeVisible ? '' : 'panel-resizer--hidden'
+			}`}
+			onpointerdown={(event) => beginResize('tree', event)}
+			onkeydown={(event) => resizeByKeyboard('tree', event)}
+		></button>
 
-    <section class="flex min-h-0 flex-col bg-card-light">
-      <div class="h-8 border-b border-border">
-        <div class="flex items-stretch overflow-x-auto">
-          {#each controller.openFilePaths as filePath (filePath)}
-            <div
-              class={`group inline-flex shrink-0 items-center border-r border-border ${
-                controller.activeFilePath === filePath
-                  ? "bg-white"
-                  : "bg-background"
-              }`}
-            >
-              <button
-                type="button"
-                onclick={() => controller.switchToFile(filePath)}
-                class={`px-2.5 py-2 text-left font-mono text-[11px] transition-colors duration-150 ease-out sm:px-3 sm:text-xs ${
-                  controller.activeFilePath === filePath
-                    ? "text-foreground"
-                    : "text-foreground/70 hover:text-foreground"
-                }`}
-              >
-                {filePath.split("/").at(-1)}
-              </button>
-              {#if controller.openFilePaths.length > 1}
-                <button
-                  type="button"
-                  onclick={(event) => {
-                    event.stopPropagation();
-                    controller.closeFile(filePath);
-                  }}
-                  class="inline-flex items-center px-3 py-2 text-foreground/70 transition-colors duration-150 ease-out hover:text-foreground"
-                  aria-label={`Close ${filePath}`}
-                >
-                  <Close size={16} />
-                </button>
-              {/if}
-            </div>
-          {/each}
-        </div>
-      </div>
+		<section class="flex min-h-0 flex-col bg-card-light">
+			<div class="h-8 border-b border-border">
+				<div class="flex items-stretch overflow-x-auto">
+					{#each controller.openFilePaths as filePath (filePath)}
+						<div
+							class={`group inline-flex shrink-0 items-center border-r border-border ${
+								controller.activeFilePath === filePath ? 'bg-white' : 'bg-background'
+							}`}
+						>
+							<button
+								type="button"
+								onclick={() => controller.switchToFile(filePath)}
+								class={`px-2.5 py-2 text-left font-mono text-[11px] transition-colors duration-150 ease-out sm:px-3 sm:text-xs ${
+									controller.activeFilePath === filePath
+										? 'text-foreground'
+										: 'text-foreground/70 hover:text-foreground'
+								}`}
+							>
+								{filePath.split('/').at(-1)}
+							</button>
+							{#if controller.openFilePaths.length > 1}
+								<button
+									type="button"
+									onclick={(event) => {
+										event.stopPropagation();
+										controller.closeFile(filePath);
+									}}
+									class="inline-flex items-center px-3 py-2 text-foreground/70 transition-colors duration-150 ease-out hover:text-foreground"
+									aria-label={`Close ${filePath}`}
+								>
+									<Close size={16} />
+								</button>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			</div>
 
-      <div
-        bind:this={controller.editorHost}
-        class="min-h-0 flex-1 bg-white"
-        aria-label="Svelte component editor"
-      ></div>
+			<div
+				bind:this={controller.editorHost}
+				class="min-h-0 flex-1 bg-white"
+				aria-label="Svelte component editor"
+			></div>
 
-      {#if controller.syncError}
-        <p
-          class="border-t border-border bg-card-light px-3 py-2 font-mono text-xs text-red-500"
-          role="alert"
-        >
-          {controller.syncError}
-        </p>
-      {/if}
+			{#if controller.syncError}
+				<p
+					class="border-t border-border bg-card-light px-3 py-2 font-mono text-xs text-red-500"
+					role="alert"
+				>
+					{controller.syncError}
+				</p>
+			{/if}
 
-      <section class="border-t border-border bg-card-light">
-        {#if controller.runtimeLog}
-          <details>
-            <summary
-              class="cursor-pointer px-3 py-2 font-mono text-xs text-foreground/70"
-            >
-              Runtime log ({controller.status})
-            </summary>
-            <pre
-              class="h-32 overflow-auto border-t border-border bg-card px-3 py-2 font-mono text-[11px] leading-5 whitespace-pre-wrap text-foreground/70">{controller.runtimeLogTail}</pre>
-          </details>
-        {:else}
-          <p
-            class="border-t border-border px-3 py-2 font-mono text-xs text-foreground/70"
-          >
-            {controller.status}
-          </p>
-        {/if}
-      </section>
-    </section>
-    <button
-      type="button"
-      aria-label="Resize preview panel"
-      tabindex={0}
-      class={`panel-resizer ${activeResize?.target === "preview" ? "panel-resizer--active" : ""}`}
-      onpointerdown={(event) => beginResize("preview", event)}
-      onkeydown={(event) => resizeByKeyboard("preview", event)}
-    ></button>
+			<section class="border-t border-border bg-card-light">
+				{#if controller.runtimeLog}
+					<details>
+						<summary class="cursor-pointer px-3 py-2 font-mono text-xs text-foreground/70">
+							Runtime log ({controller.status})
+						</summary>
+						<pre
+							class="h-32 overflow-auto border-t border-border bg-card px-3 py-2 font-mono text-[11px] leading-5 whitespace-pre-wrap text-foreground/70">{controller.runtimeLogTail}</pre>
+					</details>
+				{:else}
+					<p class="border-t border-border px-3 py-2 font-mono text-xs text-foreground/70">
+						{controller.status}
+					</p>
+				{/if}
+			</section>
+		</section>
+		<button
+			type="button"
+			aria-label="Resize preview panel"
+			tabindex={0}
+			class={`panel-resizer ${activeResize?.target === 'preview' ? 'panel-resizer--active' : ''}`}
+			onpointerdown={(event) => beginResize('preview', event)}
+			onkeydown={(event) => resizeByKeyboard('preview', event)}
+		></button>
 
-    <section class="flex min-h-0 flex-col overflow-hidden bg-card-light">
-      <div class="relative min-h-0 flex-1 bg-card-light">
-        {#if controller.previewUrl}
-          <iframe
-            title="WebContainer preview"
-            src={controller.previewUrl}
-            class="h-full w-full border-0"
-            loading="eager"
-          ></iframe>
-        {:else}
-          <div
-            class="flex h-full w-full items-center justify-center p-6 text-center text-sm text-foreground/70"
-          >
-            Booting runtime and waiting for preview...
-          </div>
-        {/if}
-      </div>
+		<section class="flex min-h-0 flex-col overflow-hidden bg-card-light">
+			<div class="relative min-h-0 flex-1 bg-card-light">
+				{#if controller.previewUrl}
+					<iframe
+						title="WebContainer preview"
+						src={controller.previewUrl}
+						class="h-full w-full border-0"
+						loading="eager"
+					></iframe>
+				{:else}
+					<div
+						class="flex h-full w-full items-center justify-center p-6 text-center text-sm text-foreground/70"
+					>
+						Booting runtime and waiting for preview...
+					</div>
+				{/if}
+			</div>
 
-      {#if controller.errorMessage}
-        <p
-          class="border-t border-border bg-card px-3 py-2 font-mono text-xs whitespace-pre-wrap text-red-500"
-          role="alert"
-        >
-          {controller.errorMessage}
-        </p>
-      {/if}
-    </section>
-  </div>
+			{#if controller.errorMessage}
+				<p
+					class="border-t border-border bg-card px-3 py-2 font-mono text-xs whitespace-pre-wrap text-red-500"
+					role="alert"
+				>
+					{controller.errorMessage}
+				</p>
+			{/if}
+		</section>
+	</div>
 </main>
 
 <style>
-  .playground-workspace {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    transition: grid-template-columns 240ms cubic-bezier(0.2, 0, 0, 1);
-  }
+	.playground-workspace {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		transition: grid-template-columns 240ms cubic-bezier(0.2, 0, 0, 1);
+	}
 
-  .playground-workspace--resizing {
-    transition: none;
-  }
+	.playground-workspace--resizing {
+		transition: none;
+	}
 
-  @media (min-width: 1024px) {
-    .playground-workspace {
-      grid-template-columns: var(--playground-columns);
-    }
+	@media (min-width: 1024px) {
+		.playground-workspace {
+			grid-template-columns: var(--playground-columns);
+		}
 
-    .panel-resizer {
-      appearance: none;
-      padding: 0;
-      border: 0;
-      position: relative;
-      display: block;
-      width: 100%;
-      height: 100%;
-      cursor: col-resize;
-      touch-action: none;
-      background: transparent;
-      z-index: 2;
-    }
+		.panel-resizer {
+			appearance: none;
+			padding: 0;
+			border: 0;
+			position: relative;
+			display: block;
+			width: 100%;
+			height: 100%;
+			cursor: col-resize;
+			touch-action: none;
+			background: transparent;
+			z-index: 2;
+		}
 
-    .panel-resizer::after {
-      position: absolute;
-      top: 0;
-      right: -6px;
-      bottom: 0;
-      left: -6px;
-      content: "";
-    }
+		.panel-resizer::after {
+			position: absolute;
+			top: 0;
+			right: -6px;
+			bottom: 0;
+			left: -6px;
+			content: '';
+		}
 
-    .panel-resizer::before {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      height: 100%;
-      content: "";
-      border-left: 1px solid transparent;
-      transform: translateX(-0.5px);
-      opacity: 0;
-    }
+		.panel-resizer::before {
+			position: absolute;
+			top: 0;
+			left: 50%;
+			height: 100%;
+			content: '';
+			border-left: 1px solid transparent;
+			transform: translateX(-0.5px);
+			opacity: 0;
+		}
 
-    .playground-workspace--resizing .panel-resizer--active::before {
-      border-left-color: color-mix(in srgb, currentColor 25%, transparent);
-      opacity: 1;
-    }
+		.playground-workspace--resizing .panel-resizer--active::before {
+			border-left-color: color-mix(in srgb, currentColor 25%, transparent);
+			opacity: 1;
+		}
 
-    .panel-resizer--hidden {
-      pointer-events: none;
-    }
+		.panel-resizer--hidden {
+			pointer-events: none;
+		}
 
-    .panel-resizer--hidden::before {
-      opacity: 0;
-    }
-  }
+		.panel-resizer--hidden::before {
+			opacity: 0;
+		}
+	}
 
-  @media (max-width: 1023px) {
-    .playground-workspace {
-      grid-template-rows: var(--playground-rows);
-      transition: grid-template-rows 240ms cubic-bezier(0.2, 0, 0, 1);
-    }
+	@media (max-width: 1023px) {
+		.playground-workspace {
+			grid-template-rows: var(--playground-rows);
+			transition: grid-template-rows 240ms cubic-bezier(0.2, 0, 0, 1);
+		}
 
-    .playground-sidebar--collapsed {
-      pointer-events: none;
-      opacity: 0;
-    }
+		.playground-sidebar--collapsed {
+			pointer-events: none;
+			opacity: 0;
+		}
 
-    .playground-sidebar {
-      transition: opacity 240ms cubic-bezier(0.2, 0, 0, 1);
-    }
+		.playground-sidebar {
+			transition: opacity 240ms cubic-bezier(0.2, 0, 0, 1);
+		}
 
-    .panel-resizer {
-      display: none;
-    }
-  }
+		.panel-resizer {
+			display: none;
+		}
+	}
 
-  :global(body.playground-resizing) {
-    cursor: col-resize;
-    user-select: none;
-  }
+	:global(body.playground-resizing) {
+		cursor: col-resize;
+		user-select: none;
+	}
 
-  :global(
-    .monaco-editor,
-    .monaco-editor .view-lines,
-    .monaco-editor .inputarea
-  ) {
-    font-family:
-      "Aeonik Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-      "Liberation Mono", "Courier New", monospace !important;
-    font-kerning: none;
-    font-variant-ligatures: none;
-    font-feature-settings:
-      "liga" 0,
-      "calt" 0;
-    text-rendering: geometricPrecision;
-  }
+	:global(.monaco-editor, .monaco-editor .view-lines, .monaco-editor .inputarea) {
+		font-family:
+			'Aeonik Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+			'Courier New', monospace !important;
+		font-kerning: none;
+		font-variant-ligatures: none;
+		font-feature-settings:
+			'liga' 0,
+			'calt' 0;
+		text-rendering: geometricPrecision;
+	}
 </style>
