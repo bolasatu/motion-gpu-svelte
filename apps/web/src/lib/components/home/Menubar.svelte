@@ -139,19 +139,19 @@
 			>
 				<a
 					href="#home"
-					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground/70 transition-colors duration-150 ease-out hover:text-foreground"
+					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>
 					Home
 				</a>
 				<a
 					href="#features"
-					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground/70 transition-colors duration-150 ease-out hover:text-foreground"
+					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>
 					Features
 				</a>
 				<a
 					href="#how-it-works"
-					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground/70 transition-colors duration-150 ease-out hover:text-foreground"
+					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>
 					Pipeline
 				</a>

@@ -13,7 +13,7 @@
 
 <div
 	class={cn(
-		'inset-shadow w-full overflow-hidden rounded-xl border border-border bg-card-muted p-2',
+		'inset-shadow w-full overflow-hidden rounded-xl border border-border bg-background-inset p-2',
 		className
 	)}
 	{...rest}

@@ -67,7 +67,7 @@
 	<h2 class="text-center text-2xl tracking-tight text-balance sm:text-4xl">
 		A transparent pipeline. Step by step.
 	</h2>
-	<p class="text-center text-base text-pretty text-foreground/70 sm:w-1/2">
+	<p class="text-center text-base text-pretty text-foreground-muted sm:w-1/2">
 		From first shader line to production diagnostics, each step keeps rendering behavior explicit
 		and composable.
 	</p>

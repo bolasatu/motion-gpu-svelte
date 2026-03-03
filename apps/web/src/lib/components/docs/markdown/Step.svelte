@@ -27,7 +27,7 @@
 			class="absolute top-0 -left-4 flex size-8 items-center justify-center rounded-full border border-border bg-background text-xs font-medium text-foreground [counter-increment:step] before:content-[counter(step)]"
 		></span>
 	{/if}
-	<div class="text-base leading-relaxed text-pretty text-foreground/70">
+	<div class="text-base leading-relaxed text-pretty text-foreground-muted">
 		{@render children?.()}
 	</div>
 </div>

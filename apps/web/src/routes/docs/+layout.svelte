@@ -140,7 +140,7 @@
 								{metadata.name || metadata.title}
 							</h1>
 							{#if metadata.description}
-								<p class="max-w-4xl text-base text-foreground/70">
+								<p class="max-w-4xl text-base text-foreground-muted">
 									{metadata.description}
 								</p>
 							{/if}

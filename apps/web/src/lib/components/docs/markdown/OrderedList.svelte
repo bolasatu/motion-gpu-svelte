@@ -14,7 +14,7 @@
 <ol
 	{...restProps}
 	class={cn(
-		'mt-6 list-decimal space-y-2 pl-6 text-sm leading-relaxed text-pretty text-foreground/70 [&>li]:pl-1',
+		'mt-6 list-decimal space-y-2 pl-6 text-sm leading-relaxed text-pretty text-foreground-muted [&>li]:pl-1',
 		className
 	)}
 >

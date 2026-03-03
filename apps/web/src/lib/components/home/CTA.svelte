@@ -12,7 +12,7 @@
 	<h2 class="text-center text-2xl tracking-tight text-balance sm:text-4xl">
 		Bring your shader pipeline to production.
 	</h2>
-	<p class="text-center text-base text-pretty text-foreground/70 sm:w-2/3">
+	<p class="text-center text-base text-pretty text-foreground-muted sm:w-2/3">
 		Open the playground to iterate fast, then move to docs for strict contracts, render passes, and
 		deterministic frame scheduling.
 	</p>

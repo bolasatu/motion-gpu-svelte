@@ -11,6 +11,9 @@
 	const { children, class: className = '', ...restProps }: ComponentProps = $props();
 </script>
 
-<li {...restProps} class={cn('text-sm leading-relaxed text-pretty text-foreground/70', className)}>
+<li
+	{...restProps}
+	class={cn('text-sm leading-relaxed text-pretty text-foreground-muted', className)}
+>
 	{@render children?.()}
 </li>

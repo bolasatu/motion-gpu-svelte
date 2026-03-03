@@ -143,7 +143,7 @@
 					aria-label="Search documentation"
 				/>
 				<kbd
-					class="pointer-events-none relative hidden h-5 items-center gap-1 rounded-md border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-foreground/45 shadow-sm select-none sm:flex"
+					class="pointer-events-none relative hidden h-5 items-center gap-1 rounded-md border border-border bg-background-inset px-1.5 font-mono text-[10px] font-medium text-foreground/45 shadow-sm select-none sm:flex"
 				>
 					ESC
 				</kbd>
@@ -166,8 +166,8 @@
 										'group relative flex w-full flex-col items-start gap-1 rounded-lg px-3 py-2 text-sm',
 										isChild && 'pl-8',
 										i === selectedIndex
-											? 'bg-background text-foreground'
-											: 'text-foreground hover:bg-background'
+											? 'bg-background-inset text-foreground'
+											: 'text-foreground hover:bg-background-inset'
 									)}
 									onclick={() => selectResult(result)}
 									onmouseenter={() => (selectedIndex = i)}
@@ -222,7 +222,7 @@
 				class="flex w-full flex-row items-center justify-start gap-2 rounded-b-xl border-t border-border/60 bg-background p-2"
 			>
 				<kbd
-					class="pointer-events-none relative hidden h-5 items-center gap-1 rounded-md border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-foreground/45 shadow-sm select-none sm:flex"
+					class="pointer-events-none relative hidden h-5 items-center gap-1 rounded-md border border-border bg-background-inset px-1.5 font-mono text-[10px] font-medium text-foreground/45 shadow-sm select-none sm:flex"
 				>
 					<Return class="size-3" />
 				</kbd>

@@ -66,8 +66,8 @@
 					<button
 						onclick={() => toggleGroup(doc.slug)}
 						class={cn(
-							'flex w-full items-center justify-between rounded-md px-3 py-1.5 text-sm transition-all duration-150 ease-out hover:bg-card-muted hover:text-foreground',
-							isGroupActive ? 'text-foreground' : 'text-foreground/70'
+							'flex w-full items-center justify-between rounded-md px-3 py-1.5 text-sm transition-all duration-150 ease-out hover:bg-background-inset hover:text-foreground',
+							isGroupActive ? 'text-foreground' : 'text-foreground-muted'
 						)}
 					>
 						<span>{doc.name}</span>
@@ -89,7 +89,7 @@
 										'block rounded-lg px-3 py-1.5 text-sm transition-all duration-150 ease-out',
 										isActive
 											? 'bg-accent/10 text-accent'
-											: 'text-foreground/70 hover:bg-card-muted hover:text-foreground'
+											: 'text-foreground-muted hover:bg-background-inset hover:text-foreground'
 									)}
 								>
 									{item.name}
@@ -106,7 +106,7 @@
 							'block rounded-lg px-3 py-1.5 text-sm transition-all duration-150 ease-out',
 							isActive
 								? 'bg-accent/10 text-accent'
-								: 'text-foreground/70 hover:bg-card-muted hover:text-foreground'
+								: 'text-foreground-muted hover:bg-background-inset hover:text-foreground'
 						)}
 					>
 						{doc.name}
@@ -118,7 +118,7 @@
 
 	<div class="flex items-center gap-2 p-4">
 		<a
-			class="inline-flex size-7 items-center justify-center gap-2 rounded-md text-sm font-medium text-foreground transition-colors duration-150 ease-out hover:bg-card-muted hover:text-foreground"
+			class="inline-flex size-7 items-center justify-center gap-2 rounded-md text-sm font-medium text-foreground transition-colors duration-150 ease-out hover:bg-background-inset hover:text-foreground"
 			href={githubUrl}
 			target="_blank"
 			rel="noreferrer"

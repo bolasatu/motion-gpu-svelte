@@ -41,7 +41,7 @@
 					<li>
 						<a
 							href={resolve(item.route as '/')}
-							class="w-fit text-sm text-foreground/70 transition-colors duration-150 ease-out hover:text-foreground"
+							class="w-fit text-sm text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 							>&#8627; {item.label}</a
 						>
 					</li>
@@ -58,7 +58,7 @@
 							href={item.href}
 							target="_blank"
 							rel="external noreferrer"
-							class="w-fit text-sm text-foreground/70 transition-colors duration-150 ease-out hover:text-foreground"
+							class="w-fit text-sm text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 							>&#8627; {item.label}</a
 						>
 					</li>
@@ -72,14 +72,14 @@
 				href="https://github.com/motion-core/motion-gpu/issues"
 				target="_blank"
 				rel="noreferrer"
-				class="w-fit text-sm text-foreground/70 transition-colors duration-150 ease-out hover:text-foreground"
+				class="w-fit text-sm text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>Issues</a
 			>
 			<a
 				href="https://github.com/motion-core/motion-gpu/discussions"
 				target="_blank"
 				rel="noreferrer"
-				class="w-fit text-sm text-foreground/70 transition-colors duration-150 ease-out hover:text-foreground"
+				class="w-fit text-sm text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>Discussions</a
 			>
 		</div>
@@ -90,7 +90,7 @@
 				href="https://github.com/motion-core/motion-gpu/blob/main/LICENSE"
 				target="_blank"
 				rel="noreferrer"
-				class="w-fit text-sm text-foreground/70 transition-colors duration-150 ease-out hover:text-foreground"
+				class="w-fit text-sm text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>&#8627; License</a
 			>
 		</div>

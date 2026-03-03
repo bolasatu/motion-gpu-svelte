@@ -24,10 +24,10 @@
 	--color-background-inset: oklch(0.9674 0.0013 var(--base-hue));
 	--color-background: oklch(1 0 0);
 	--color-foreground: oklch(0.2408 0.0044 var(--base-hue));
+	--color-foreground-muted: oklch(0.2408 0.0044 var(--base-hue) / 0.6);
 	--color-accent: oklch(0.6996 0.201959 44.4414);
 	--color-accent-secondary: oklch(0.5096 0.151959 44.4414);
 	--color-border: oklch(0.92 0.004 var(--base-hue));
-	--color-card-muted: oklch(0.9342 0.002 var(--base-hue));
 
 	--shadow-xs: 0px 1px 1px -0.5px rgba(0, 0, 0, 0.06);
 	--shadow-sm: 0px 1px 1px -0.5px rgba(0, 0, 0, 0.06), 0px 3px 3px -1.5px rgba(0, 0, 0, 0.06);
@@ -54,10 +54,10 @@
 	--color-background-inset: var(--background-inset);
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
+	--color-foreground-muted: var(--foreground-muted);
 	--color-accent: var(--accent);
 	--color-accent-secoundary: var(--accent-secondary);
 	--color-border: var(--border);
-	--color-card-muted: var(--card-muted);
 
 	--font-weight-light: 200;
 	--font-weight-normal: 300;

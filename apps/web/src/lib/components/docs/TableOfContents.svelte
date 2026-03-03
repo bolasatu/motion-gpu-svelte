@@ -502,7 +502,7 @@
 								'block max-w-44 truncate py-1 transition-[color] duration-150 ease-out',
 								isLinkHighlighted(heading.id)
 									? 'text-accent'
-									: 'text-foreground/70 hover:text-foreground'
+									: 'text-foreground-muted hover:text-foreground'
 							)}
 							use:registerLink={heading.id}
 						>

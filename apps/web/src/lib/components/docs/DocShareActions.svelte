@@ -89,7 +89,7 @@
 			onclick={handleCopy}
 			aria-live="polite"
 			aria-disabled={copyState === 'success'}
-			class="group/option flex items-center gap-2 overflow-hidden rounded-lg px-3 py-1.5 text-left text-foreground/70 transition-colors duration-150 ease-out hover:bg-card-muted hover:text-foreground"
+			class="group/option flex items-center gap-2 overflow-hidden rounded-lg px-3 py-1.5 text-left text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-inset hover:text-foreground"
 		>
 			<span class="grid" style="grid-template-areas: 'content';">
 				{#key copyState}
@@ -127,7 +127,7 @@
 		</button>
 
 		<a
-			class="group/option flex items-center gap-2 rounded-lg px-3 py-1.5 text-left text-foreground/70 transition-colors duration-150 ease-out hover:bg-card-muted hover:text-foreground"
+			class="group/option flex items-center gap-2 rounded-lg px-3 py-1.5 text-left text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-inset hover:text-foreground"
 			href={githubUrl}
 			target="_blank"
 			rel="noreferrer"
@@ -139,7 +139,7 @@
 
 		{#if chatGptUrl}
 			<a
-				class="group/option flex items-center gap-2 rounded-lg px-3 py-1.5 text-left text-foreground/70 transition-colors duration-150 ease-out hover:bg-card-muted hover:text-foreground"
+				class="group/option flex items-center gap-2 rounded-lg px-3 py-1.5 text-left text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-inset hover:text-foreground"
 				href={chatGptUrl}
 				target="_blank"
 				rel="noreferrer"
@@ -163,7 +163,7 @@
 
 		{#if claudeUrl}
 			<a
-				class="group/option flex items-center gap-2 rounded-lg px-3 py-1.5 text-left text-foreground/70 transition-colors duration-150 ease-out hover:bg-card-muted hover:text-foreground"
+				class="group/option flex items-center gap-2 rounded-lg px-3 py-1.5 text-left text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-inset hover:text-foreground"
 				href={claudeUrl}
 				target="_blank"
 				rel="noreferrer"

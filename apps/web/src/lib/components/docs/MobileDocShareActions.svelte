@@ -184,7 +184,7 @@
 	});
 
 	const buttonClass =
-		"border border-border relative inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-background px-4 py-2 text-sm font-medium whitespace-nowrap text-foreground shadow-sm transition-[background-color] duration-150 ease-out hover:bg-card-muted disabled:pointer-events-none disabled:opacity-50 has-[>svg]:px-3 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 flex-1";
+		"border border-border relative inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-background px-4 py-2 text-sm font-medium whitespace-nowrap text-foreground shadow-sm transition-[background-color] duration-150 ease-out hover:bg-background-inset disabled:pointer-events-none disabled:opacity-50 has-[>svg]:px-3 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 flex-1";
 </script>
 
 <div class="relative z-20 mt-8 flex w-full gap-2 overflow-hidden lg:hidden">
@@ -256,7 +256,7 @@
 					href={githubUrl}
 					target="_blank"
 					rel="noreferrer"
-					class="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground/70 transition-colors hover:bg-card-muted hover:text-foreground"
+					class="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground-muted transition-colors hover:bg-background-inset hover:text-foreground"
 				>
 					<LogoGithub class="size-4 flex-none" />
 					Open in GitHub
@@ -267,7 +267,7 @@
 						href={chatGptUrl}
 						target="_blank"
 						rel="noreferrer"
-						class="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground/70 transition-colors hover:bg-card-muted hover:text-foreground"
+						class="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground-muted transition-colors hover:bg-background-inset hover:text-foreground"
 					>
 						<svg
 							role="img"
@@ -290,7 +290,7 @@
 						href={claudeUrl}
 						target="_blank"
 						rel="noreferrer"
-						class="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground/70 transition-colors hover:bg-card-muted hover:text-foreground"
+						class="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground-muted transition-colors hover:bg-background-inset hover:text-foreground"
 					>
 						<svg
 							role="img"
