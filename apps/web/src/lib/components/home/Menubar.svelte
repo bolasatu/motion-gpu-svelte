@@ -119,7 +119,7 @@
 </script>
 
 <nav aria-label="Primary navigation" class="fixed top-0 z-60 w-full">
-	<div class="mx-auto max-w-6xl border border-border bg-white">
+	<div class="mx-auto max-w-6xl border border-border bg-background">
 		<div class="relative flex items-center justify-between gap-3 px-3 py-2 sm:px-4">
 			<a
 				href={resolve(homeRoute)}
@@ -159,16 +159,12 @@
 			</div>
 
 			<div class="hidden items-center gap-2 sm:flex">
-				<Button href={resolve(docsRoute as '/')} size="sm" variant="default">
-					<Book size={16} />
-					<span>Docs</span>
-				</Button>
 				<Button
 					href="https://github.com/motion-core/motion-gpu"
 					target="_blank"
 					rel="noreferrer"
 					variant="secondary"
-					size="sm"
+					size="md"
 				>
 					<LogoGithub size={16} />
 					<span>GitHub</span>
@@ -211,7 +207,7 @@
 		aria-modal="true"
 		aria-label="Mobile navigation"
 		tabindex="-1"
-		class="fixed top-16 left-1/2 z-50 grid w-[min(92vw,30rem)] -translate-x-1/2 gap-2 rounded-lg border border-border bg-white p-3 sm:hidden"
+		class="fixed top-16 left-1/2 z-50 grid w-[min(92vw,30rem)] -translate-x-1/2 gap-2 rounded-lg border border-border bg-background p-3 sm:hidden"
 		onkeydown={handleMobilePanelKeydown}
 		bind:this={mobilePanel}
 		in:fly={{
@@ -254,16 +250,6 @@
 		</Button>
 
 		<div class="mt-1 grid grid-cols-1 gap-2">
-			<Button
-				variant="default"
-				href={resolve(docsRoute as '/')}
-				onclick={handleMenuLinkSelect}
-				class="justify-center"
-			>
-				<Book size={16} />
-				<span>Docs</span>
-			</Button>
-
 			<Button
 				href="https://github.com/motion-core/motion-gpu"
 				target="_blank"

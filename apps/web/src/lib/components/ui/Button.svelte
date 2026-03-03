@@ -10,8 +10,6 @@
 				variant: {
 					default: 'btn-primary',
 					secondary: 'btn-secondary',
-					outline: 'border border-border text-foreground hover:bg-card-muted',
-					link: 'h-auto p-0 text-foreground underline-offset-4 hover:underline',
 					ghost: 'text-foreground hover:bg-background-inset'
 				},
 				size: {
@@ -130,20 +128,15 @@
 		transition:
 			filter 150ms ease-out,
 			box-shadow 150ms ease-out;
+		color: var(--color-background);
+		transition:
+			filter 150ms ease-out,
+			box-shadow 150ms ease-out;
 		background:
-			radial-gradient(
-				120% 140% at 0% 0%,
-				color-mix(in oklab, var(--color-background-inset) 85%, transparent),
-				transparent 58%
-			),
-			linear-gradient(
-				180deg,
-				color-mix(in oklab, var(--color-background) 94%, var(--color-background-inset) 6%),
-				color-mix(in oklab, var(--color-card-muted) 90%, var(--color-background-inset) 10%)
-			);
+			radial-gradient(ellipse at -20px top, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0)),
+			linear-gradient(180deg, var(--color-foreground), var(--color-foreground));
 		box-shadow:
-			inset 0 1px 0 color-mix(in oklab, var(--color-background-inset) 78%, transparent),
-			inset 0 -1px 0 color-mix(in oklab, var(--color-border) 36%, transparent),
+			inset 0 1px 0 rgb(255 255 255 / 0.22),
 			var(--shadow-md);
 
 		&::after {
@@ -163,18 +156,18 @@
 			mask-composite: exclude;
 			background: linear-gradient(
 					180deg,
-					color-mix(in oklab, var(--color-background-inset) 95%, transparent),
-					color-mix(in oklab, var(--color-border) 55%, transparent) 41%,
-					color-mix(in oklab, var(--color-border) 44%, transparent) 75%,
-					color-mix(in oklab, var(--color-background-inset) 78%, transparent)
+					rgb(255 255 255 / 0.72),
+					rgb(0 0 0 / 0.24) 41%,
+					rgb(0 0 0 / 0.24) 75%,
+					rgb(255 255 255 / 0.28)
 				)
 				border-box;
-			opacity: 0.9;
+			mix-blend-mode: overlay;
 		}
 
 		@media (hover: hover) {
 			&:hover {
-				filter: brightness(1.03);
+				filter: brightness(1.08) contrast(0.9);
 			}
 		}
 	}
