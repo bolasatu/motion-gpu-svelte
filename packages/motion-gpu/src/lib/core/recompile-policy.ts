@@ -1,17 +1,17 @@
-import type { OutputColorSpace } from './types';
+import type { OutputColorSpace } from "./types";
 
 /**
  * Inputs that affect renderer pipeline compilation.
  */
 export interface RendererPipelineSignatureInput {
-	/**
-	 * Material pipeline signature (fragment preprocess + uniform/texture layout).
-	 */
-	materialSignature: string;
-	/**
-	 * Output color-space transform mode.
-	 */
-	outputColorSpace: OutputColorSpace;
+  /**
+   * Material pipeline signature (fragment preprocess + uniform/texture layout).
+   */
+  materialSignature: string;
+  /**
+   * Output color-space transform mode.
+   */
+  outputColorSpace: OutputColorSpace;
 }
 
 /**
@@ -26,6 +26,8 @@ export interface RendererPipelineSignatureInput {
  * - runtime texture sources
  * - clear color changes
  */
-export function buildRendererPipelineSignature(input: RendererPipelineSignatureInput): string {
-	return `${input.materialSignature}|${input.outputColorSpace}`;
+export function buildRendererPipelineSignature(
+  input: RendererPipelineSignatureInput,
+): string {
+  return `${input.materialSignature}|${input.outputColorSpace}`;
 }
