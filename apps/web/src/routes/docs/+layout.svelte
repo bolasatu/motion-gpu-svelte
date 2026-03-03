@@ -1,72 +1,183 @@
 <script lang="ts">
-	import type { LayoutData } from './$types';
-	import type { Snippet } from 'svelte';
-	import { getDocHref } from '$lib/docs/manifest';
-	import DocsSidebar from '$lib/components/docs/navigation/DocsSidebar.svelte';
-	import MobileSidebar from '$lib/components/docs/navigation/MobileSidebar.svelte';
-	import TableOfContents from '$lib/components/docs/TableOfContents.svelte';
-	import CommandPalette from '$lib/components/docs/search/CommandPalette.svelte';
-	import DocNavigation from '$lib/components/docs/navigation/DocNavigation.svelte';
+  import TableOfContents from "$lib/components/docs/TableOfContents.svelte";
+  import DocsSidebar from "$lib/components/docs/navigation/DocsSidebar.svelte";
+  import MobileSidebar from "$lib/components/docs/navigation/MobileSidebar.svelte";
+  import ScrollArea from "$lib/components/ui/ScrollArea.svelte";
+  import { DocNavigation } from "$lib";
+  import type { LayoutData } from "./$types";
+  import type { Snippet } from "svelte";
+  import { page } from "$app/state";
+  import { tick } from "svelte";
+  import { beforeNavigate, afterNavigate } from "$app/navigation";
+  import { SvelteMap } from "svelte/reactivity";
+  import DocShareActions from "$lib/components/docs/DocShareActions.svelte";
+  import MobileDocShareActions from "$lib/components/docs/MobileDocShareActions.svelte";
+  import { siteConfig } from "$lib/config/site";
+  import { docsManifest, getDocHref } from "$lib/docs/manifest";
 
-	interface Props {
-		data: LayoutData;
-		children?: Snippet;
-	}
+  const props = $props<{ data: LayoutData; children?: Snippet }>();
+  const previousLink = $derived(
+    props.data.previousDoc
+      ? {
+          title: props.data.previousDoc.name,
+          href: getDocHref(props.data.previousDoc.slug),
+        }
+      : null,
+  );
+  const nextLink = $derived(
+    props.data.nextDoc
+      ? {
+          title: props.data.nextDoc.name,
+          href: getDocHref(props.data.nextDoc.slug),
+        }
+      : null,
+  );
+  const metadata = $derived(props.data.metadata);
+  const renderChildren = $derived(props.children);
+  const docSlug = $derived(metadata?.slug);
+  const currentDoc = $derived(docsManifest.find((d) => d.slug === docSlug));
+  const rawPath = $derived(docSlug ? `/docs/raw/${docSlug}` : null);
+  const docOrigin = $derived(props.data.docOrigin);
+  const rawUrl = $derived(
+    rawPath && docOrigin ? new URL(rawPath, docOrigin).href : null,
+  );
+  const repoRelativePath = $derived(
+    metadata ? `/src/routes${metadata.href}/+page.svx` : null,
+  );
+  const githubUrl = $derived(
+    repoRelativePath
+      ? `${siteConfig.links.github}/blob/master${repoRelativePath}`
+      : null,
+  );
 
-	let { data, children }: Props = $props();
+  const tocSelector = $derived(
+    docSlug?.startsWith("changelog/") ? "[data-doc-content] h2" : undefined,
+  );
 
-	const previousLink = $derived(
-		data.previousDoc
-			? { title: data.previousDoc.title, href: getDocHref(data.previousDoc.slug) }
-			: null
-	);
-	const nextLink = $derived(
-		data.nextDoc ? { title: data.nextDoc.title, href: getDocHref(data.nextDoc.slug) } : null
-	);
+  const scrollContainerId = "docs-content-container";
+  const scrollPositions = new SvelteMap<string, number>();
+
+  beforeNavigate(() => {
+    const elem = document.getElementById(scrollContainerId);
+    if (elem) {
+      scrollPositions.set(page.url.pathname, elem.scrollTop);
+    }
+  });
+
+  afterNavigate((nav) => {
+    const elem = document.getElementById(scrollContainerId);
+    if (elem && !page.url.hash) {
+      if (nav.type === "popstate") {
+        const saved = scrollPositions.get(page.url.pathname);
+        if (saved !== undefined) {
+          elem.scrollTop = saved;
+        }
+      } else {
+        elem.scrollTop = 0;
+      }
+    }
+  });
+
+  $effect(() => {
+    const hash = page.url.hash;
+    if (hash) {
+      const id = hash.substring(1);
+
+      const scrollToElement = () => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+          return true;
+        }
+        return false;
+      };
+
+      tick().then(() => {
+        if (!scrollToElement()) {
+          setTimeout(scrollToElement, 100);
+        }
+      });
+    }
+  });
 </script>
 
 <svelte:head>
-	{#if data.currentDoc}
-		<title>{data.currentDoc.title} | MotionGPU Docs</title>
-		<meta name="description" content={data.currentDoc.description} />
-		<meta property="og:title" content={`${data.currentDoc.title} | MotionGPU Docs`} />
-		<meta property="og:description" content={data.currentDoc.description} />
-	{/if}
+  {#if metadata}
+    <title>{metadata.title} - {siteConfig.name}</title>
+    <meta name="description" content={metadata.description} />
+
+    <meta property="og:title" content={metadata.title} />
+    <meta property="og:description" content={metadata.description} />
+    <meta property="twitter:title" content={metadata.title} />
+    <meta property="twitter:description" content={metadata.description} />
+  {/if}
 </svelte:head>
 
-<CommandPalette />
+<main class="relative h-dvh bg-background text-foreground lg:py-4">
+  <MobileSidebar />
 
-<main class="min-h-dvh bg-card text-foreground lg:grid lg:grid-cols-[18rem_minmax(0,1fr)_16rem]">
-	<MobileSidebar />
+  <aside class="fixed top-0 left-0 hidden w-88 shrink-0 lg:block">
+    <DocsSidebar />
+  </aside>
 
-	<aside class="hidden lg:block">
-		<div class="sticky top-0 h-dvh">
-			<DocsSidebar />
-		</div>
-	</aside>
+  <div
+    class="relative mx-auto w-full max-w-4xl h-full overflow-hidden bg-card border border-border pt-12 md:overflow-visible lg:ml-88 lg:max-h-[calc(100dvh-2rem)] lg:rounded-xl lg:pt-0 xl:mr-88"
+  >
+    <ScrollArea
+      id="docs-content-container"
+      viewportStyle="mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);"
+      class="mx-auto w-full h-full md:h-auto lg:max-h-[calc(100dvh-2rem)]"
+    >
+      <div class="flex flex-col gap-8 px-4 py-8 lg:px-8">
+        <section class="min-w-0 flex-1 space-y-8">
+          {#if metadata}
+            <div class="space-y-4">
+              {#if currentDoc?.category}
+                <p
+                  class="mb-2 text-sm font-medium text-foreground/45 capitalize"
+                >
+                  {currentDoc.category}
+                </p>
+              {/if}
+              <h1
+                class="scroll-m-20 text-3xl font-medium text-foreground font-display"
+              >
+                {metadata.name || metadata.title}
+              </h1>
+              {#if metadata.description}
+                <p class="max-w-4xl text-base text-foreground/70">
+                  {metadata.description}
+                </p>
+              {/if}
 
-	<div id="docs-content-container" class="pt-20 lg:pt-0">
-		<div class="mx-auto w-full max-w-4xl px-4 py-8 sm:px-8 sm:py-10">
-			{#if data.currentDoc}
-				<header class="space-y-3 border-b border-border pb-6">
-					<h1 class="text-3xl tracking-tight sm:text-4xl">{data.currentDoc.title}</h1>
-					<p class="max-w-3xl text-base leading-relaxed text-foreground-muted">
-						{data.currentDoc.description}
-					</p>
-				</header>
-			{/if}
+              {#if metadata && rawPath && rawUrl && githubUrl}
+                <MobileDocShareActions {rawPath} {rawUrl} {githubUrl} />
+              {/if}
+            </div>
+            <hr class="text-border" />
+          {/if}
 
-			<div class="mt-10">
-				{@render children?.()}
-			</div>
+          <div>
+            {@render renderChildren?.()}
 
-			<DocNavigation previous={previousLink} next={nextLink} />
-		</div>
-	</div>
+            <DocNavigation previous={previousLink} next={nextLink} />
+          </div>
+        </section>
+      </div>
+    </ScrollArea>
+  </div>
 
-	<aside class="hidden xl:block">
-		<div class="sticky top-0 h-dvh overflow-y-auto py-8">
-			<TableOfContents />
-		</div>
-	</aside>
+  <aside
+    class="fixed top-8 right-8 hidden h-[calc(100dvh-4rem)] w-53 shrink-0 flex-col xl:flex"
+  >
+    <div class="flex-1">
+      <TableOfContents selector={tocSelector} />
+    </div>
+    {#if metadata && rawPath && rawUrl && githubUrl}
+      <DocShareActions {rawPath} {rawUrl} {githubUrl} />
+    {/if}
+  </aside>
 </main>

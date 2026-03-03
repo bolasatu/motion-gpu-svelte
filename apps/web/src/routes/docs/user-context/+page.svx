@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: User Context
+description: Advanced hook for namespaced, reactive shared state within the MotionGPU runtime.
 ---
 
 `useMotionGPUUserContext` is an advanced hook that enables **namespaced, reactive shared state** within the MotionGPU runtime. It is designed for plugin-like patterns where multiple independent components need to read and write shared data.

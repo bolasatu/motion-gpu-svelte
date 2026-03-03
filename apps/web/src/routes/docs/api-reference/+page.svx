@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: API Reference
+description: Complete reference of all public exports from the motion-gpu packages.
 ---
 
 Complete reference of all public exports from `@motion-core/motion-gpu` and `@motion-core/motion-gpu/advanced`.

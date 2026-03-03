@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Frame Scheduler
+description: Managing per-frame logic, task ordering, and invalidation with the useFrame API.
 ---
 
 The frame scheduler manages all per-frame logic in MotionGPU. Every `useFrame` callback is registered as a **task** with ordering constraints and an invalidation policy. This page covers the `useFrame` API in depth.

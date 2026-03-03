@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Render Targets
+description: Creating off-screen textures for multi-pass rendering and intermediate computation.
 ---
 
 Render targets are named off-screen textures that passes can read from and write to. They allow techniques like downsampled blur pyramids, multi-resolution effects, and intermediate computation buffers.

@@ -1,36 +1,26 @@
 <script lang="ts">
-	/* eslint-disable svelte/no-at-html-tags */
-	import Pre from './Pre.svelte';
+	import type { Snippet } from "svelte";
+	import Pre from "./Pre.svelte";
+	import ShikiCodeBlock from "../ShikiCodeBlock.svelte";
 
-	interface Props {
-		html: string;
+	type Props = {
+		htmlLight: string;
+		code?: Snippet;
 		lang?: string;
 		raw?: string;
-	}
+	};
 
-	let { html, lang, raw = '' }: Props = $props();
+	const props = $props();
+	const htmlLight = $derived((props as Props).htmlLight);
+	const code = $derived((props as Props).code);
+	const lang = $derived((props as Props).lang);
+	const raw = $derived((props as Props).raw ?? "");
 </script>
 
-<Pre data-language={lang} code={raw} class="group/md-pre">
-	<div class="md-pre-content">{@html html}</div>
-</Pre>
-
-<style>
-	:global(.group\/md-pre .shiki) {
-		margin: 0;
-		background: transparent !important;
-		font-size: 0.82rem;
-		line-height: 1.6;
-		overflow-x: auto;
-	}
-
-	:global(.group\/md-pre .shiki code) {
-		counter-reset: line;
-		display: grid;
-	}
-
-	:global(.group\/md-pre .shiki .line) {
-		display: inline-block;
-		min-height: 1.3em;
-	}
-</style>
+{#if code}
+	<Pre data-language={lang} code={raw}>
+		{@render code?.()}
+	</Pre>
+{:else}
+	<ShikiCodeBlock code={raw} {htmlLight} {lang} />
+{/if}

@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Getting Started
+description: Step-by-step guide to installing MotionGPU and building your first shader.
 ---
 
 This guide walks you through installing MotionGPU and building your first fullscreen shader, step by step. By the end, you will understand the core `defineMaterial` → `FragCanvas` → `useFrame` workflow.

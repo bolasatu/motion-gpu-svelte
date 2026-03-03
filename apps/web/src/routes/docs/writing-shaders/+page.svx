@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Writing Shaders
+description: WGSL concepts, conventions, and patterns for effective shader authoring in MotionGPU.
 ---
 
 MotionGPU renders fullscreen fragment shaders written in **WGSL** (WebGPU Shading Language). This page covers the WGSL concepts you need for effective shader authoring, the conventions MotionGPU imposes, and common visual patterns.
@@ -102,16 +103,6 @@ If you are new to WGSL, here are the most common types and functions used in fra
 | `vec3f` | 3-component float vector | `vec3f(1.0, 0.5, 0.0)` |
 | `vec4f` | 4-component float vector | `vec4f(r, g, b, a)` |
 
-### Swizzling
-
-WGSL supports component access and rearrangement:
-
-```wgsl
-let color = vec4f(1.0, 0.5, 0.0, 1.0);
-let rgb = color.rgb;    // vec3f(1.0, 0.5, 0.0)
-let rr = color.xx;      // vec2f(1.0, 1.0)
-```
-
 ### Common math functions
 
 | Function | Description |
@@ -195,34 +186,8 @@ fn frag(uv: vec2f) -> vec4f {
 }
 ```
 
-### Noise using the hash trick
-
-WGSL does not ship a built-in noise function. A common workaround is a hash function:
-
-```wgsl
-fn hash(p: vec2f) -> f32 {
-  let h = dot(p, vec2f(127.1, 311.7));
-  return fract(sin(h) * 43758.5453123);
-}
-
-fn frag(uv: vec2f) -> vec4f {
-  let scale = 10.0;
-  let cell = floor(uv * scale);
-  let n = hash(cell);
-  return vec4f(vec3f(n), 1.0);
-}
-```
-
-For more sophisticated noise, use the [`#include` system](/docs/shader-includes-and-defines) to inject reusable noise functions.
-
 ## Color output and color space
 
 By default, `FragCanvas` operates in sRGB output color space (`outputColorSpace: 'srgb'`). This means the renderer applies a **linear-to-sRGB conversion** to your fragment output automatically.
 
 If you are doing your own color management and want raw linear output, set `outputColorSpace="linear"` on `FragCanvas`. Note that changing this triggers a renderer rebuild since it changes the pipeline signature.
-
-## Next steps
-
-- [Includes and Defines](/docs/shader-includes-and-defines) — reusable shader code and compile-time constants.
-- [Defining Materials](/docs/defining-materials) — the `defineMaterial` API in depth.
-- [Uniforms](/docs/uniforms) — all uniform input forms and packing rules.

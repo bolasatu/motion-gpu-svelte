@@ -1,18 +1,45 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+  import type { Snippet } from "svelte";
+  import { cn } from "$lib/utils/cn";
 
-	interface Props {
-		children?: Snippet;
-		class?: string;
-		[key: string]: unknown;
-	}
+  type ComponentProps = {
+    class?: string;
+    children?: Snippet;
+    [prop: string]: unknown;
+  };
 
-	let { children, class: className = '', ...rest }: Props = $props();
+  const {
+    children,
+    class: className = "",
+    ...restProps
+  }: ComponentProps = $props();
+
+  const isBlock = (classValue: string | undefined, dataTheme: unknown) => {
+    if (dataTheme !== undefined) return true;
+    if (!classValue) return false;
+
+    return classValue
+      .split(/\s+/)
+      .some((token) => token.startsWith("language-"));
+  };
 </script>
 
-<code
-	{...rest}
-	class={`bg-background px-2 py-0.5 font-mono text-sm text-foreground ${className}`.trim()}
->
-	{@render children?.()}
-</code>
+{#if isBlock(typeof className === "string" ? className : undefined, restProps["data-theme"])}
+  <code
+    {...restProps}
+    class={cn(
+      "block text-sm leading-relaxed whitespace-pre font-mono",
+      className,
+    )}
+  >
+    {@render children?.()}
+  </code>
+{:else}
+  <div
+    class="border border-border relative inline-block w-fit rounded-md bg-card-light px-1.5 py-0.5 text-xs font-medium whitespace-nowrap text-foreground shadow-sm font-mono"
+  >
+    <code {...restProps} class={cn("", className)}>
+      {@render children?.()}
+    </code>
+  </div>
+{/if}

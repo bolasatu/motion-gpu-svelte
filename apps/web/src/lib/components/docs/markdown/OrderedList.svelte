@@ -1,18 +1,26 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+  import type { Snippet } from "svelte";
+  import { cn } from "$lib/utils/cn";
 
-	interface Props {
-		children?: Snippet;
-		class?: string;
-		[key: string]: unknown;
-	}
+  type ComponentProps = {
+    class?: string;
+    children?: Snippet;
+    [prop: string]: unknown;
+  };
 
-	let { children, class: className = '', ...rest }: Props = $props();
+  const {
+    children,
+    class: className = "",
+    ...restProps
+  }: ComponentProps = $props();
 </script>
 
 <ol
-	{...rest}
-	class={`max-w-[78ch] list-decimal pl-5 text-sm leading-relaxed text-foreground-muted ${className}`.trim()}
+  {...restProps}
+  class={cn(
+    "mt-6 list-decimal text-sm space-y-2 pl-6 text-pretty leading-relaxed text-foreground/70 [&>li]:pl-1",
+    className,
+  )}
 >
-	{@render children?.()}
+  {@render children?.()}
 </ol>

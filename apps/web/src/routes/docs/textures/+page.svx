@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Textures
+description: Declaring textures, configuring samplers, and managing runtime texture updates.
 ---
 
 This page covers texture declarations in `defineMaterial`, the runtime texture value forms, update modes, upload behaviour, mipmap generation, and sampler configuration.

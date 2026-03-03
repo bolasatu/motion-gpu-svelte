@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Render Modes
+description: Controlling when the canvas re-renders always, on-demand, or manual.
 ---
 
 This page covers the three render modes (`always`, `on-demand`, `manual`), the stage API for organizing task execution, dependency ordering, and the profiling/diagnostics system.

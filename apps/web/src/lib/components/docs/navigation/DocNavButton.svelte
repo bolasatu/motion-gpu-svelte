@@ -1,24 +1,35 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
-	import { cn } from '$lib/utils/cn';
+  import { cn } from "$lib/utils/cn";
 
-	type Props = {
-		label: string;
-		title: string;
-		href: string;
-		align?: 'left' | 'right';
-	};
+  type ComponentProps = {
+    label: string;
+    title: string;
+    href: string;
+    align?: "left" | "right";
+    forceSecondColumn?: boolean;
+  };
 
-	let { label, title, href, align = 'left' }: Props = $props();
+  const {
+    label,
+    title,
+    href,
+    align = "left",
+    forceSecondColumn = false,
+  }: ComponentProps = $props();
 </script>
 
 <a
-	href={resolve(href as '/')}
-	class={cn(
-		'block border border-border bg-background px-4 py-3 transition-colors hover:bg-background-muted',
-		align === 'right' && 'text-right'
-	)}
+  {href}
+  class={cn(
+    "group border border-border relative flex flex-col rounded-lg bg-card-light px-4 py-3 shadow-sm transition-[background-color] duration-150 ease-out hover:bg-card-muted",
+    align === "right" && "sm:text-right",
+    forceSecondColumn && "sm:col-start-2",
+  )}
 >
-	<p class="text-xs tracking-wide text-foreground-muted uppercase">{label}</p>
-	<p class="text-base tracking-tight text-foreground">{title}</p>
+  <span class="text-xs tracking-wide text-foreground/45 uppercase">
+    {label}
+  </span>
+  <span class="text-lg font-medium text-foreground">
+    {title}
+  </span>
 </a>

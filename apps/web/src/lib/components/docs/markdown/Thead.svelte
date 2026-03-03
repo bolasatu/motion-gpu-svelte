@@ -1,15 +1,26 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+  import type { Snippet } from "svelte";
+  import { cn } from "$lib/utils/cn";
 
-	interface Props {
-		children?: Snippet;
-		class?: string;
-		[key: string]: unknown;
-	}
+  type ComponentProps = {
+    class?: string;
+    children?: Snippet;
+    [prop: string]: unknown;
+  };
 
-	let { children, class: className = '', ...rest }: Props = $props();
+  const {
+    children,
+    class: className = "",
+    ...restProps
+  }: ComponentProps = $props();
 </script>
 
-<thead {...rest} class={`border-y border-border ${className}`.trim()}>
-	{@render children?.()}
+<thead
+  {...restProps}
+  class={cn(
+    "overflow-hidden rounded-t-lg border-b border-border bg-card-light",
+    className,
+  )}
+>
+  {@render children?.()}
 </thead>

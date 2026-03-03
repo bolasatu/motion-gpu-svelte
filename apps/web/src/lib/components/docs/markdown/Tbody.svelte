@@ -1,15 +1,20 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import type { Snippet } from "svelte";
+	import { cn } from "$lib/utils/cn";
 
-	interface Props {
-		children?: Snippet;
+	type ComponentProps = {
 		class?: string;
-		[key: string]: unknown;
-	}
+		children?: Snippet;
+		[prop: string]: unknown;
+	};
 
-	let { children, class: className = '', ...rest }: Props = $props();
+	const {
+		children,
+		class: className = "",
+		...restProps
+	}: ComponentProps = $props();
 </script>
 
-<tbody {...rest} class={className}>
+<tbody {...restProps} class={cn("divide-y divide-border/60", className)}>
 	{@render children?.()}
 </tbody>

@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Defining Materials
+description: Creating immutable, validated materials with the defineMaterial API.
 ---
 
 `defineMaterial` is the entry point for creating materials in MotionGPU. It validates your inputs, freezes the result, and produces an immutable `FragMaterial` that `FragCanvas` uses to build the WebGPU rendering pipeline.

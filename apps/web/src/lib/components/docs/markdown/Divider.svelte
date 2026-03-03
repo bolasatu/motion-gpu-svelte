@@ -1,10 +1,8 @@
 <script lang="ts">
-	interface Props {
-		class?: string;
-		[key: string]: unknown;
-	}
+  import { cn } from "$lib/utils/cn";
 
-	let { class: className = '', ...rest }: Props = $props();
+  type ComponentProps = Record<string, unknown> & { class?: string };
+  const { class: className = "", ...restProps }: ComponentProps = $props();
 </script>
 
-<hr {...rest} class={`my-8 border-0 border-t border-border ${className}`.trim()} />
+<hr {...restProps} class={cn("my-12 h-px border-t border-border", className)} />

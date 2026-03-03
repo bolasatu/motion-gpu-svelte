@@ -1,18 +1,26 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+  import type { Snippet } from "svelte";
+  import { cn } from "$lib/utils/cn";
 
-	interface Props {
-		children?: Snippet;
-		class?: string;
-		[key: string]: unknown;
-	}
+  type ComponentProps = {
+    class?: string;
+    children?: Snippet;
+    [prop: string]: unknown;
+  };
 
-	let { children, class: className = '', ...rest }: Props = $props();
+  const {
+    children,
+    class: className = "",
+    ...restProps
+  }: ComponentProps = $props();
 </script>
 
 <a
-	{...rest}
-	class={`text-foreground underline decoration-accent/60 decoration-1 underline-offset-[3px] transition-colors duration-150 ease-out hover:text-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none ${className}`.trim()}
+  {...restProps}
+  class={cn(
+    "text-foreground text-sm underline decoration-dotted underline-offset-4 transition-[color] duration-150 ease-out hover:text-foreground/70",
+    className,
+  )}
 >
-	{@render children?.()}
+  {@render children?.()}
 </a>

@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Error Handling
+description: Understanding the error normalization pipeline, structured reports, and diagnostics.
 ---
 
 MotionGPU normalizes all runtime errors into a consistent `MotionGPUErrorReport` structure. This page covers the error pipeline, classification patterns, overlay behaviour, shader compile diagnostics, device loss handling, and retry strategy.

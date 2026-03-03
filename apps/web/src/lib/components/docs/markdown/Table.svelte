@@ -1,17 +1,27 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+  import type { Snippet } from "svelte";
+  import { cn } from "$lib/utils/cn";
 
-	interface Props {
-		children?: Snippet;
-		class?: string;
-		[key: string]: unknown;
-	}
+  type ComponentProps = {
+    class?: string;
+    children?: Snippet;
+    [prop: string]: unknown;
+  };
 
-	let { children, class: className = '', ...rest }: Props = $props();
+  const {
+    children,
+    class: className = "",
+    ...restProps
+  }: ComponentProps = $props();
 </script>
 
-<div class="my-8 max-w-full overflow-x-auto">
-	<table {...rest} class={`w-full min-w-xl border-collapse text-left ${className}`.trim()}>
-		{@render children?.()}
-	</table>
+<div class="border border-border relative my-8 rounded-lg bg-card shadow-sm">
+  <div class="w-full overflow-x-auto rounded-lg">
+    <table
+      {...restProps}
+      class={cn("w-full text-base [&_code]:text-sm", className)}
+    >
+      {@render children?.()}
+    </table>
+  </div>
 </div>

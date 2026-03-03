@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Hooks & Context
+description: Accessing runtime state and controlling rendering with useMotionGPU and context hooks.
 ---
 
 This page covers the `useMotionGPU()` hook for accessing the runtime context, the `CurrentWritable` pattern for synchronous value access, and recommended integration patterns.

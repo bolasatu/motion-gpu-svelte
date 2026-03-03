@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Examples
+description: Practical, annotated code examples demonstrating common MotionGPU patterns.
 ---
 
 Practical, annotated code examples demonstrating common use cases. Each example includes the full material definition, runtime component, and explanatory notes.

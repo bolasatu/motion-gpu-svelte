@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Testing & Internals
+description: Test coverage, runtime contracts, and implementation details for library maintainers.
 ---
 
 This page documents the test coverage, enforced runtime contracts, key implementation details for maintainers, and build/validation commands.

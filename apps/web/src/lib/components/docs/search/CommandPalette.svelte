@@ -1,227 +1,243 @@
 <script lang="ts">
-	import { goto, afterNavigate } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import { onMount } from 'svelte';
-	import { cubicOut } from 'svelte/easing';
-	import { fade, scale } from 'svelte/transition';
-	import { searchState } from '$lib/stores/search.svelte';
-	import { searchDocs } from '$lib/utils/docs-search';
-	import { cn } from '$lib/utils/cn';
-	import Search from 'carbon-icons-svelte/lib/Search.svelte';
+  import { searchState } from "$lib/stores/search.svelte";
+  import { searchDocs } from "$lib/utils/search";
+  import { fade, scale } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import { goto } from "$app/navigation";
+  import { onNavigate } from "$app/navigation";
+  import { cn } from "$lib/utils/cn";
+  import ScrollArea from "$lib/components/ui/ScrollArea.svelte";
+  import { onMount } from "svelte";
+  import Search from "carbon-icons-svelte/lib/Search.svelte";
+  import Return from "carbon-icons-svelte/lib/Return.svelte";
 
-	let query = $state('');
-	let selectedIndex = $state(0);
-	let inputRef = $state<HTMLInputElement | null>(null);
-	let contentHeight = $state(0);
-	const results = $derived(searchDocs(query));
+  let query = $state("");
+  let results = $derived(searchDocs(query));
+  let selectedIndex = $state(0);
+  let inputRef = $state<HTMLInputElement>();
+  let contentHeight = $state(0);
 
-	function close() {
-		searchState.close();
-	}
+  function handleGlobalKeydown(e: KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      searchState.toggle();
+    }
+  }
 
-	function handleGlobalShortcut(event: KeyboardEvent) {
-		if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-			event.preventDefault();
-			searchState.toggle();
-		}
-	}
+  onMount(() => {
+    window.addEventListener("keydown", handleGlobalKeydown);
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKeydown);
+    };
+  });
 
-	function selectResult(index: number) {
-		const result = results[index];
-		if (!result) return;
-		if (result.anchor)
-			void goto(resolve((`${result.href}${result.anchor}`) as '/'), { noScroll: true });
-		else void goto(resolve(result.href as '/'));
-		close();
-	}
+  $effect(() => {
+    if (searchState.isOpen && inputRef) {
+      inputRef.focus();
+    }
+  });
 
-	function handleKeydown(event: KeyboardEvent) {
-		if (!searchState.isOpen) return;
+  $effect(() => {
+    void results;
+    selectedIndex = 0;
+  });
 
-		if (event.key === 'Escape') {
-			event.preventDefault();
-			close();
-			return;
-		}
+  function close() {
+    searchState.close();
+  }
 
-		if (results.length === 0) return;
+  function handleKeydown(e: KeyboardEvent) {
+    if (!searchState.isOpen) return;
 
-		if (event.key === 'ArrowDown') {
-			event.preventDefault();
-			selectedIndex = (selectedIndex + 1) % results.length;
-		}
+    if (e.key === "Escape") {
+      e.preventDefault();
+      close();
+      return;
+    }
 
-		if (event.key === 'ArrowUp') {
-			event.preventDefault();
-			selectedIndex = (selectedIndex - 1 + results.length) % results.length;
-		}
+    if (results.length === 0) {
+      return;
+    }
 
-		if (event.key === 'Enter') {
-			event.preventDefault();
-			selectResult(selectedIndex);
-		}
-	}
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      selectedIndex = (selectedIndex + 1) % results.length;
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      selectedIndex = (selectedIndex - 1 + results.length) % results.length;
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (results[selectedIndex]) {
+        selectResult(results[selectedIndex]);
+      }
+    }
+  }
 
-	function highlight(text: string, search: string) {
-		if (!search.trim()) return [{ text, highlighted: false }];
+  $effect(() => {
+    if (searchState.isOpen) {
+      window.addEventListener("keydown", handleKeydown);
+      return () => window.removeEventListener("keydown", handleKeydown);
+    }
+  });
 
-		const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-		const regex = new RegExp(`(${escapedSearch})`, 'gi');
-		const parts = text.split(regex);
+  function selectResult(result: ReturnType<typeof searchDocs>[number]) {
+    const href = `${result.slug}${result.anchor || ""}`;
+    goto(href);
+    close();
+  }
 
-		return parts
-			.filter((part) => part.length > 0)
-			.map((part) => ({
-				text: part,
-				highlighted: part.toLowerCase() === search.toLowerCase()
-			}));
-	}
+  onNavigate(() => {
+    close();
+  });
 
-	onMount(() => {
-		window.addEventListener('keydown', handleGlobalShortcut);
-		return () => {
-			window.removeEventListener('keydown', handleGlobalShortcut);
-		};
-	});
+  function highlight(text: string, search: string) {
+    if (!search.trim()) return [{ text, highlight: false }];
 
-	afterNavigate(() => {
-		const hash = typeof location !== 'undefined' ? location.hash : '';
-		if (!hash) return;
-		const id = hash.slice(1);
-		let tries = 0;
-		const attempt = () => {
-			const el = document.getElementById(id);
-			if (el) {
-				el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-				return;
-			}
-			if (tries++ < 30) setTimeout(attempt, 50);
-		};
-		attempt();
-	});
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(${escapedSearch})`, "gi");
+    const parts = text.split(regex);
 
-	$effect(() => {
-		if (!searchState.isOpen) return;
-		selectedIndex = 0;
-		requestAnimationFrame(() => inputRef?.focus());
-	});
-
-	$effect(() => {
-		if (!searchState.isOpen) return;
-		window.addEventListener('keydown', handleKeydown);
-		return () => {
-			window.removeEventListener('keydown', handleKeydown);
-		};
-	});
+    return parts.map((part) => ({
+      text: part,
+      highlight: part.toLowerCase() === search.toLowerCase(),
+    }));
+  }
 </script>
 
 {#if searchState.isOpen}
-	<div
-		class="fixed inset-0 z-120 bg-background/85"
-		role="presentation"
-		onclick={close}
-		transition:fade={{ duration: 150 }}
-	></div>
+  <div
+    class="fixed inset-0 z-60 bg-background/80 backdrop-blur-sm"
+    transition:fade={{ duration: 150 }}
+    onclick={close}
+    role="presentation"
+  ></div>
 
-	<div
-		class="fixed inset-0 z-121 flex items-start justify-center p-4 pt-[10vh]"
-		role="dialog"
-		aria-modal="true"
-		tabindex="-1"
-		onclick={(event) => event.target === event.currentTarget && close()}
-		onkeydown={(event) => {
-			if (event.key === 'Escape') close();
-		}}
-	>
-		<div
-			class="w-full max-w-3xl border border-border bg-card"
-			transition:scale={{ duration: 300, start: 0.95, easing: cubicOut }}
-			onoutroend={() => {
-				query = '';
-				contentHeight = 0;
-			}}
-		>
-			<div class="flex items-center gap-2 border-b border-border px-3">
-				<Search size={20} class="text-foreground-muted" aria-hidden="true" />
-				<input
-					bind:this={inputRef}
-					bind:value={query}
-					class="h-12 w-full bg-transparent text-sm text-foreground placeholder:text-foreground-muted focus:outline-none"
-					placeholder="Search MotionGPU docs"
-					aria-label="Search MotionGPU docs"
-				/>
-				<span class="border border-border px-1.5 py-0.5 font-mono text-[10px] text-foreground-muted bg-background"
-					>ESC</span
-				>
-			</div>
+  <div
+    class="fixed inset-0 z-60 flex items-start justify-center p-4 sm:pt-[10vh]"
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+    onclick={(e) => e.target === e.currentTarget && close()}
+    onkeydown={(e) => e.key === "Escape" && close()}
+  >
+    <div
+      class="border border-border relative w-full max-w-164 rounded-xl bg-card shadow-2xl"
+      role="document"
+      transition:scale={{
+        duration: 300,
+        start: 0.95,
+        easing: cubicOut,
+      }}
+      onoutroend={() => {
+        query = "";
+        contentHeight = 0;
+      }}
+    >
+      <div class="flex items-center border-b border-border/60 px-3">
+        <Search size={24} class="mr-2 text-foreground/45" />
+        <input
+          bind:this={inputRef}
+          bind:value={query}
+          class="flex h-12 w-full bg-transparent text-base text-foreground placeholder:text-foreground/45 focus:outline-none focus-visible:border-none! focus-visible:ring-0! focus-visible:ring-offset-0! focus-visible:outline-none!"
+          placeholder="Search documentation..."
+          aria-label="Search documentation"
+        />
+        <kbd
+          class="border border-border pointer-events-none relative hidden h-5 items-center gap-1 rounded-md bg-card-light px-1.5 text-[10px] font-medium text-foreground/45 shadow-sm select-none font-mono sm:flex"
+        >
+          ESC
+        </kbd>
+      </div>
 
-			<div
-				class="overflow-hidden transition-[height] duration-300 ease-out"
-				style={`height: ${contentHeight}px`}
-			>
-				<div bind:clientHeight={contentHeight}>
-					{#if results.length > 0}
-						<div class="max-h-[60vh] overflow-y-auto">
-							{#each results as result, index (`${result.href}${result.anchor ?? ''}${index}`)}
-								{@const isChild = result.matchType === 'heading' || result.matchType === 'content'}
-								<button
-									type="button"
-									onclick={() => selectResult(index)}
-									onmouseenter={() => (selectedIndex = index)}
-									class={cn(
-										'group relative w-full border-b border-border px-3 py-2 text-left transition-colors',
-										isChild && 'pl-7',
-										selectedIndex === index
-											? 'bg-background-muted/55 text-foreground'
-											: 'bg-card text-foreground hover:bg-background'
-									)}
-								>
-									{#if isChild}
-										<div
-											class={cn(
-												'absolute top-0 bottom-0 left-3 w-px',
-												selectedIndex === index ? 'bg-accent' : 'bg-foreground/18'
-											)}
-										></div>
-									{/if}
+      <div
+        class="overflow-hidden transition-[height] duration-300 ease-out"
+        style="height: {contentHeight}px"
+      >
+        <div bind:clientHeight={contentHeight}>
+          {#if results.length > 0}
+            <ScrollArea
+              viewportStyle="mask-image: linear-gradient(to bottom, transparent, black 8px, black calc(100% - 8px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 8px, black calc(100% - 8px), transparent);"
+              viewportClass="max-h-96 p-2"
+            >
+              {#each results as result, i (result.slug + (result.anchor || "") + i)}
+                {@const isChild =
+                  result.matchType === "heading" ||
+                  result.matchType === "content"}
+                <button
+                  class={cn(
+                    "group relative flex w-full flex-col items-start gap-1 rounded-lg px-3 py-2 text-sm",
+                    isChild && "pl-8",
+                    i === selectedIndex
+                      ? "bg-card-light text-foreground"
+                      : "text-foreground hover:bg-card-light",
+                  )}
+                  onclick={() => selectResult(result)}
+                  onmouseenter={() => (selectedIndex = i)}
+                >
+                  {#if isChild}
+                    <div
+                      class={cn(
+                        "absolute top-0 bottom-0 left-3 w-px bg-border/30",
+                      )}
+                    ></div>
+                  {/if}
 
-									{#if result.matchType !== 'content'}
-										<p class="text-sm tracking-tight text-foreground">
-											{#each highlight(result.matchType === 'heading' ? (result.heading ?? result.title) : result.title, query) as part, partIndex (`title-${partIndex}-${part.text}`)}
-												{#if part.highlighted}
-													<span class="text-accent">{part.text}</span>
-												{:else}
-													{part.text}
-												{/if}
-											{/each}
-										</p>
-									{/if}
-
-									{#if result.snippet}
-										<p class="mt-1 line-clamp-1 text-xs text-foreground-muted">
-											{#each highlight(result.snippet, query) as part, partIndex (`snippet-${partIndex}-${part.text}`)}
-												{#if part.highlighted}
-													<span class="text-accent">{part.text}</span>
-												{:else}
-													{part.text}
-												{/if}
-											{/each}
-										</p>
-									{/if}
-								</button>
-							{/each}
-						</div>
-					{:else if query.trim()}
-						<p class="px-3 py-6 text-sm text-foreground-muted">No results found.</p>
-					{/if}
-				</div>
-			</div>
-
-			<div class="border-t border-border px-3 py-2">
-				<p class="font-mono text-xs text-foreground-muted">
-					Use ↑ ↓ to navigate and Enter to open.
-				</p>
-			</div>
-		</div>
-	</div>
+                  <div class="flex w-full flex-col items-start gap-0.5">
+                    {#if result.matchType !== "content"}
+                      <div class="flex items-center gap-2 font-medium">
+                        {#if result.matchType === "heading"}
+                          <span class="opacity-70">#</span>
+                        {/if}
+                        <span>
+                          {#each highlight(result.heading || result.title, query) as part, index (index)}
+                            {#if part.highlight}
+                              <span class="text-accent">{part.text}</span>
+                            {:else}
+                              {part.text}
+                            {/if}
+                          {/each}
+                        </span>
+                      </div>
+                    {/if}
+                    {#if result.snippet}
+                      <div
+                        class={cn(
+                          "line-clamp-1 text-left text-xs",
+                          i === selectedIndex
+                            ? "text-foreground"
+                            : "text-foreground/60",
+                        )}
+                      >
+                        {#each highlight(result.snippet, query) as part, index (index)}
+                          {#if part.highlight}
+                            <span class="text-accent">{part.text}</span>
+                          {:else}
+                            {part.text}
+                          {/if}
+                        {/each}
+                      </div>
+                    {/if}
+                  </div>
+                </button>
+              {/each}
+            </ScrollArea>
+          {:else if query}
+            <div class="py-6 text-center text-sm text-foreground/45">
+              No results found.
+            </div>
+          {/if}
+        </div>
+      </div>
+      <div
+        class="flex w-full flex-row items-center justify-start gap-2 rounded-b-xl border-t border-border/60 bg-card-light p-2"
+      >
+        <kbd
+          class="border border-border pointer-events-none relative hidden h-5 items-center gap-1 rounded-md bg-card-light px-1.5 text-[10px] font-medium text-foreground/45 shadow-sm select-none font-mono sm:flex"
+        >
+          <Return class="size-3" />
+        </kbd>
+        <span class="text-xs text-foreground/45"> Go to page </span>
+      </div>
+    </div>
+  </div>
 {/if}

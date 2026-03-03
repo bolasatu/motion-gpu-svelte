@@ -1,31 +1,34 @@
 <script lang="ts">
-	import DocNavButton from './DocNavButton.svelte';
+  import DocNavButton from "./DocNavButton.svelte";
 
-	type Link = {
-		title: string;
-		href: string;
-	};
+  export type DocNavLink = {
+    title: string;
+    href: string;
+  };
 
-	interface Props {
-		previous?: Link | null;
-		next?: Link | null;
-	}
-
-	let { previous = null, next = null }: Props = $props();
-	const nextStartsRight = $derived(!previous && !!next);
+  const props = $props<{
+    previous?: DocNavLink | null;
+    next?: DocNavLink | null;
+  }>();
+  const previous = $derived(props.previous ?? null);
+  const next = $derived(props.next ?? null);
 </script>
 
 {#if previous || next}
-	<nav class="mt-12 border-t border-border pt-8">
-		<div class="grid gap-4 sm:grid-cols-2">
-			{#if previous}
-				<DocNavButton label="Previous" {...previous} />
-			{/if}
-			{#if next}
-				<div class={nextStartsRight ? 'sm:col-start-2' : ''}>
-					<DocNavButton label="Next" align="right" {...next} />
-				</div>
-			{/if}
-		</div>
-	</nav>
+  <nav class="relative mt-16 pt-9 border-t border-border">
+    <div class="grid gap-4 sm:grid-cols-2">
+      {#if previous}
+        <DocNavButton label="Previous" {...previous} />
+      {/if}
+
+      {#if next}
+        <DocNavButton
+          label="Next"
+          align="right"
+          forceSecondColumn={!previous}
+          {...next}
+        />
+      {/if}
+    </div>
+  </nav>
 {/if}

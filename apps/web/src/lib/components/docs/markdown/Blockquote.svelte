@@ -1,18 +1,26 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+  import type { Snippet } from "svelte";
+  import { cn } from "$lib/utils/cn";
 
-	interface Props {
-		children?: Snippet;
-		class?: string;
-		[key: string]: unknown;
-	}
+  type ComponentProps = {
+    class?: string;
+    children?: Snippet;
+    [prop: string]: unknown;
+  };
 
-	let { children, class: className = '', ...rest }: Props = $props();
+  const {
+    children,
+    class: className = "",
+    ...restProps
+  }: ComponentProps = $props();
 </script>
 
 <blockquote
-	{...rest}
-	class={`max-w-[78ch] border-l-2 border-accent/70 pl-3 text-sm leading-relaxed text-foreground-muted ${className}`.trim()}
+  {...restProps}
+  class={cn(
+    "border border-border relative mt-6 rounded-lg border-l-2 border-l-accent bg-card px-5 py-3 text-sm text-foreground/70 italic shadow-sm",
+    className,
+  )}
 >
-	{@render children?.()}
+  {@render children?.()}
 </blockquote>

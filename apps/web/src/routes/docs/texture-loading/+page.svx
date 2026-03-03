@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Texture Loading
+description: Reactive hook for loading textures from URLs with automatic cleanup and error handling.
 ---
 
 `useTexture` is a Svelte hook that loads textures from URLs, exposes reactive loading/error state, and handles cancellation and resource cleanup automatically.

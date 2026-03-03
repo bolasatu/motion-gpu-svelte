@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: MotionGPU Documentation
+description: Svelte 5 runtime for fullscreen WGSL rendering on WebGPU.
 ---
 
 `@motion-core/motion-gpu` is a **Svelte 5 runtime for fullscreen WGSL rendering on WebGPU**. It gives you a declarative material system, a reactive frame scheduler, and a composable post-processing pipeline — all wired into a single `<FragCanvas>` component.

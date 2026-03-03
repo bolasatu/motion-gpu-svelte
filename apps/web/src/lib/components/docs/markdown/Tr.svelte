@@ -1,15 +1,26 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+  import type { Snippet } from "svelte";
+  import { cn } from "$lib/utils/cn";
 
-	interface Props {
-		children?: Snippet;
-		class?: string;
-		[key: string]: unknown;
-	}
+  type ComponentProps = {
+    class?: string;
+    children?: Snippet;
+    [prop: string]: unknown;
+  };
 
-	let { children, class: className = '', ...rest }: Props = $props();
+  const {
+    children,
+    class: className = "",
+    ...restProps
+  }: ComponentProps = $props();
 </script>
 
-<tr {...rest} class={`border-b border-border ${className}`.trim()}>
-	{@render children?.()}
+<tr
+  {...restProps}
+  class={cn(
+    "transition-[background-color] [&_code]:text-xs [&strong]:text-sm text-sm duration-150 ease-out hover:bg-card-light data-[state=selected]:bg-card-light",
+    className,
+  )}
+>
+  {@render children?.()}
 </tr>

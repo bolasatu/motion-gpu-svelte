@@ -1,18 +1,26 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+  import type { Snippet } from "svelte";
+  import { cn } from "$lib/utils/cn";
 
-	interface Props {
-		children?: Snippet;
-		class?: string;
-		[key: string]: unknown;
-	}
+  type ComponentProps = {
+    class?: string;
+    children?: Snippet;
+    [prop: string]: unknown;
+  };
 
-	let { children, class: className = '', ...rest }: Props = $props();
+  const {
+    children,
+    class: className = "",
+    ...restProps
+  }: ComponentProps = $props();
 </script>
 
 <h1
-	{...rest}
-	class={`mt-8 text-3xl leading-tight tracking-tight text-foreground ${className}`.trim()}
+  {...restProps}
+  class={cn(
+    "scroll-m-24 [&_code]:text-lg text-2xl font-medium text-foreground font-display",
+    className,
+  )}
 >
-	{@render children?.()}
+  {@render children?.()}
 </h1>

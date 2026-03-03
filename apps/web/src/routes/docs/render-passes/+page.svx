@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Render Passes
+description: Building post-processing pipelines with the render graph and built-in pass types.
 ---
 
 MotionGPU supports post-processing through a **render graph** that sequences passes over ping-pong buffers. This page covers the render graph model, slot semantics, and the three built-in pass types.

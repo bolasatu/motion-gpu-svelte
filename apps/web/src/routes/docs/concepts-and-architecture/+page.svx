@@ -1,5 +1,6 @@
 ---
-layout: docs
+title: Concepts & Architecture
+description: Architectural decisions, runtime lifecycle, and the mental model behind MotionGPU.
 ---
 
 This page explains the architectural decisions behind MotionGPU, how the runtime pieces fit together, and what happens on every frame. Understanding this foundation makes the rest of the documentation much easier to navigate.
@@ -21,7 +22,7 @@ MotionGPU is intentionally strict in input contracts and explicit in scheduling.
 packages/motion-gpu/src/lib/
 ├── index.ts                        # Public root exports
 ├── advanced.ts                     # Advanced exports (user context, extended types)
-├── FragCanvas.svelte               # Runtime entry component (714 lines)
+├── FragCanvas.svelte               # Runtime entry component
 ├── Portal.svelte                   # DOM portal utility for error overlay
 ├── current-writable.ts             # CurrentWritable<T> reactive store
 ├── frame-context.ts                # Scheduler registry + useFrame hook
