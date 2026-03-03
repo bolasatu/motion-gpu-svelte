@@ -28,23 +28,25 @@
 	});
 </script>
 
-<div
-	{...restProps}
-	class={cn(
-		unstyled
-			? 'group/pre relative font-mono text-sm'
-			: 'group/pre relative mt-8 rounded-lg border border-border bg-card-light p-4 font-mono text-sm text-foreground shadow-sm',
-		className
-	)}
->
-	<div class="overflow-x-auto">
-		{@render children?.()}
-	</div>
-	{#if code}
-		<div class="pointer-events-none absolute top-2 right-2">
-			<CopyCodeButton {code} class="pointer-events-auto" />
+<div class="inset-shadow mt-8 rounded-lg border border-border bg-background-inset p-1">
+	<div
+		{...restProps}
+		class={cn(
+			unstyled
+				? 'group/pre relative font-mono text-sm'
+				: 'group/pre relative rounded-md border border-border bg-background p-4 font-mono text-sm text-foreground shadow-md',
+			className
+		)}
+	>
+		<div class="overflow-x-auto">
+			{@render children?.()}
 		</div>
-	{/if}
+		{#if code}
+			<div class="pointer-events-none absolute top-2 right-2">
+				<CopyCodeButton {code} class="pointer-events-auto" />
+			</div>
+		{/if}
+	</div>
 </div>
 
 <style>

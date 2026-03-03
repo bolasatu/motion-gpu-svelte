@@ -14,7 +14,7 @@
 <tr
 	{...restProps}
 	class={cn(
-		'text-sm transition-[background-color] duration-150 ease-out hover:bg-card-light data-[state=selected]:bg-card-light [&_code]:text-xs [&strong]:text-sm',
+		'text-sm transition-[background-color] duration-150 ease-out hover:bg-background data-[state=selected]:bg-background [&_code]:text-xs [&strong]:text-sm',
 		className
 	)}
 >

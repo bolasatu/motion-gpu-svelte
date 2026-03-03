@@ -106,7 +106,7 @@
 
 {#if searchState.isOpen}
 	<div
-		class="fixed inset-0 z-60 bg-background/80 backdrop-blur-sm"
+		class="fixed inset-0 z-60 bg-background-inset/80 backdrop-blur-sm"
 		transition:fade={{ duration: 150 }}
 		onclick={close}
 		role="presentation"
@@ -121,7 +121,7 @@
 		onkeydown={(e) => e.key === 'Escape' && close()}
 	>
 		<div
-			class="relative w-full max-w-164 rounded-xl border border-border bg-card shadow-2xl"
+			class="relative w-full max-w-164 rounded-xl border border-border bg-background shadow-2xl"
 			role="document"
 			transition:scale={{
 				duration: 300,
@@ -143,7 +143,7 @@
 					aria-label="Search documentation"
 				/>
 				<kbd
-					class="pointer-events-none relative hidden h-5 items-center gap-1 rounded-md border border-border bg-card-light px-1.5 font-mono text-[10px] font-medium text-foreground/45 shadow-sm select-none sm:flex"
+					class="pointer-events-none relative hidden h-5 items-center gap-1 rounded-md border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-foreground/45 shadow-sm select-none sm:flex"
 				>
 					ESC
 				</kbd>
@@ -166,8 +166,8 @@
 										'group relative flex w-full flex-col items-start gap-1 rounded-lg px-3 py-2 text-sm',
 										isChild && 'pl-8',
 										i === selectedIndex
-											? 'bg-card-light text-foreground'
-											: 'text-foreground hover:bg-card-light'
+											? 'bg-background text-foreground'
+											: 'text-foreground hover:bg-background'
 									)}
 									onclick={() => selectResult(result)}
 									onmouseenter={() => (selectedIndex = i)}
@@ -219,10 +219,10 @@
 				</div>
 			</div>
 			<div
-				class="flex w-full flex-row items-center justify-start gap-2 rounded-b-xl border-t border-border/60 bg-card-light p-2"
+				class="flex w-full flex-row items-center justify-start gap-2 rounded-b-xl border-t border-border/60 bg-background p-2"
 			>
 				<kbd
-					class="pointer-events-none relative hidden h-5 items-center gap-1 rounded-md border border-border bg-card-light px-1.5 font-mono text-[10px] font-medium text-foreground/45 shadow-sm select-none sm:flex"
+					class="pointer-events-none relative hidden h-5 items-center gap-1 rounded-md border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-foreground/45 shadow-sm select-none sm:flex"
 				>
 					<Return class="size-3" />
 				</kbd>

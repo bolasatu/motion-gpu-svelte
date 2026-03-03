@@ -13,7 +13,7 @@
 
 <thead
 	{...restProps}
-	class={cn('overflow-hidden rounded-t-lg border-b border-border bg-card-light', className)}
+	class={cn('overflow-hidden rounded-t-lg border-b border-border bg-background', className)}
 >
 	{@render children?.()}
 </thead>

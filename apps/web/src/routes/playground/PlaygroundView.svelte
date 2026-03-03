@@ -242,7 +242,7 @@
 
 <main class="flex h-dvh min-h-0 flex-col overflow-hidden">
 	<div
-		class="flex h-9 items-center justify-between border-b border-border bg-card-light px-2 sm:px-3"
+		class="flex h-9 items-center justify-between border-b border-border bg-background px-2 sm:px-3"
 	>
 		<div
 			class="inline-flex items-center gap-1 py-2 text-sm tracking-tight text-foreground transition-colors hover:text-foreground"
@@ -284,7 +284,7 @@
 		<aside
 			inert={!isTreeVisible}
 			aria-hidden={!isTreeVisible}
-			class={`playground-sidebar flex min-h-0 flex-col overflow-hidden bg-card-light lg:max-h-none ${
+			class={`playground-sidebar flex min-h-0 flex-col overflow-hidden bg-background lg:max-h-none ${
 				isTreeVisible ? '' : 'playground-sidebar--collapsed'
 			} `}
 			bind:this={sidebarHost}
@@ -360,13 +360,13 @@
 			onkeydown={(event) => resizeByKeyboard('tree', event)}
 		></button>
 
-		<section class="flex min-h-0 flex-col bg-card-light">
+		<section class="flex min-h-0 flex-col bg-background">
 			<div class="h-8 border-b border-border">
 				<div class="flex items-stretch overflow-x-auto">
 					{#each controller.openFilePaths as filePath (filePath)}
 						<div
 							class={`group inline-flex shrink-0 items-center border-r border-border ${
-								controller.activeFilePath === filePath ? 'bg-white' : 'bg-background'
+								controller.activeFilePath === filePath ? 'bg-white' : 'bg-background-inset'
 							}`}
 						>
 							<button
@@ -406,21 +406,21 @@
 
 			{#if controller.syncError}
 				<p
-					class="border-t border-border bg-card-light px-3 py-2 font-mono text-xs text-red-500"
+					class="border-t border-border bg-background px-3 py-2 font-mono text-xs text-red-500"
 					role="alert"
 				>
 					{controller.syncError}
 				</p>
 			{/if}
 
-			<section class="border-t border-border bg-card-light">
+			<section class="border-t border-border bg-background">
 				{#if controller.runtimeLog}
 					<details>
 						<summary class="cursor-pointer px-3 py-2 font-mono text-xs text-foreground/70">
 							Runtime log ({controller.status})
 						</summary>
 						<pre
-							class="h-32 overflow-auto border-t border-border bg-card px-3 py-2 font-mono text-[11px] leading-5 whitespace-pre-wrap text-foreground/70">{controller.runtimeLogTail}</pre>
+							class="h-32 overflow-auto border-t border-border bg-background px-3 py-2 font-mono text-[11px] leading-5 whitespace-pre-wrap text-foreground/70">{controller.runtimeLogTail}</pre>
 					</details>
 				{:else}
 					<p class="border-t border-border px-3 py-2 font-mono text-xs text-foreground/70">
@@ -438,8 +438,8 @@
 			onkeydown={(event) => resizeByKeyboard('preview', event)}
 		></button>
 
-		<section class="flex min-h-0 flex-col overflow-hidden bg-card-light">
-			<div class="relative min-h-0 flex-1 bg-card-light">
+		<section class="flex min-h-0 flex-col overflow-hidden bg-background">
+			<div class="relative min-h-0 flex-1 bg-background">
 				{#if controller.previewUrl}
 					<iframe
 						title="WebContainer preview"
@@ -458,7 +458,7 @@
 
 			{#if controller.errorMessage}
 				<p
-					class="border-t border-border bg-card px-3 py-2 font-mono text-xs whitespace-pre-wrap text-red-500"
+					class="border-t border-border bg-background px-3 py-2 font-mono text-xs whitespace-pre-wrap text-red-500"
 					role="alert"
 				>
 					{controller.errorMessage}
@@ -494,7 +494,7 @@
 			height: 100%;
 			cursor: col-resize;
 			touch-action: none;
-			background: transparent;
+			background: var(--color-border);
 			z-index: 2;
 		}
 

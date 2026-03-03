@@ -118,14 +118,16 @@
 	</aside>
 
 	<div
-		class="relative mx-auto h-full w-full max-w-4xl overflow-hidden border border-border bg-card pt-12 md:overflow-visible lg:ml-88 lg:max-h-[calc(100dvh-2rem)] lg:rounded-xl lg:pt-0 xl:mr-88"
+		class="inset-shadow relative mx-auto h-full w-full max-w-4xl overflow-hidden border border-border bg-background-inset pt-12 md:overflow-visible lg:ml-88 lg:max-h-[calc(100dvh-2rem)] lg:rounded-xl lg:pt-0 xl:mr-88"
 	>
 		<ScrollArea
 			id="docs-content-container"
-			viewportStyle="mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);"
-			class="mx-auto h-full w-full md:h-auto lg:max-h-[calc(100dvh-2rem)]"
+			class="mx-auto h-full w-full p-2 md:h-auto lg:max-h-[calc(100dvh-2rem)]"
+			viewportClass="rounded-lg"
 		>
-			<div class="flex flex-col gap-8 px-4 py-8 lg:px-8">
+			<div
+				class="flex flex-col gap-8 rounded-lg border border-border bg-background px-4 py-8 lg:px-8"
+			>
 				<section class="min-w-0 flex-1 space-y-8">
 					{#if metadata}
 						<div class="space-y-4">

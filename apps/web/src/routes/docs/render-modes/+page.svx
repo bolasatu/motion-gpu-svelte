@@ -177,7 +177,7 @@ This is useful for debugging task ordering and verifying dependency resolution.
 
 ## Delta clamping
 
-`maxDelta` clamps `state.delta` every frame to prevent large time jumps (e.g., when a tab is backgrounded):
+`maxDelta` clamps `state.delta` every frame to prevent large time jumps (e.g., when a tab is background-inseted):
 
 - **Default**: `0.1` seconds
 - **Must be**: finite and `> 0`

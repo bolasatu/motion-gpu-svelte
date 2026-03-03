@@ -58,7 +58,7 @@
 	});
 </script>
 
-<div class="relative my-6 w-full rounded-lg border border-border bg-card shadow-sm">
+<div class="relative my-6 w-full rounded-lg border border-border bg-background shadow-sm">
 	<div class="flex items-center justify-between rounded-t-lg border-b border-border bg-card-muted">
 		<div class="flex items-center">
 			{#each packageManagers as pm (pm)}

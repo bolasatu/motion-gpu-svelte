@@ -27,7 +27,7 @@
 	</code>
 {:else}
 	<div
-		class="relative inline-block w-fit rounded-md border border-border bg-card-light px-1.5 py-0.5 font-mono text-xs font-medium whitespace-nowrap text-foreground shadow-sm"
+		class="inset-shadow relative inline-block w-fit rounded-sm border border-border bg-background-inset px-1.5 py-0.5 font-mono text-xs font-medium whitespace-nowrap text-foreground"
 	>
 		<code {...restProps} class={cn('', className)}>
 			{@render children?.()}

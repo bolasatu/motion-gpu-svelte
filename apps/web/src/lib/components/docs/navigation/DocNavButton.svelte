@@ -18,18 +18,20 @@
 	}: ComponentProps = $props();
 </script>
 
-<a
-	{href}
-	class={cn(
-		'group relative flex flex-col rounded-lg border border-border bg-card-light px-4 py-3 shadow-sm transition-[background-color] duration-150 ease-out hover:bg-card-muted',
-		align === 'right' && 'sm:text-right',
-		forceSecondColumn && 'sm:col-start-2'
-	)}
->
-	<span class="text-xs tracking-wide text-foreground/45 uppercase">
-		{label}
-	</span>
-	<span class="text-lg font-medium text-foreground">
-		{title}
-	</span>
-</a>
+<div class="inset-shadow rounded-lg bg-background-inset p-1">
+	<a
+		{href}
+		class={cn(
+			'group relative flex flex-col rounded-md border border-border bg-background px-4 py-3 shadow-md transition-[background-color] duration-150 ease-out hover:bg-background',
+			align === 'right' && 'sm:text-right',
+			forceSecondColumn && 'sm:col-start-2'
+		)}
+	>
+		<span class="text-xs tracking-wide text-foreground/45 uppercase">
+			{label}
+		</span>
+		<span class="text-lg font-medium text-foreground">
+			{title}
+		</span>
+	</a>
+</div>

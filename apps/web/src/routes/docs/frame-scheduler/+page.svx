@@ -153,7 +153,7 @@ The invalidation policy controls whether a task's execution triggers a re-render
 With `on-change`, the scheduler compares the current resolved token against the previous frame's token. Invalidation fires **only when they differ**. This is ideal for state-driven updates:
 
 ```ts
-useFrame('background', (state) => {
+useFrame('background-inset', (state) => {
   state.setUniform('uColor', currentColor);
 }, {
   autoInvalidate: false,

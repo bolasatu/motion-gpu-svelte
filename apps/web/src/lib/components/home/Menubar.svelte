@@ -170,7 +170,7 @@
 			</div>
 
 			<div class="hidden items-center gap-2 sm:flex">
-				<Button variant="brand" href={resolve(playgroundRoute as '/playground')} size="sm">
+				<Button variant="default" href={resolve(playgroundRoute as '/playground')} size="sm">
 					<WatsonHealth3DPrintMesh size={16} />
 					<span>Playground</span>
 				</Button>
@@ -192,7 +192,7 @@
 
 			<button
 				type="button"
-				class="inline-flex size-10 items-center justify-center gap-2 text-sm whitespace-nowrap text-foreground transition-colors duration-150 ease-out hover:bg-background sm:hidden"
+				class="hover:bg-background-inset inline-flex size-10 items-center justify-center gap-2 text-sm whitespace-nowrap text-foreground transition-colors duration-150 ease-out sm:hidden"
 				aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
 				aria-expanded={mobileOpen}
 				aria-controls="mobile-menubar-panel"
@@ -213,7 +213,7 @@
 {#if mobileOpen}
 	<button
 		type="button"
-		class="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm sm:hidden"
+		class="bg-background-inset/80 fixed inset-0 z-40 backdrop-blur-sm sm:hidden"
 		aria-label="Close mobile navigation overlay"
 		onclick={() => closeMobileMenu()}
 		in:fade={{ duration: reducedMotion ? 0 : 180 }}
@@ -278,7 +278,7 @@
 		</Button>
 
 		<div class="mt-1 grid grid-cols-2 gap-2">
-			<Button variant="brand" href={resolve(playgroundRoute as '/playground')}>
+			<Button variant="default" href={resolve(playgroundRoute as '/playground')}>
 				<WatsonHealth3DPrintMesh size={16} />
 				<span>Playground</span>
 			</Button>

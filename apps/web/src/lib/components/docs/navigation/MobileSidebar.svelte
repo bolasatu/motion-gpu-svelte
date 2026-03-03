@@ -23,7 +23,7 @@
 </script>
 
 <div
-	class="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-border bg-card px-4 py-1.5 lg:hidden"
+	class="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-border bg-background px-4 py-1.5 lg:hidden"
 >
 	<a href="/" class="flex items-center gap-2">
 		<span
@@ -44,7 +44,7 @@
 </div>
 
 <div
-	class="overlay fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden"
+	class="overlay fixed inset-0 z-50 bg-background-inset/80 backdrop-blur-sm lg:hidden"
 	class:active={isOpen}
 	onclick={close}
 	role="button"
@@ -57,7 +57,7 @@
 ></div>
 
 <div
-	class="sidebar fixed inset-y-0 right-0 z-50 w-3/4 max-w-sm overflow-hidden border-l border-border bg-background text-foreground/70 shadow-xl lg:hidden"
+	class="sidebar fixed inset-y-0 right-0 z-50 w-3/4 max-w-sm overflow-hidden border-l border-border bg-background-inset text-foreground/70 shadow-xl lg:hidden"
 	class:active={isOpen}
 >
 	<div class="absolute top-0 right-0 flex justify-end p-4">
