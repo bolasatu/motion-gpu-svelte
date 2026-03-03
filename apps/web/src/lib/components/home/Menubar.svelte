@@ -3,7 +3,6 @@
 	import { onMount, tick } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
 	import { fade, fly } from 'svelte/transition';
-	import Book from 'carbon-icons-svelte/lib/Book.svelte';
 	import Close from 'carbon-icons-svelte/lib/Close.svelte';
 	import LogoGithub from 'carbon-icons-svelte/lib/LogoGithub.svelte';
 	import Menu from 'carbon-icons-svelte/lib/Menu.svelte';
