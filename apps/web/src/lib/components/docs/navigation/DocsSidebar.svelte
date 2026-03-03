@@ -78,7 +78,7 @@
 					{#if isGroupActive}
 						<div
 							transition:slide={{ duration: 150 }}
-							class="flex flex-col gap-1 overflow-hidden pl-4"
+							class="relative flex flex-col gap-1 overflow-hidden pl-5 before:absolute before:top-1 before:bottom-1 before:left-3 before:w-px before:bg-border"
 						>
 							{#each doc.items as item (item.slug)}
 								{@const href = `/docs/${item.slug}`}
