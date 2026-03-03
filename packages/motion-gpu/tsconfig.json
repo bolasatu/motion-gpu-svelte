@@ -19,5 +19,12 @@
 		"types": ["@webgpu/types", "vite/client", "vitest/globals"],
 		"skipLibCheck": true
 	},
-	"include": ["src/**/*.ts", "src/**/*.svelte", "vite.config.ts"]
+	"include": [
+		"src/**/*.ts",
+		"src/**/*.svelte",
+		"e2e/**/*.ts",
+		"e2e/**/*.svelte",
+		"vite.config.ts",
+		"playwright.config.ts"
+	]
 }
