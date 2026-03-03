@@ -58,6 +58,27 @@ describe('render graph planner', () => {
 		expect(plan.finalOutput).toBe('canvas');
 	});
 
+	it('clones clear color values to avoid shared mutable references', () => {
+		const clearColor: [number, number, number, number] = [0.2, 0.3, 0.4, 1];
+		const plan = planRenderGraph([createPass({ clear: true, clearColor })], [0, 0, 0, 1]);
+
+		clearColor[0] = 0.99;
+		expect(plan.steps[0]?.clearColor).toEqual([0.2, 0.3, 0.4, 1]);
+	});
+
+	it('counts pass index using enabled passes when reporting validation errors', () => {
+		expect(() =>
+			planRenderGraph(
+				[
+					createPass({ enabled: false, needsSwap: true, output: 'canvas' }),
+					createPass({ needsSwap: false, output: 'target' }),
+					createPass({ needsSwap: true, output: 'canvas' })
+				],
+				[0, 0, 0, 1]
+			)
+		).toThrow(/Render pass #1 uses needsSwap=true/);
+	});
+
 	it('rejects invalid needsSwap configuration', () => {
 		expect(() =>
 			planRenderGraph([createPass({ needsSwap: true, output: 'canvas' })], [0, 0, 0, 1])

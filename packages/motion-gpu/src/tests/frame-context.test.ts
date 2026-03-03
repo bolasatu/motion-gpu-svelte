@@ -356,4 +356,79 @@ describe('frame registry', () => {
 		expect(stageCallback).toHaveBeenCalledTimes(2);
 		expect(callback).toHaveBeenCalledTimes(1);
 	});
+
+	it('validates initial scheduler options', () => {
+		expect(() => createFrameRegistry({ maxDelta: 0 })).toThrow(/maxDelta must be/);
+		expect(() => createFrameRegistry({ profilingWindow: 0 })).toThrow(/profilingWindow must be/);
+	});
+
+	it('rejects task registration without a callback', () => {
+		const registry = createFrameRegistry();
+		expect(() =>
+			(registry.register as unknown as (key: string) => unknown)('missing-callback')
+		).toThrow(/useFrame requires a callback/);
+	});
+
+	it('infers task stage from task dependencies when stage is omitted', () => {
+		const registry = createFrameRegistry();
+		registry.createStage('post');
+		const base = registry.register('base', () => undefined, { stage: 'post' });
+		const derived = registry.register('derived', () => undefined, { after: base.task });
+
+		expect(derived.task.stage).toBe('post');
+		const postStage = registry.getSchedule().stages.find((stage) => stage.key === 'post');
+		expect(postStage?.tasks).toEqual(['base', 'derived']);
+	});
+
+	it('falls back to stable registration order for cyclic task dependencies', () => {
+		const registry = createFrameRegistry();
+		const execution: string[] = [];
+
+		registry.register('a', () => execution.push('a'), { after: 'b' });
+		registry.register('b', () => execution.push('b'), { after: 'a' });
+
+		registry.run(createState(registry));
+		expect(execution).toEqual(['a', 'b']);
+	});
+
+	it('supports explicit never invalidation mode in on-demand rendering', () => {
+		const registry = createFrameRegistry({ renderMode: 'on-demand' });
+		registry.register(() => undefined, { invalidation: 'never' });
+
+		registry.endFrame();
+		expect(registry.shouldRender()).toBe(false);
+		registry.run(createState(registry));
+		expect(registry.shouldRender()).toBe(false);
+	});
+
+	it('treats on-change invalidation token as fresh after token becomes null', () => {
+		const registry = createFrameRegistry({ renderMode: 'on-demand' });
+		let token: number | null = null;
+		registry.register(() => undefined, {
+			invalidation: {
+				mode: 'on-change',
+				token: () => token
+			}
+		});
+
+		registry.endFrame();
+		registry.run(createState(registry));
+		expect(registry.shouldRender()).toBe(false);
+
+		token = 1;
+		registry.run(createState(registry));
+		expect(registry.shouldRender()).toBe(true);
+
+		registry.endFrame();
+		registry.run(createState(registry));
+		expect(registry.shouldRender()).toBe(false);
+
+		token = null;
+		registry.run(createState(registry));
+		expect(registry.shouldRender()).toBe(false);
+
+		token = 1;
+		registry.run(createState(registry));
+		expect(registry.shouldRender()).toBe(true);
+	});
 });

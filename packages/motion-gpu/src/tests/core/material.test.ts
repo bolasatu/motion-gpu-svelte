@@ -23,6 +23,39 @@ describe('material', () => {
 		expect(Object.isFrozen(input.defines)).toBe(true);
 	});
 
+	it('clones mutable uniform and texture inputs to avoid external mutation side effects', () => {
+		const matrix = new Float32Array(16);
+		matrix[0] = 1;
+		const tint: [number, number, number, number] = [1, 0.5, 0.25, 1];
+		const canvas = document.createElement('canvas');
+		canvas.width = 16;
+		canvas.height = 8;
+		const texturePayload = { source: canvas, width: 16, height: 8 };
+
+		const material = defineMaterial({
+			fragment: 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
+			uniforms: {
+				uTint: tint,
+				uTransform: { type: 'mat4x4f', value: matrix }
+			},
+			textures: {
+				uMain: { source: texturePayload }
+			}
+		});
+
+		tint[0] = 0;
+		matrix[0] = 9;
+		texturePayload.width = 2;
+
+		expect(material.uniforms.uTint).toEqual([1, 0.5, 0.25, 1]);
+		expect(
+			(material.uniforms.uTransform as { type: 'mat4x4f'; value: Float32Array }).value[0]
+		).toBe(1);
+		expect(
+			(material.textures.uMain?.source as { source: HTMLCanvasElement; width?: number }).width
+		).toBe(16);
+	});
+
 	it('builds and applies define blocks', () => {
 		const block = buildDefinesBlock({
 			USE_FOG: true,

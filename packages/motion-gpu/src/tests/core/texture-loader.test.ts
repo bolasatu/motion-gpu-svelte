@@ -155,6 +155,69 @@ describe('texture-loader', () => {
 		await expect(promise).rejects.toSatisfy((error: unknown) => isAbortError(error));
 	});
 
+	it('throws when createImageBitmap is unavailable in runtime', async () => {
+		vi.unstubAllGlobals();
+		Reflect.deleteProperty(globalThis, 'createImageBitmap');
+
+		await expect(loadTextureFromUrl('/assets/no-bitmap.png')).rejects.toThrow(
+			/createImageBitmap is not available/
+		);
+	});
+
+	it('uses createImageBitmap(blob) shortcut when decode options stay default', async () => {
+		await loadTextureFromUrl('/assets/defaults.png');
+		expect(createImageBitmap).toHaveBeenCalledWith(expect.any(Blob));
+		expect(createImageBitmap).toHaveBeenCalledTimes(1);
+	});
+
+	it('disposes already loaded textures when one of many URL loads fails', async () => {
+		const bitmapClose = vi.fn();
+		vi.stubGlobal(
+			'createImageBitmap',
+			vi.fn(async () => ({
+				width: 32,
+				height: 18,
+				close: bitmapClose
+			}))
+		);
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (url: string) => ({
+				ok: !url.includes('bad'),
+				status: url.includes('bad') ? 404 : 200,
+				blob: async () => createMockBlob()
+			}))
+		);
+
+		await expect(loadTexturesFromUrls(['/assets/good.png', '/assets/bad.png'])).rejects.toThrow(
+			/Texture request failed \(404\)/
+		);
+		expect(bitmapClose).toHaveBeenCalledTimes(1);
+	});
+
+	it('closes decoded bitmap when signal aborts before result is returned', async () => {
+		const close = vi.fn();
+		const controller = new AbortController();
+		vi.stubGlobal(
+			'createImageBitmap',
+			vi.fn(async () => {
+				controller.abort();
+				return {
+					width: 32,
+					height: 18,
+					close
+				};
+			})
+		);
+
+		const pending = loadTextureFromUrl('/assets/late-abort.png', {
+			signal: controller.signal
+		});
+
+		await expect(pending).rejects.toSatisfy((error: unknown) => isAbortError(error));
+		expect(close).toHaveBeenCalled();
+	});
+
 	it('builds stable cache keys from full io config', () => {
 		const a = buildTextureResourceCacheKey('/assets/sprite.png', {
 			colorSpace: 'srgb',

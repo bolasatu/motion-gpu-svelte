@@ -63,6 +63,57 @@ describe('error report', () => {
 		expect(report.source?.snippet.some((line) => line.highlight && line.number === 3)).toBe(true);
 	});
 
+	it('builds include source snippet when diagnostics point to include chunk', () => {
+		const error = attachShaderCompilationDiagnostics(
+			new Error('WGSL compilation failed:\nunknown function call'),
+			{
+				kind: 'shader-compilation',
+				diagnostics: [
+					{
+						generatedLine: 25,
+						message: 'unknown function call',
+						linePos: 4,
+						lineLength: 8,
+						sourceLocation: { kind: 'include', include: 'tone', line: 2 }
+					}
+				],
+				fragmentSource: 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
+				includeSources: {
+					tone: ['fn tone(uv: vec2f) -> vec3f {', '\treturn vec3f(uv, 1.0);', '}'].join('\n')
+				},
+				materialSource: null
+			}
+		);
+
+		const report = toMotionGPUErrorReport(error, 'render');
+		expect(report.source?.component).toBe('#include <tone>');
+		expect(report.source?.line).toBe(2);
+		expect(report.source?.snippet.some((line) => line.highlight && line.number === 2)).toBe(true);
+	});
+
+	it('uses material source filename when component name is unavailable', () => {
+		const error = attachShaderCompilationDiagnostics(
+			new Error('WGSL compilation failed:\nbad expression'),
+			{
+				kind: 'shader-compilation',
+				diagnostics: [
+					{
+						generatedLine: 10,
+						message: 'bad expression',
+						sourceLocation: { kind: 'fragment', line: 1 }
+					}
+				],
+				fragmentSource: 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
+				includeSources: {},
+				materialSource: { file: '/app/components/Water.svelte' }
+			}
+		);
+
+		const report = toMotionGPUErrorReport(error, 'render');
+		expect(report.source?.component).toBe('Water.svelte');
+		expect(report.source?.location).toContain('Water.svelte');
+	});
+
 	it('classifies device lost errors', () => {
 		const report = toMotionGPUErrorReport(
 			new Error('WebGPU device lost: The device was lost (unknown)'),
@@ -81,6 +132,22 @@ describe('error report', () => {
 
 		expect(report.title).toBe('WebGPU uncaptured error');
 		expect(report.hint).toContain('GPU command failed asynchronously');
+	});
+
+	it('classifies bind group mismatch errors and removes duplicate stack message line', () => {
+		const error = new Error('CreateBindGroup failed due to bind group layout mismatch');
+		error.stack = [
+			'Error: CreateBindGroup failed due to bind group layout mismatch',
+			'CreateBindGroup failed due to bind group layout mismatch',
+			'at render (Renderer.ts:42:7)'
+		].join('\n');
+
+		const report = toMotionGPUErrorReport(error, 'render');
+		expect(report.title).toBe('Bind group mismatch');
+		expect(report.stack).toEqual([
+			'Error: CreateBindGroup failed due to bind group layout mismatch',
+			'at render (Renderer.ts:42:7)'
+		]);
 	});
 
 	it('handles unknown non-error values', () => {

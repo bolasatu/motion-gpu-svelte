@@ -14,6 +14,9 @@ describe('uniform helpers', () => {
 		expect(inferUniformType([1, 2, 3])).toBe('vec3f');
 		expect(inferUniformType([1, 2, 3, 4])).toBe('vec4f');
 		expect(inferUniformType({ type: 'mat4x4f', value: new Float32Array(16) })).toBe('mat4x4f');
+		expect(() => inferUniformType([1, 2, 3, 4, 5] as unknown as number[])).toThrow(
+			/Uniform value must resolve/
+		);
 	});
 
 	it('builds layout using wgsl alignment rules', () => {
@@ -109,5 +112,20 @@ describe('uniform helpers', () => {
 		const layout = resolveUniformLayout({ uA: 1 });
 		const wrongSize = new Float32Array(1 + layout.byteLength / 4);
 		expect(() => packUniformsInto({ uA: 1 }, layout, wrongSize)).toThrow(/size mismatch/);
+	});
+
+	it('rejects invalid identifier names and non-finite typed values', () => {
+		expect(() =>
+			resolveUniformLayout({
+				'bad-name': 1
+			})
+		).toThrow(/Invalid uniform name/);
+
+		expect(() =>
+			assertUniformValueForType('f32', {
+				type: 'f32',
+				value: Number.NaN
+			})
+		).toThrow(/finite number/);
 	});
 });
