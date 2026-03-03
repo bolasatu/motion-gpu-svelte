@@ -7,7 +7,7 @@
 	import LogoGithub from 'carbon-icons-svelte/lib/LogoGithub.svelte';
 	import Menu from 'carbon-icons-svelte/lib/Menu.svelte';
 	import Button from '../ui/Button.svelte';
-	import Logo from '$lib/assets/motiongpu-logo.svg?raw';
+	import { brandingConfig } from '$lib/config/branding';
 
 	const homeRoute = '/' as const;
 	const focusableSelectors = 'a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -117,8 +117,8 @@
 </script>
 
 <nav aria-label="Primary navigation" class="fixed top-0 z-60 w-full">
-	<div class="mx-auto max-w-6xl border border-border bg-background">
-		<div class="relative flex items-center justify-between gap-3 px-3 py-2 sm:px-4">
+	<div class="mx-auto max-w-6xl border-b border-border bg-background sm:border">
+		<div class="relative flex items-center justify-between gap-3 px-4 py-1.5">
 			<a
 				href={resolve(homeRoute)}
 				class="inline-flex items-center gap-1 px-2 py-2 text-sm tracking-tight text-foreground transition-colors duration-150 ease-out hover:text-foreground"
@@ -128,9 +128,9 @@
 					aria-hidden="true"
 				>
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					{@html Logo}
+					{@html brandingConfig.logoRaw}
 				</span>
-				<span class="font-medium">MotionGPU</span>
+				<span class="font-medium">{brandingConfig.name}</span>
 			</a>
 
 			<div
@@ -171,7 +171,7 @@
 
 			<button
 				type="button"
-				class="inline-flex size-10 items-center justify-center gap-2 text-sm whitespace-nowrap text-foreground transition-colors duration-150 ease-out hover:bg-background-inset sm:hidden"
+				class="-mr-2 inline-flex size-10 items-center justify-center gap-2 text-sm whitespace-nowrap text-foreground transition-colors duration-150 ease-out hover:bg-background-inset sm:hidden"
 				aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
 				aria-expanded={mobileOpen}
 				aria-controls="mobile-menubar-panel"

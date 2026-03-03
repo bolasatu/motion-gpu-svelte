@@ -25,21 +25,25 @@
 <div
 	class="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-border bg-background px-4 py-1.5 lg:hidden"
 >
-	<a href="/" class="flex items-center gap-2">
+	<a
+		href="/"
+		class="inline-flex items-center gap-1 px-2 py-2 text-sm tracking-tight text-foreground transition-colors duration-150 ease-out hover:text-foreground"
+	>
 		<span
-			class="inline-flex shrink-0 items-center text-accent [&>svg]:size-6 [&>svg]:fill-current"
+			class="inline-flex shrink-0 items-center text-accent [&>svg]:size-4 [&>svg]:fill-current"
 			aria-hidden="true"
 		>
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 			{@html brandingConfig.logoRaw}
 		</span>
-		<span class="font-display text-xl font-medium text-foreground">{brandingConfig.name}</span>
+		<span class="font-medium">{brandingConfig.name}</span>
 	</a>
 	<button
 		onclick={toggle}
-		class="-mr-2 p-2 text-foreground-muted hover:text-foreground"
+		class="-mr-2 inline-flex size-10 items-center justify-center gap-2 text-sm whitespace-nowrap text-foreground transition-colors duration-150 ease-out hover:bg-background-inset sm:hidden"
 		aria-label="Toggle menu"
 	>
-		<Menu size={32} class="size-6" />
+		<Menu size={20} />
 	</button>
 </div>
 
