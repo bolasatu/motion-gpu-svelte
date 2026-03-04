@@ -52,7 +52,7 @@
 		viewportClass="p-4"
 		viewportStyle="mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, black 16px, black calc(100% - 16px), transparent);"
 	>
-		<nav class="flex flex-col gap-1">
+		<nav class="flex flex-col space-y-1">
 			<h4
 				class="font-display mb-2 ml-2 text-xs font-medium tracking-wider text-foreground/45 uppercase"
 			>
@@ -77,7 +77,7 @@
 					</button>
 					{#if isGroupActive}
 						<div
-							transition:slide={{ duration: 150 }}
+							transition:slide={{ duration: 220 }}
 							class="relative flex flex-col gap-1 overflow-hidden pl-5 before:absolute before:top-1 before:bottom-1 before:left-3 before:w-px before:bg-border"
 						>
 							{#each doc.items as item (item.slug)}
