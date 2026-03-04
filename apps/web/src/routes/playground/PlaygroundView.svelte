@@ -1,6 +1,6 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { resolve } from '$app/paths';
-	import Logo from '$lib/assets/motiongpu-logo.svg?raw';
 	import ChevronDown from 'carbon-icons-svelte/lib/ChevronDown.svelte';
 	import ChevronRight from 'carbon-icons-svelte/lib/ChevronRight.svelte';
 	import Close from 'carbon-icons-svelte/lib/Close.svelte';
@@ -18,7 +18,8 @@
 	let { controller }: { controller: PlaygroundController } = $props();
 	let isTreeVisible = $state(true);
 	let workspaceHost: HTMLDivElement | null = null;
-	let sidebarHost: HTMLElement | null = null;
+	let sidebarHeaderHost: HTMLDivElement | null = null;
+	let sidebarListHost: HTMLDivElement | null = null;
 	let treeWidth = $state(256);
 	let previewWidth = $state(420);
 	let mobileTreeHeight = $state(0);
@@ -35,6 +36,8 @@
 	const MIN_TREE_WIDTH = 180;
 	const MIN_EDITOR_WIDTH = 380;
 	const MIN_PREVIEW_WIDTH = 260;
+	const MOBILE_TREE_MIN_HEIGHT = 120;
+	const MOBILE_TREE_MAX_VIEWPORT_RATIO = 0.42;
 
 	const isSvelteFile = (path: string) => path.endsWith('.svelte');
 	const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
@@ -91,6 +94,27 @@
 				clampPanelWidths();
 			});
 		}
+	};
+	const trackMobileTreeDependencies = (
+		_isTreeVisible: boolean,
+		_collapsedDirs: Record<string, boolean>,
+		_rowCount: number
+	) => {};
+	const recomputeMobileTreeHeight = () => {
+		if (typeof window === 'undefined') return;
+		if (!window.matchMedia('(max-width: 1023px)').matches || !isTreeVisible) {
+			mobileTreeHeight = 0;
+			return;
+		}
+
+		const headerHeight = sidebarHeaderHost?.offsetHeight ?? 0;
+		const listHeight = sidebarListHost?.scrollHeight ?? 0;
+		const desiredHeight = headerHeight + listHeight;
+		const maxHeight = Math.max(
+			MOBILE_TREE_MIN_HEIGHT,
+			Math.round(window.innerHeight * MOBILE_TREE_MAX_VIEWPORT_RATIO)
+		);
+		mobileTreeHeight = Math.min(desiredHeight, maxHeight);
 	};
 
 	const beginResize = (target: 'tree' | 'preview', event: PointerEvent) => {
@@ -223,21 +247,25 @@
 	$effect(() => {
 		if (typeof window === 'undefined') return;
 		const mql = window.matchMedia('(max-width: 1023px)');
-		const recompute = () => {
-			if (mql.matches) {
-				mobileTreeHeight = sidebarHost?.scrollHeight ?? 0;
-			} else {
-				mobileTreeHeight = 0;
-			}
-		};
-		recompute();
-		const onChange = () => recompute();
+		recomputeMobileTreeHeight();
+		const onChange = () => recomputeMobileTreeHeight();
 		window.addEventListener('resize', onChange);
 		mql.addEventListener?.('change', onChange);
 		return () => {
 			window.removeEventListener('resize', onChange);
 			mql.removeEventListener?.('change', onChange);
 		};
+	});
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		trackMobileTreeDependencies(
+			isTreeVisible,
+			controller.collapsedDirs,
+			controller.visibleFileTreeRows.length
+		);
+		void tick().then(() => {
+			recomputeMobileTreeHeight();
+		});
 	});
 </script>
 
@@ -288,9 +316,9 @@
 			class={`playground-sidebar flex min-h-0 flex-col overflow-hidden bg-background lg:max-h-none ${
 				isTreeVisible ? '' : 'playground-sidebar--collapsed'
 			} `}
-			bind:this={sidebarHost}
 		>
 			<div
+				bind:this={sidebarHeaderHost}
 				class="flex items-center gap-1 border-b border-border px-3 py-2 text-sm whitespace-nowrap"
 			>
 				<span
@@ -304,7 +332,7 @@
 					>{brandingConfig.name} <span class="text-xs text-accent">playground</span></span
 				>
 			</div>
-			<div class="min-h-0 flex-1 overflow-auto py-1">
+			<div bind:this={sidebarListHost} class="overflow-auto py-1 lg:min-h-0 lg:flex-1">
 				{#each controller.visibleFileTreeRows as row (row.path)}
 					{#if row.kind === 'directory'}
 						<button
