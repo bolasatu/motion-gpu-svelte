@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { getShaderCompilationDiagnostics } from '../../lib/core/error-diagnostics';
 import { createRenderer } from '../../lib/core/renderer';
 import { resolveUniformLayout } from '../../lib/core/uniforms';
 import type { RenderPass, RenderTargetDefinitionMap } from '../../lib/core/types';
@@ -188,6 +189,7 @@ describe('createRenderer', () => {
 		Reflect.deleteProperty(globalThis, 'GPUShaderStage');
 		Reflect.deleteProperty(globalThis, 'GPUTextureUsage');
 		Reflect.deleteProperty(globalThis, 'GPUBufferUsage');
+		vi.unstubAllGlobals();
 		vi.restoreAllMocks();
 	});
 
@@ -394,5 +396,244 @@ describe('createRenderer', () => {
 			'uncapturederror',
 			expect.any(Function)
 		);
+	});
+
+	it('attaches shader diagnostics and cleans up listeners when compilation fails', async () => {
+		const runtime = createWebGpuRuntime();
+		runtime.device.createShaderModule.mockReturnValueOnce({
+			getCompilationInfo: vi.fn(async () => ({
+				messages: [
+					{
+						type: 'error',
+						message: 'unknown symbol foo',
+						lineNum: 11,
+						linePos: 4,
+						length: 3
+					}
+				]
+			}))
+		} as unknown as GPUShaderModule);
+
+		let thrown: unknown;
+		try {
+			await createRenderer({
+				...baseOptions(runtime),
+				fragmentLineMap: [null, { kind: 'fragment', line: 1 }]
+			});
+		} catch (error) {
+			thrown = error;
+		}
+
+		expect(thrown).toBeInstanceOf(Error);
+		expect((thrown as Error).message).toContain('WGSL compilation failed');
+		const diagnostics = getShaderCompilationDiagnostics(thrown);
+		expect(diagnostics?.diagnostics[0]?.message).toBe('unknown symbol foo');
+		expect(runtime.device.removeEventListener).toHaveBeenCalledWith(
+			'uncapturederror',
+			expect.any(Function)
+		);
+	});
+
+	it('updates onInvalidate textures only on invalidation conditions', async () => {
+		const runtime = createWebGpuRuntime();
+		const source = document.createElement('canvas');
+		source.width = 4;
+		source.height = 4;
+
+		const renderer = await createRenderer({
+			...baseOptions(runtime),
+			textureKeys: ['uTex'],
+			textureDefinitions: {
+				uTex: {
+					update: 'onInvalidate'
+				}
+			}
+		});
+
+		const uploads = (): number => runtime.device.queue.copyExternalImageToTexture.mock.calls.length;
+
+		renderer.render({
+			time: 0,
+			delta: 0.016,
+			renderMode: 'always',
+			uniforms: {},
+			textures: { uTex: source }
+		});
+		expect(uploads()).toBe(1);
+
+		renderer.render({
+			time: 0.016,
+			delta: 0.016,
+			renderMode: 'always',
+			uniforms: {},
+			textures: { uTex: source }
+		});
+		expect(uploads()).toBe(1);
+
+		renderer.render({
+			time: 0.032,
+			delta: 0.016,
+			renderMode: 'manual',
+			uniforms: {},
+			textures: { uTex: source }
+		});
+		expect(uploads()).toBe(2);
+
+		renderer.render({
+			time: 0.048,
+			delta: 0.016,
+			renderMode: 'always',
+			uniforms: {},
+			textures: { uTex: { source } }
+		});
+		expect(uploads()).toBe(3);
+	});
+
+	it('destroys runtime textures and restores fallback when texture is cleared', async () => {
+		const runtime = createWebGpuRuntime();
+		const source = document.createElement('canvas');
+		source.width = 6;
+		source.height = 6;
+
+		const renderer = await createRenderer({
+			...baseOptions(runtime),
+			textureKeys: ['uTex'],
+			textureDefinitions: { uTex: {} }
+		});
+
+		renderer.render({
+			time: 0,
+			delta: 0.016,
+			renderMode: 'always',
+			uniforms: {},
+			textures: { uTex: source }
+		});
+
+		const uploadedTexture = runtime.textures.find((texture) => {
+			const size = texture.descriptor.size as { width?: number; height?: number };
+			return size.width === 6 && size.height === 6;
+		});
+		expect(uploadedTexture).toBeDefined();
+
+		renderer.render({
+			time: 0.016,
+			delta: 0.016,
+			renderMode: 'always',
+			uniforms: {},
+			textures: { uTex: null }
+		});
+
+		expect(uploadedTexture?.destroy).toHaveBeenCalledTimes(1);
+		expect(runtime.device.createBindGroup.mock.calls.length).toBeGreaterThanOrEqual(3);
+	});
+
+	it('fails mipmap upload when no 2d context is available for generated levels', async () => {
+		const runtime = createWebGpuRuntime();
+		const source = document.createElement('canvas');
+		source.width = 8;
+		source.height = 8;
+
+		vi.stubGlobal(
+			'OffscreenCanvas',
+			class {
+				width: number;
+				height: number;
+
+				constructor(width: number, height: number) {
+					this.width = width;
+					this.height = height;
+				}
+
+				getContext(): null {
+					return null;
+				}
+			}
+		);
+
+		await expect(
+			createRenderer({
+				...baseOptions(runtime),
+				textureKeys: ['uTex'],
+				textureDefinitions: {
+					uTex: {
+						source,
+						generateMipmaps: true
+					}
+				}
+			})
+		).rejects.toThrow(/Unable to create 2D context for mipmap generation/);
+		expect(runtime.device.removeEventListener).toHaveBeenCalledWith(
+			'uncapturederror',
+			expect.any(Function)
+		);
+	});
+
+	it('blits final source slot to canvas when pass graph ends offscreen', async () => {
+		const runtime = createWebGpuRuntime();
+		const pass: RenderPass = {
+			needsSwap: true,
+			render: vi.fn()
+		};
+
+		const renderer = await createRenderer({
+			...baseOptions(runtime),
+			passes: [pass]
+		});
+		const bindGroupCallsBeforeRender = runtime.device.createBindGroup.mock.calls.length;
+
+		renderer.render({
+			time: 0,
+			delta: 0.016,
+			renderMode: 'always',
+			uniforms: {},
+			textures: {}
+		});
+
+		expect(pass.render).toHaveBeenCalledTimes(1);
+		expect(runtime.device.createBindGroup.mock.calls.length).toBe(bindGroupCallsBeforeRender + 1);
+	});
+
+	it('disposes live render targets and texture bindings on renderer destroy', async () => {
+		const runtime = createWebGpuRuntime();
+		const source = document.createElement('canvas');
+		source.width = 5;
+		source.height = 5;
+
+		const renderer = await createRenderer({
+			...baseOptions(runtime),
+			textureKeys: ['uTex'],
+			textureDefinitions: {
+				uTex: {}
+			},
+			renderTargets: {
+				uFx: { width: 7, height: 7, format: 'rgba8unorm' }
+			}
+		});
+
+		renderer.render({
+			time: 0,
+			delta: 0.016,
+			renderMode: 'always',
+			uniforms: {},
+			textures: { uTex: source }
+		});
+
+		const uploadedTexture = runtime.textures.find((texture) => {
+			const size = texture.descriptor.size as { width?: number; height?: number };
+			return size.width === 5 && size.height === 5;
+		});
+		const runtimeTargetTexture = runtime.textures.find((texture) => {
+			const size = texture.descriptor.size as { width?: number; height?: number };
+			return size.width === 7 && size.height === 7;
+		});
+		const fallbackTexture = runtime.textures.find((texture) => {
+			const size = texture.descriptor.size as { width?: number; height?: number };
+			return size.width === 1 && size.height === 1;
+		});
+
+		renderer.destroy();
+		expect(uploadedTexture?.destroy).toHaveBeenCalledTimes(1);
+		expect(runtimeTargetTexture?.destroy).toHaveBeenCalledTimes(1);
+		expect(fallbackTexture?.destroy).toHaveBeenCalledTimes(1);
 	});
 });
