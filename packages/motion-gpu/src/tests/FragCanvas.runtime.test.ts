@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import FragCanvas from '../lib/FragCanvas.svelte';
 import { attachShaderCompilationDiagnostics } from '../lib/core/error-diagnostics';
 import { defineMaterial } from '../lib/core/material';
+import FragCanvasFrameMutationHarness from './fixtures/FragCanvasFrameMutationHarness.svelte';
 
 const { createRendererMock } = vi.hoisted(() => ({
 	createRendererMock: vi.fn()
@@ -25,6 +26,19 @@ fn frag(uv: vec2f) -> vec4f {
 	return vec4f(1.0 - uv.x, uv.y, 0.2, 1.0);
 }
 `
+});
+const runtimeBindingsMaterial = defineMaterial({
+	fragment: `
+fn frag(uv: vec2f) -> vec4f {
+	return vec4f(uv, 0.0, 1.0);
+}
+`,
+	uniforms: {
+		uGain: 0
+	},
+	textures: {
+		uTex: {}
+	}
 });
 
 interface MockRenderer {
@@ -246,6 +260,194 @@ describe('FragCanvas runtime', () => {
 		expect(overlay.textContent).toContain('expected ;');
 		expect(overlay.textContent).toContain('Stack trace');
 		expect(overlay.textContent).toContain('at render (Renderer.ts:42:7)');
+	});
+
+	it('applies frame uniform/texture writes and clears stale runtime maps after material change', async () => {
+		const created: MockRenderer[] = [];
+		createRendererMock.mockImplementation(async () => {
+			const renderer: MockRenderer = {
+				render: vi.fn(),
+				destroy: vi.fn()
+			};
+			created.push(renderer);
+			return renderer;
+		});
+
+		const view = render(FragCanvasFrameMutationHarness, {
+			props: {
+				material: runtimeBindingsMaterial,
+				mode: 'valid-both',
+				showErrorOverlay: false
+			}
+		});
+
+		await flushFrame(16);
+		await waitFor(() => {
+			expect(createRendererMock).toHaveBeenCalledTimes(1);
+		});
+		await flushFrame(32);
+		await waitFor(() => {
+			expect(created[0]?.render).toHaveBeenCalledTimes(1);
+		});
+
+		const firstRenderInput = created[0]?.render.mock.calls[0]?.[0] as
+			| { uniforms: Record<string, unknown>; textures: Record<string, unknown> }
+			| undefined;
+		expect(firstRenderInput?.uniforms['uGain']).toBe(0.75);
+		expect(firstRenderInput?.textures['uTex']).toBeTruthy();
+
+		await view.rerender({
+			material,
+			mode: 'none',
+			showErrorOverlay: false
+		});
+		await flushFrame(48);
+		await waitFor(() => {
+			expect(createRendererMock).toHaveBeenCalledTimes(2);
+		});
+		await flushFrame(64);
+		await waitFor(() => {
+			expect(created[1]?.render).toHaveBeenCalledTimes(1);
+		});
+
+		const secondRenderInput = created[1]?.render.mock.calls[0]?.[0] as
+			| { uniforms: Record<string, unknown>; textures: Record<string, unknown> }
+			| undefined;
+		expect('uGain' in (secondRenderInput?.uniforms ?? {})).toBe(false);
+		expect('uTex' in (secondRenderInput?.textures ?? {})).toBe(false);
+	});
+
+	it('reports render-phase error for unknown uniform writes from frame callbacks', async () => {
+		const renderer: MockRenderer = {
+			render: vi.fn(),
+			destroy: vi.fn()
+		};
+		createRendererMock.mockResolvedValue(renderer);
+		const onError = vi.fn();
+
+		render(FragCanvasFrameMutationHarness, {
+			props: {
+				material: runtimeBindingsMaterial,
+				mode: 'invalid-uniform',
+				onError,
+				showErrorOverlay: false
+			}
+		});
+
+		await flushFrame(16);
+		await flushFrame(32);
+		await waitFor(() => {
+			expect(onError).toHaveBeenCalledWith(
+				expect.objectContaining({
+					phase: 'render',
+					rawMessage: expect.stringContaining('Unknown uniform "uMissing"')
+				})
+			);
+		});
+		expect(renderer.render).not.toHaveBeenCalled();
+	});
+
+	it('reports render-phase error for unknown texture writes from frame callbacks', async () => {
+		const renderer: MockRenderer = {
+			render: vi.fn(),
+			destroy: vi.fn()
+		};
+		createRendererMock.mockResolvedValue(renderer);
+		const onError = vi.fn();
+
+		render(FragCanvasFrameMutationHarness, {
+			props: {
+				material: runtimeBindingsMaterial,
+				mode: 'invalid-texture',
+				onError,
+				showErrorOverlay: false
+			}
+		});
+
+		await flushFrame(16);
+		await flushFrame(32);
+		await waitFor(() => {
+			expect(onError).toHaveBeenCalledWith(
+				expect.objectContaining({
+					phase: 'render',
+					rawMessage: expect.stringContaining('Unknown texture "uMissing"')
+				})
+			);
+		});
+		expect(renderer.render).not.toHaveBeenCalled();
+	});
+
+	it('reports initialization error when material becomes invalid during render loop', async () => {
+		const renderer: MockRenderer = {
+			render: vi.fn(),
+			destroy: vi.fn()
+		};
+		createRendererMock.mockResolvedValue(renderer);
+		const onError = vi.fn();
+
+		const invalidMaterial = {
+			fragment: 'fn frag(uv: vec2f) -> vec4f { return vec4f(uv, 0.0, 1.0); }',
+			uniforms: {},
+			textures: {},
+			defines: {}
+		};
+
+		const view = render(FragCanvas, {
+			props: {
+				material,
+				onError,
+				showErrorOverlay: false
+			}
+		});
+		await flushFrame(16);
+		await flushFrame(32);
+		await waitFor(() => {
+			expect(renderer.render).toHaveBeenCalledTimes(1);
+		});
+
+		await view.rerender({
+			material: invalidMaterial as unknown as typeof material,
+			onError,
+			showErrorOverlay: false
+		});
+		await flushFrame(48);
+		await waitFor(() => {
+			expect(onError).toHaveBeenCalledWith(
+				expect.objectContaining({
+					phase: 'initialization',
+					rawMessage: expect.stringContaining('Invalid material instance')
+				})
+			);
+		});
+	});
+
+	it('disposes late-created renderer when component unmounts mid-initialization', async () => {
+		let resolveRenderer: ((renderer: MockRenderer) => void) | null = null;
+		createRendererMock.mockImplementation(
+			() =>
+				new Promise<MockRenderer>((resolve) => {
+					resolveRenderer = resolve;
+				})
+		);
+
+		const lateRenderer: MockRenderer = {
+			render: vi.fn(),
+			destroy: vi.fn()
+		};
+		const view = render(FragCanvas, {
+			props: {
+				material,
+				showErrorOverlay: false
+			}
+		});
+
+		await flushFrame(16);
+		view.unmount();
+		resolveRenderer?.(lateRenderer);
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect(lateRenderer.destroy).toHaveBeenCalledTimes(1);
 	});
 
 	it('recovers when material becomes valid after initial initialization error', async () => {

@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { getCanvasHash, toNumber } from './helpers';
+import {
+	expectCanvasHashStable,
+	getCanvasHash,
+	toNumber,
+	waitForCanvasHash,
+	waitForCanvasHashChange
+} from './helpers';
 
 test.describe('motion-gpu passes e2e', () => {
 	test('applies and removes post-process pass in manual render mode', async ({ page }) => {
@@ -14,26 +20,21 @@ test.describe('motion-gpu passes e2e', () => {
 		const frameCounter = page.getByTestId('frame-count');
 		await expect.poll(async () => toNumber(await frameCounter.textContent())).toBeGreaterThan(0);
 
-		await page.waitForTimeout(200);
 		const baseHash = await getCanvasHash(page);
-		await page.waitForTimeout(220);
-		expect(await getCanvasHash(page)).toBe(baseHash);
+		await expectCanvasHashStable(page, baseHash, 220);
 
 		await page.getByTestId('set-pass-invert').click();
 		await expect(page.getByTestId('pass-mode')).toHaveText('invert');
 		await page.getByTestId('advance-once').click();
-		await page.waitForTimeout(140);
-		const invertHash = await getCanvasHash(page);
+		const invertHash = await waitForCanvasHashChange(page, baseHash);
 		expect(invertHash).not.toBe(baseHash);
 
-		await page.waitForTimeout(220);
-		expect(await getCanvasHash(page)).toBe(invertHash);
+		await expectCanvasHashStable(page, invertHash, 220);
 
 		await page.getByTestId('set-pass-none').click();
 		await expect(page.getByTestId('pass-mode')).toHaveText('none');
 		await page.getByTestId('advance-once').click();
-		await page.waitForTimeout(140);
-		expect(await getCanvasHash(page)).toBe(baseHash);
+		await waitForCanvasHash(page, baseHash);
 		await expect(page.getByTestId('last-error')).toHaveText('none');
 	});
 });

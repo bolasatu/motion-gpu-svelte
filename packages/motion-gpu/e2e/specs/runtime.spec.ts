@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { getCanvasHash, toNumber } from './helpers';
+import {
+	expectCanvasHashStable,
+	getCanvasHash,
+	toNumber,
+	waitForCanvasHashChange
+} from './helpers';
 
 test.describe('motion-gpu runtime e2e', () => {
 	test('renders frames and obeys render mode controls', async ({ page }) => {
@@ -16,34 +21,29 @@ test.describe('motion-gpu runtime e2e', () => {
 			.poll(async () => toNumber(await frameCounter.textContent()))
 			.toBeGreaterThan(first);
 		const alwaysHashA = await getCanvasHash(page);
-		await page.waitForTimeout(180);
-		const alwaysHashB = await getCanvasHash(page);
+		const alwaysHashB = await waitForCanvasHashChange(page, alwaysHashA);
 		expect(alwaysHashB).not.toBe(alwaysHashA);
 
 		await page.getByTestId('set-mode-manual').click();
 		await expect(page.getByTestId('render-mode')).toHaveText('manual');
-		await page.waitForTimeout(120);
 		const manualHashA = await getCanvasHash(page);
-		await page.waitForTimeout(220);
+		await expectCanvasHashStable(page, manualHashA, 220);
 		const manualHashB = await getCanvasHash(page);
 		expect(manualHashB).toBe(manualHashA);
 
 		await page.getByTestId('advance-once').click();
-		await page.waitForTimeout(120);
-		const manualHashC = await getCanvasHash(page);
+		const manualHashC = await waitForCanvasHashChange(page, manualHashB);
 		expect(manualHashC).not.toBe(manualHashB);
 
 		await page.getByTestId('set-mode-on-demand').click();
 		await expect(page.getByTestId('render-mode')).toHaveText('on-demand');
-		await page.waitForTimeout(150);
 		const demandHashA = await getCanvasHash(page);
-		await page.waitForTimeout(220);
+		await expectCanvasHashStable(page, demandHashA, 220);
 		const demandHashB = await getCanvasHash(page);
 		expect(demandHashB).toBe(demandHashA);
 
 		await page.getByTestId('invalidate-once').click();
-		await page.waitForTimeout(120);
-		const demandHashC = await getCanvasHash(page);
+		const demandHashC = await waitForCanvasHashChange(page, demandHashB);
 		expect(demandHashC).not.toBe(demandHashB);
 		await expect(page.getByTestId('last-error')).toHaveText('none');
 	});
