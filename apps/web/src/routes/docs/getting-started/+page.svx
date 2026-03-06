@@ -237,6 +237,7 @@ For power-user APIs (namespaced shared user state and scheduler tooling):
 ```ts
 import {
   useMotionGPUUserContext,
+  setMotionGPUUserContext,
   applySchedulerPreset,
   captureSchedulerDebugSnapshot
 } from '@motion-core/motion-gpu/advanced';

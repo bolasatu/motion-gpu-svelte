@@ -24,7 +24,7 @@ This documentation was generated directly from the `packages/motion-gpu/src` sou
 | Entrypoint | Key exports |
 | --- | --- |
 | `@motion-core/motion-gpu` | `FragCanvas`, `defineMaterial`, `useMotionGPU`, `useFrame`, `useTexture`, `BlitPass`, `CopyPass`, `ShaderPass` |
-| `@motion-core/motion-gpu/advanced` | Everything above **plus** `useMotionGPUUserContext`, `applySchedulerPreset`, `captureSchedulerDebugSnapshot`, and extended scheduler / user-context types |
+| `@motion-core/motion-gpu/advanced` | Everything above **plus** `useMotionGPUUserContext`, `setMotionGPUUserContext`, `applySchedulerPreset`, `captureSchedulerDebugSnapshot`, and extended scheduler / user-context types |
 
 The export contract is verified in `src/tests/public-api.test.ts`.
 

@@ -1,34 +1,34 @@
 ---
 title: User Context
-description: Advanced hook for namespaced, reactive shared state within the MotionGPU runtime.
+description: Advanced read/write API for namespaced, reactive shared state within the MotionGPU runtime.
 ---
 
-`useMotionGPUUserContext` is an advanced hook that enables **namespaced, reactive shared state** within the MotionGPU runtime. It is designed for plugin-like patterns where multiple independent components need to read and write shared data.
+`useMotionGPUUserContext` + `setMotionGPUUserContext` provide a split read/write API for **namespaced, reactive shared state** within the MotionGPU runtime. This is designed for plugin-like patterns where multiple independent components need to coordinate shared data.
 
 This hook is exported from the **advanced entrypoint**:
 
 ```ts
-import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
+import { setMotionGPUUserContext, useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
 ```
 
 The same entrypoint also exports scheduler helpers (`applySchedulerPreset`, `captureSchedulerDebugSnapshot`) for runtime diagnostics workflows.
 
 ## Why use user context?
 
-Standard Svelte context (`setContext` / `getContext`) is **read-only once set** and tightly coupled to component hierarchy. `useMotionGPUUserContext` provides:
+Standard Svelte context (`setContext` / `getContext`) is **read-only once set** and tightly coupled to component hierarchy. The MotionGPU advanced API provides:
 
 - **Namespaced keys** — multiple plugins write to different namespaces without conflicts.
+- **Explicit read/write split** — `useMotionGPUUserContext` reads; `setMotionGPUUserContext` writes.
 - **Conflict strategies** — `skip`, `replace`, or `merge` when a namespace already exists.
 - **Reactive reads** — values are backed by the `user` store from `useMotionGPU()`.
-- **Write operations** — update values from any component in the tree.
 
-## Overloads
+## API
 
 ### Read the entire user context
 
 ```ts
 const allState = useMotionGPUUserContext();
-// Returns the full user context store (MotionGPUUserContext — writable store)
+// Returns CurrentReadable<Record<string | symbol, unknown>>
 ```
 
 ### Read a namespace
@@ -41,13 +41,14 @@ const orbit = useMotionGPUUserContext<{ enabled: boolean; speed: number }>('orbi
 ### Write a namespace
 
 ```ts
-useMotionGPUUserContext('orbit-controls', () => ({
+const result = setMotionGPUUserContext('orbit-controls', () => ({
   enabled: true,
   speed: 1.0
 }), { existing: 'skip' });
 ```
 
-The second argument is a **factory function** that produces the initial value. It is only called if needed (based on the conflict strategy).
+The second argument is a **value or factory function**. Factory is only called if needed (based on conflict strategy).
+The return value is the effective value currently stored under the namespace.
 
 ## SetMotionGPUUserContextOptions
 
@@ -69,20 +70,9 @@ The return value depends on the overload:
 
 | Overload | Return type |
 | --- | --- |
-| `useMotionGPUUserContext()` | `MotionGPUUserContext` (full writable store: `.current`, `.set`, `.update`, `.subscribe`) |
+| `useMotionGPUUserContext()` | `CurrentReadable<Record<string \| symbol, unknown>>` |
 | `useMotionGPUUserContext(namespace)` | `CurrentReadable<T \| undefined>` (reactive namespace view) |
-| `useMotionGPUUserContext(namespace, factory, options?)` | `T` (the effective value at namespace) |
-
-### Full context (store API)
-
-When called without arguments, you get the full `MotionGPUUserContext` — the current state and store methods:
-
-| Method | Description |
-| --- | --- |
-| `.current` | Current value of the entire context (object) |
-| `.set(value)` | Sets the entire context |
-| `.update(updater)` | Updates the context based on previous value |
-| `.subscribe(run)` | Standard Svelte subscription |
+| `setMotionGPUUserContext(namespace, valueOrFactory, options?)` | `T \| undefined` (the effective value at namespace) |
 
 ## Practical patterns
 
@@ -90,7 +80,7 @@ When called without arguments, you get the full `MotionGPUUserContext` — the c
 
 ```ts
 // PluginA.svelte — initializes only if no one else has set it
-useMotionGPUUserContext('config', () => ({
+setMotionGPUUserContext('config', () => ({
   quality: 'high',
   debugGrid: false
 }), { existing: 'skip' });
@@ -100,7 +90,7 @@ useMotionGPUUserContext('config', () => ({
 
 ```ts
 // DebugPanel.svelte — force-sets debug config
-useMotionGPUUserContext('config', () => ({
+setMotionGPUUserContext('config', () => ({
   quality: 'low',
   debugGrid: true
 }), { existing: 'replace' });
@@ -110,7 +100,7 @@ useMotionGPUUserContext('config', () => ({
 
 ```ts
 // QualityButton.svelte — updates only the quality field
-useMotionGPUUserContext('config', () => ({
+setMotionGPUUserContext('config', () => ({
   quality: 'medium'
 }), { existing: 'merge' });
 ```
@@ -119,7 +109,7 @@ useMotionGPUUserContext('config', () => ({
 
 ```svelte
 <script lang="ts">
-  import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
+  import { setMotionGPUUserContext, useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
   import { useFrame } from '@motion-core/motion-gpu';
 
   type Config = { quality: string; debugGrid: boolean };
@@ -130,26 +120,23 @@ useMotionGPUUserContext('config', () => ({
       // Apply debug grid logic
     }
   });
+
+  function setMedium() {
+    setMotionGPUUserContext('config', { quality: 'medium' }, { existing: 'merge' });
+  }
 </script>
 ```
 
-### Full context access
+### Full context read
 
 ```svelte
 <script lang="ts">
   import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
 
   const ctx = useMotionGPUUserContext();
-
-  function reset() {
-    ctx.update((prev) => ({
-      ...prev,
-      config: { quality: 'high', debugGrid: false }
-    }));
-  }
 </script>
 ```
 
 ## Under the hood
 
-User context is stored in the `user` `CurrentWritable` store exposed by `useMotionGPU()`. The `useMotionGPUUserContext` hook is a convenience layer that provides namespacing and conflict resolution on top of this flat store.
+User context is stored in the `user` `CurrentWritable` store exposed by `useMotionGPU()`. `useMotionGPUUserContext` provides namespaced read views, while `setMotionGPUUserContext` applies explicit writes with conflict-resolution rules.

@@ -34,7 +34,7 @@ function isObjectEntry(value: unknown): value is UserContextEntry {
 }
 
 /**
- * Reads the entire motiongpu user context store.
+ * Returns a read-only view of the entire motiongpu user context store.
  */
 export function useMotionGPUUserContext<
 	UC extends UserContextStore = UserContextStore
@@ -48,79 +48,85 @@ export function useMotionGPUUserContext<UCT = unknown>(
 ): CurrentReadable<UCT | undefined>;
 
 /**
- * Sets a namespaced user context value and returns the resolved value.
- */
-export function useMotionGPUUserContext<UCT extends UserContextEntry = UserContextEntry>(
-	namespace: MotionGPUUserNamespace,
-	value: UCT | (() => UCT),
-	options?: SetMotionGPUUserContextOptions
-): UCT;
-
-/**
- * Multi-mode user context hook:
+ * Read-only user context hook:
  * - no args: returns full user context store
  * - namespace: returns namespaced store view
- * - namespace + value: writes value using selected conflict mode
  *
  * @param namespace - Optional namespace key.
- * @param value - Optional value (or lazy value factory) for write mode.
- * @param options - Optional write behavior flags.
  */
 export function useMotionGPUUserContext<
-	UCOrEntry extends UserContextStore | UserContextEntry,
-	Value extends UserContextEntry | (() => UserContextEntry),
-	Result = UCOrEntry extends UserContextStore
-		? CurrentReadable<UCOrEntry>
-		: Value extends UserContextEntry
-			? UserContextEntry
-			: CurrentReadable<UserContextEntry | undefined>
->(
-	namespace?: MotionGPUUserNamespace,
-	value?: Value,
-	options?: SetMotionGPUUserContextOptions
-): Result {
+	UC extends UserContextStore = UserContextStore,
+	UCT = unknown
+>(namespace?: MotionGPUUserNamespace): CurrentReadable<UC> | CurrentReadable<UCT | undefined> {
 	const userStore = useMotionGPU().user;
 
 	if (namespace === undefined) {
-		return userStore as Result;
-	}
-
-	if (value === undefined) {
-		const scopedStore: CurrentReadable<UserContextEntry | undefined> = {
+		const allStore: CurrentReadable<UC> = {
 			get current() {
-				return userStore.current[namespace] as UserContextEntry | undefined;
+				return userStore.current as UC;
 			},
 			subscribe(run) {
-				return userStore.subscribe((context) =>
-					run(context[namespace] as UserContextEntry | undefined)
-				);
+				return userStore.subscribe((context) => run(context as UC));
 			}
 		};
-		return scopedStore as Result;
+
+		return allStore;
 	}
 
+	const scopedStore: CurrentReadable<UCT | undefined> = {
+		get current() {
+			return userStore.current[namespace] as UCT | undefined;
+		},
+		subscribe(run) {
+			return userStore.subscribe((context) => run(context[namespace] as UCT | undefined));
+		}
+	};
+
+	return scopedStore;
+}
+
+/**
+ * Sets a namespaced user context value with explicit write semantics.
+ *
+ * Returns the effective value stored under the namespace.
+ */
+export function setMotionGPUUserContext<UCT = unknown>(
+	namespace: MotionGPUUserNamespace,
+	value: UCT | (() => UCT),
+	options?: SetMotionGPUUserContextOptions
+): UCT | undefined {
+	const userStore = useMotionGPU().user;
 	const mode = options?.existing ?? 'skip';
+	let resolvedValue: UCT | undefined;
+
 	userStore.update((context) => {
 		const hasExisting = namespace in context;
 		if (hasExisting && mode === 'skip') {
+			resolvedValue = context[namespace] as UCT | undefined;
 			return context;
 		}
 
-		const nextValue = typeof value === 'function' ? value() : value;
+		const nextValue = typeof value === 'function' ? (value as () => UCT)() : value;
 		if (hasExisting && mode === 'merge') {
 			const currentValue = context[namespace];
 			if (isObjectEntry(currentValue) && isObjectEntry(nextValue)) {
-				context[namespace] = {
+				resolvedValue = {
 					...currentValue,
 					...nextValue
+				} as UCT;
+				return {
+					...context,
+					[namespace]: resolvedValue
 				};
-				return context;
 			}
 		}
 
-		context[namespace] = nextValue;
-		return context;
+		resolvedValue = nextValue;
+		return {
+			...context,
+			[namespace]: nextValue
+		};
 	});
 
-	return userStore.current[namespace] as Result;
+	return resolvedValue;
 }

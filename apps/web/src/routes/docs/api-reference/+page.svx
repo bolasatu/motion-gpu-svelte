@@ -36,6 +36,7 @@ Re-exports everything from root, plus:
 | `applySchedulerPreset` | function | Applies named scheduler timing preset with optional overrides. |
 | `captureSchedulerDebugSnapshot` | function | Returns aggregate scheduler debug payload (`schedule`, timings, profiling snapshot). |
 | `useMotionGPUUserContext` | hook | Namespaced shared runtime user state. See [User Context](/docs/user-context). |
+| `setMotionGPUUserContext` | function | Writes namespaced user context values with explicit conflict strategy. |
 | `SchedulerPreset` | type | Preset name union: `'performance' \| 'balanced' \| 'debug'`. |
 | `SchedulerPresetConfig` | type | Resolved diagnostics/profiling settings after preset apply. |
 | `ApplySchedulerPresetOptions` | type | Optional override fields for preset application. |
@@ -223,9 +224,18 @@ captureSchedulerDebugSnapshot(
 ## `useMotionGPUUserContext` signatures
 
 ```ts
-useMotionGPUUserContext(): MotionGPUUserContext
+useMotionGPUUserContext(): CurrentReadable<Record<MotionGPUUserNamespace, unknown>>
 useMotionGPUUserContext<T>(namespace: MotionGPUUserNamespace): CurrentReadable<T | undefined>
-useMotionGPUUserContext<T>(namespace: MotionGPUUserNamespace, factory: () => T, options?: SetMotionGPUUserContextOptions): T
+```
+
+## `setMotionGPUUserContext` signature
+
+```ts
+setMotionGPUUserContext<T>(
+  namespace: MotionGPUUserNamespace,
+  value: T | (() => T),
+  options?: SetMotionGPUUserContextOptions
+): T | undefined
 ```
 
 ### `SetMotionGPUUserContextOptions`

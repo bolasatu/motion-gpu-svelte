@@ -6,7 +6,7 @@
  */
 export * from './index';
 export { applySchedulerPreset, captureSchedulerDebugSnapshot } from './advanced-scheduler';
-export { useMotionGPUUserContext } from './use-motiongpu-user-context';
+export { setMotionGPUUserContext, useMotionGPUUserContext } from './use-motiongpu-user-context';
 export type {
 	ApplySchedulerPresetOptions,
 	SchedulerDebugSnapshot,

@@ -25,6 +25,7 @@ describe('public api contract', () => {
 			'applySchedulerPreset',
 			'captureSchedulerDebugSnapshot',
 			'defineMaterial',
+			'setMotionGPUUserContext',
 			'useFrame',
 			'useMotionGPU',
 			'useMotionGPUUserContext',

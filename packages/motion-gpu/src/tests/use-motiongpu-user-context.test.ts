@@ -24,8 +24,17 @@ describe('useMotionGPUUserContext', () => {
 			skipped: Record<string, unknown>;
 			merged: Record<string, unknown>;
 			replaced: Record<string, unknown>;
+			skippedAfterReplace: Record<string, unknown>;
 			pluginStore: CurrentReadable<Record<string, unknown> | undefined>;
 			allStore: CurrentReadable<Record<string | symbol, unknown>>;
+			contextRefs: {
+				beforeInitial: Record<string | symbol, unknown>;
+				afterInitial: Record<string | symbol, unknown>;
+				afterSkipped: Record<string | symbol, unknown>;
+				afterMerged: Record<string | symbol, unknown>;
+				afterReplaced: Record<string | symbol, unknown>;
+				afterSkippedAfterReplace: Record<string | symbol, unknown>;
+			};
 		};
 
 		expect(result.initial).toEqual({ mode: 'initial', enabled: true });
@@ -36,8 +45,13 @@ describe('useMotionGPUUserContext', () => {
 			merged: true
 		});
 		expect(result.replaced).toEqual({ mode: 'replaced' });
+		expect(result.skippedAfterReplace).toEqual({ mode: 'replaced' });
 
 		expect(result.pluginStore.current).toEqual({ mode: 'replaced' });
 		expect(result.allStore.current.plugin).toEqual({ mode: 'replaced' });
+		expect(result.contextRefs.afterInitial).not.toBe(result.contextRefs.beforeInitial);
+		expect(result.contextRefs.afterMerged).not.toBe(result.contextRefs.afterSkipped);
+		expect(result.contextRefs.afterReplaced).not.toBe(result.contextRefs.afterMerged);
+		expect(result.contextRefs.afterSkippedAfterReplace).toBe(result.contextRefs.afterReplaced);
 	});
 });

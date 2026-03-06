@@ -237,10 +237,10 @@ fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
 Share configuration across components via namespaced user context:
 
 ```ts
-import { useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
+import { setMotionGPUUserContext, useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
 
 // Initialize (skip if another component already set it)
-useMotionGPUUserContext('orbit-controls', () => ({
+setMotionGPUUserContext('orbit-controls', () => ({
   enabled: true,
   speed: 1.0
 }), { existing: 'skip' });
@@ -251,7 +251,7 @@ const orbit = useMotionGPUUserContext<{ enabled: boolean; speed: number }>('orbi
 
 **Notes:**
 - `existing: 'skip'` means "don't overwrite if already set" — safe for multiple initializers.
-- Use `'replace'` to force-set, or `'merge'` for partial updates.
+- Use `'replace'` to force-set, or `'merge'` for partial updates via `setMotionGPUUserContext(...)`.
 
 ## 8. Error reporting with custom handler/UI
 
