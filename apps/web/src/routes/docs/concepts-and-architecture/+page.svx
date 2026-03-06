@@ -118,7 +118,7 @@ The scheduler is a DAG-based execution engine:
 | --- | --- |
 | **Task** | A `useFrame` callback with a key, stage assignment, invalidation policy, and dependency edges. |
 | **Stage** | An ordered group of tasks. Stages can have their own `before` / `after` dependencies and optional wrapper callbacks. |
-| **Dependencies** | `before` / `after` on both tasks and stages. Resolved via topological sort — cycles throw. |
+| **Dependencies** | `before` / `after` on both tasks and stages. Resolved via topological sort — cycles and missing references throw. |
 | **Render modes** | `always` (continuous), `on-demand` (invalidation-driven), `manual` (explicit `advance()` only). |
 
 The scheduler exposes its resolved execution order via `getSchedule()` for debugging.

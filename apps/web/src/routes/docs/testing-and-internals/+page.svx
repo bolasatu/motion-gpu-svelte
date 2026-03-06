@@ -14,7 +14,7 @@ Tests live in `packages/motion-gpu/src/tests/`:
 | **Public API** | Root and advanced export contracts — every public symbol is verified to exist and have the correct type. |
 | **FragCanvas** | WebGPU-unavailable behaviour, error callback invocation, overlay toggling, prop validation. |
 | **Context hooks** | `useMotionGPU` and `useFrame` throw when called outside `FragCanvas`. Context shape and exposed controls. |
-| **Scheduler** | Task ordering, topological sort, invalidation modes (`always`, `never`, `on-change`), stage callbacks, diagnostics/profiling data shapes. |
+| **Scheduler** | Task ordering, topological sort, cycle/missing-dependency validation, invalidation modes (`always`, `never`, `on-change`), stage callbacks, diagnostics/profiling data shapes. |
 | **Material** | Contract validation (`fn frag(...)` required), includes/defines expansion, signature determinism, deep-freeze behaviour, caching. |
 | **Uniforms** | Type inference from value shapes, layout alignment (`std140`-style), buffer packing, sorted order, invalid input rejection. |
 | **Textures** | Defaults (`flipY: true`, `filter: 'linear'`), size helpers, update mode resolution (video → `perFrame`), mipmap level calculation, video detection heuristics. |

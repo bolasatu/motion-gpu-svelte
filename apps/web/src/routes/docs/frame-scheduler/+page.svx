@@ -180,7 +180,10 @@ const render = useFrame('render-update', (state) => {
 });
 ```
 
-Dependencies are resolved via topological sort. Circular dependencies throw.
+Dependencies are resolved via topological sort.
+
+- Circular dependencies throw a deterministic error.
+- Missing `before` / `after` references throw a deterministic error.
 
 ## Lifecycle
 

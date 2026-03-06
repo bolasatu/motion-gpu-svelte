@@ -92,6 +92,8 @@ useFrame(key: FrameKey, callback: (state: FrameState) => void, options?: UseFram
 | `after` | task ref or list | `undefined` |
 | `running` | `() => boolean` | `undefined` |
 
+Dependency validation is strict: cyclic graphs and missing `before` / `after` references throw.
+
 ### Return: `UseFrameHandle`
 
 | Field | Type |

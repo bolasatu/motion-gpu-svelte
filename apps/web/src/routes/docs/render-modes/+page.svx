@@ -157,6 +157,7 @@ Both tasks and stages support `before` / `after` dependency edges. Dependencies 
 - Tasks within a stage are sorted by their inter-task dependencies.
 - Stages are sorted by their inter-stage dependencies.
 - Circular dependencies throw an error.
+- Missing dependency references throw an error.
 
 ## Schedule inspection
 

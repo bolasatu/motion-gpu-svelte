@@ -380,15 +380,42 @@ describe('frame registry', () => {
 		expect(postStage?.tasks).toEqual(['base', 'derived']);
 	});
 
-	it('falls back to stable registration order for cyclic task dependencies', () => {
+	it('throws deterministic error for cyclic task dependencies', () => {
 		const registry = createFrameRegistry();
-		const execution: string[] = [];
+		registry.register('a', () => undefined, { after: 'b' });
+		registry.register('b', () => undefined, { after: 'a' });
 
-		registry.register('a', () => execution.push('a'), { after: 'b' });
-		registry.register('b', () => execution.push('b'), { after: 'a' });
+		expect(() => registry.run(createState(registry))).toThrow(
+			/Frame task graph for stage .* dependency cycle detected: a -> b -> a/
+		);
+	});
 
-		registry.run(createState(registry));
-		expect(execution).toEqual(['a', 'b']);
+	it('throws deterministic error for cyclic stage dependencies', () => {
+		const registry = createFrameRegistry();
+		registry.createStage('a', { after: 'b' });
+		registry.createStage('b', { after: 'a' });
+
+		expect(() => registry.getSchedule()).toThrow(
+			/Frame stage graph dependency cycle detected: a -> b -> a/
+		);
+	});
+
+	it('throws for missing task dependencies', () => {
+		const registry = createFrameRegistry();
+		registry.register('a', () => undefined, { after: 'missing-task' });
+
+		expect(() => registry.run(createState(registry))).toThrow(
+			/Frame task graph for stage .* references missing dependency "missing-task" in "after"/
+		);
+	});
+
+	it('throws for missing stage dependencies', () => {
+		const registry = createFrameRegistry();
+		registry.createStage('late', { after: 'missing-stage' });
+
+		expect(() => registry.getSchedule()).toThrow(
+			/Frame stage graph dependency error: stage "late" references missing dependency "missing-stage" in "after"/
+		);
 	});
 
 	it('supports explicit never invalidation mode in on-demand rendering', () => {

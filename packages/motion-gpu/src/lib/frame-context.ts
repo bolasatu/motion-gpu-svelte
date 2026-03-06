@@ -238,6 +238,13 @@ function asArray<T>(value: T | T[] | undefined): T[] {
 }
 
 /**
+ * Normalizes frame keys to readable string labels.
+ */
+function frameKeyToString(key: FrameKey): string {
+	return typeof key === 'symbol' ? key.toString() : key;
+}
+
+/**
  * Extracts task key from either direct key or task reference.
  */
 function toTaskKey(reference: FrameKey | FrameTask): FrameKey {
@@ -388,12 +395,82 @@ function buildTimingStats(samples: number[], last: number): FrameTimingStats {
 }
 
 /**
- * Topologically sorts items by `before`/`after` dependencies with stable order fallback.
+ * Dependency graph sorting options used for diagnostics labels.
+ */
+interface SortDependenciesOptions<T extends { key: FrameKey; order: number }> {
+	graphName: string;
+	getItemLabel: (item: T) => string;
+	isKnownExternalDependency?: (key: FrameKey) => boolean;
+}
+
+/**
+ * Deterministically sorts dependency keys for stable traversal and diagnostics.
+ */
+function sortDependencyKeys(keys: Iterable<FrameKey>): FrameKey[] {
+	return Array.from(keys).sort((a, b) => frameKeyToString(a).localeCompare(frameKeyToString(b)));
+}
+
+/**
+ * Finds one deterministic cycle path in the directed dependency graph.
+ */
+function findDependencyCycle<T extends { key: FrameKey; order: number }>(
+	items: T[],
+	edges: ReadonlyMap<FrameKey, ReadonlySet<FrameKey>>
+): FrameKey[] | null {
+	const visitState = new Map<FrameKey, 0 | 1 | 2>();
+	const stack: FrameKey[] = [];
+	let cycle: FrameKey[] | null = null;
+	const sortedItems = [...items].sort((a, b) => a.order - b.order);
+
+	const visit = (key: FrameKey): boolean => {
+		visitState.set(key, 1);
+		stack.push(key);
+
+		for (const childKey of sortDependencyKeys(edges.get(key) ?? [])) {
+			const state = visitState.get(childKey) ?? 0;
+			if (state === 0) {
+				if (visit(childKey)) {
+					return true;
+				}
+				continue;
+			}
+
+			if (state === 1) {
+				const cycleStartIndex = stack.findIndex((entry) => entry === childKey);
+				const cyclePath = cycleStartIndex === -1 ? [childKey] : stack.slice(cycleStartIndex);
+				cycle = [...cyclePath, childKey];
+				return true;
+			}
+		}
+
+		stack.pop();
+		visitState.set(key, 2);
+		return false;
+	};
+
+	for (const item of sortedItems) {
+		if ((visitState.get(item.key) ?? 0) !== 0) {
+			continue;
+		}
+
+		if (visit(item.key)) {
+			return cycle;
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Topologically sorts items by `before`/`after` dependencies.
+ *
+ * Throws deterministic errors when dependencies are missing or cyclic.
  */
 function sortByDependencies<T extends { key: FrameKey; order: number }>(
 	items: T[],
 	getBefore: (item: T) => Iterable<FrameKey>,
-	getAfter: (item: T) => Iterable<FrameKey>
+	getAfter: (item: T) => Iterable<FrameKey>,
+	options: SortDependenciesOptions<T>
 ): T[] {
 	const itemsByKey = new Map<FrameKey, T>();
 	for (const item of items) {
@@ -411,7 +488,12 @@ function sortByDependencies<T extends { key: FrameKey; order: number }>(
 	for (const item of items) {
 		for (const dependencyKey of getAfter(item)) {
 			if (!itemsByKey.has(dependencyKey)) {
-				continue;
+				if (options.isKnownExternalDependency?.(dependencyKey)) {
+					continue;
+				}
+				throw new Error(
+					`${options.graphName} dependency error: ${options.getItemLabel(item)} references missing dependency "${frameKeyToString(dependencyKey)}" in "after".`
+				);
 			}
 
 			edges.get(dependencyKey)?.add(item.key);
@@ -420,7 +502,12 @@ function sortByDependencies<T extends { key: FrameKey; order: number }>(
 
 		for (const dependencyKey of getBefore(item)) {
 			if (!itemsByKey.has(dependencyKey)) {
-				continue;
+				if (options.isKnownExternalDependency?.(dependencyKey)) {
+					continue;
+				}
+				throw new Error(
+					`${options.graphName} dependency error: ${options.getItemLabel(item)} references missing dependency "${frameKeyToString(dependencyKey)}" in "before".`
+				);
 			}
 
 			edges.get(item.key)?.add(dependencyKey);
@@ -454,9 +541,14 @@ function sortByDependencies<T extends { key: FrameKey; order: number }>(
 	}
 
 	if (ordered.length !== items.length) {
-		const missing = items.filter((item) => !ordered.some((entry) => entry.key === item.key));
-		missing.sort((a, b) => a.order - b.order);
-		ordered.push(...missing);
+		const cycle = findDependencyCycle(items, edges);
+		if (cycle) {
+			throw new Error(
+				`${options.graphName} dependency cycle detected: ${cycle.map((key) => frameKeyToString(key)).join(' -> ')}`
+			);
+		}
+
+		throw new Error(`${options.graphName} dependency resolution failed.`);
 	}
 
 	return ordered;
@@ -640,9 +732,19 @@ export function createFrameRegistry(options?: {
 		const stageList = sortByDependencies(
 			Array.from(stages.values()),
 			(stage) => stage.before,
-			(stage) => stage.after
+			(stage) => stage.after,
+			{
+				graphName: 'Frame stage graph',
+				getItemLabel: (stage) => `stage "${frameKeyToString(stage.key)}"`
+			}
 		);
 		const nextTasksByStage = new Map<FrameKey, InternalTask[]>();
+		const globalTaskKeys = new Set<FrameKey>();
+		for (const stage of stageList) {
+			for (const task of stage.tasks.values()) {
+				globalTaskKeys.add(task.task.key);
+			}
+		}
 
 		for (const stage of stageList) {
 			const taskList = sortByDependencies(
@@ -652,7 +754,12 @@ export function createFrameRegistry(options?: {
 					task
 				})),
 				(task) => task.task.before,
-				(task) => task.task.after
+				(task) => task.task.after,
+				{
+					graphName: `Frame task graph for stage "${frameKeyToString(stage.key)}"`,
+					getItemLabel: (task) => `task "${frameKeyToString(task.key)}"`,
+					isKnownExternalDependency: (key) => globalTaskKeys.has(key)
+				}
 			).map((task) => task.task);
 			nextTasksByStage.set(stage.key, taskList);
 		}
@@ -665,8 +772,10 @@ export function createFrameRegistry(options?: {
 
 		scheduleSnapshot = {
 			stages: sortedStages.map((stage) => ({
-				key: keyToString(stage.key),
-				tasks: (sortedTasksByStage.get(stage.key) ?? []).map((task) => keyToString(task.task.key))
+				key: frameKeyToString(stage.key),
+				tasks: (sortedTasksByStage.get(stage.key) ?? []).map((task) =>
+					frameKeyToString(task.task.key)
+				)
 			}))
 		};
 
@@ -790,10 +899,6 @@ export function createFrameRegistry(options?: {
 			task.startedStoreSet(running);
 		}
 		return running;
-	};
-
-	const keyToString = (key: FrameKey): string => {
-		return typeof key === 'symbol' ? key.toString() : key;
 	};
 
 	const hasPendingInvalidation = (): boolean => {
@@ -938,14 +1043,14 @@ export function createFrameRegistry(options?: {
 
 						task.callback(frameState);
 						if (profilingEnabled) {
-							taskTimings[keyToString(task.task.key)] = performance.now() - taskStart;
+							taskTimings[frameKeyToString(task.task.key)] = performance.now() - taskStart;
 						}
 						applyTaskInvalidation(task);
 					}
 				});
 
 				if (profilingEnabled) {
-					stageTimings[keyToString(stage.key)] = {
+					stageTimings[frameKeyToString(stage.key)] = {
 						duration: performance.now() - stageStart,
 						tasks: taskTimings
 					};
