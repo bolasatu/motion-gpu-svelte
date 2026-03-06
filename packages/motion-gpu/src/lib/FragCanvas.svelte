@@ -164,21 +164,66 @@
 		let uniformTypes = new Map<string, UniformType>();
 		let textureKeys: string[] = [];
 		let textureKeySet = new Set<string>();
+		let activeMaterialSignature = '';
+		let currentCssWidth = -1;
+		let currentCssHeight = -1;
+		const renderUniforms: Record<string, UniformValue> = {};
+		const renderTextures: TextureMap = {};
+		const canvasSize = { width: 0, height: 0 };
 
 		const resetRuntimeMaps = (): void => {
-			const validUniforms = new Set(uniformKeys);
 			for (const key of Object.keys(runtimeUniforms)) {
-				if (!validUniforms.has(key)) {
+				if (!uniformKeySet.has(key)) {
 					Reflect.deleteProperty(runtimeUniforms, key);
 				}
 			}
 
-			const validTextures = new Set(textureKeys);
 			for (const key of Object.keys(runtimeTextures)) {
-				if (!validTextures.has(key)) {
+				if (!textureKeySet.has(key)) {
 					Reflect.deleteProperty(runtimeTextures, key);
 				}
 			}
+		};
+
+		const resetRenderPayloadMaps = (): void => {
+			for (const key of Object.keys(renderUniforms)) {
+				if (!uniformKeySet.has(key)) {
+					Reflect.deleteProperty(renderUniforms, key);
+				}
+			}
+
+			for (const key of Object.keys(renderTextures)) {
+				if (!textureKeySet.has(key)) {
+					Reflect.deleteProperty(renderTextures, key);
+				}
+			}
+		};
+
+		const syncMaterialRuntimeState = (materialState: ReturnType<typeof resolveMaterial>): void => {
+			const signatureChanged = activeMaterialSignature !== materialState.signature;
+			const defaultsChanged =
+				activeUniforms !== materialState.uniforms || activeTextures !== materialState.textures;
+
+			if (!signatureChanged && !defaultsChanged) {
+				return;
+			}
+
+			activeUniforms = materialState.uniforms;
+			activeTextures = materialState.textures;
+			if (!signatureChanged) {
+				return;
+			}
+
+			uniformKeys = materialState.uniformLayout.entries.map((entry) => entry.name);
+			uniformTypes = new Map(
+				materialState.uniformLayout.entries.map((entry) => [entry.name, entry.type])
+			);
+			textureKeys = materialState.textureKeys;
+			uniformKeySet = new Set(uniformKeys);
+			textureKeySet = new Set(textureKeys);
+			resetRuntimeMaps();
+			resetRenderPayloadMaps();
+			activeMaterialSignature = materialState.signature;
 		};
 
 		const resolveActiveMaterial = () => {
@@ -222,16 +267,7 @@
 				materialSignature: materialState.signature,
 				outputColorSpace
 			});
-			activeUniforms = materialState.uniforms;
-			activeTextures = materialState.textures;
-			uniformKeys = materialState.uniformLayout.entries.map((entry) => entry.name);
-			uniformTypes = new Map(
-				materialState.uniformLayout.entries.map((entry) => [entry.name, entry.type])
-			);
-			textureKeys = materialState.textureKeys;
-			uniformKeySet = new Set(uniformKeys);
-			textureKeySet = new Set(textureKeys);
-			resetRuntimeMaps();
+			syncMaterialRuntimeState(materialState);
 
 			if (failedRendererSignature && failedRendererSignature !== rendererSignature) {
 				failedRendererSignature = null;
@@ -306,7 +342,11 @@
 			const rect = canvasElement.getBoundingClientRect();
 			const width = Math.max(0, Math.floor(rect.width));
 			const height = Math.max(0, Math.floor(rect.height));
-			size.set({ width, height });
+			if (width !== currentCssWidth || height !== currentCssHeight) {
+				currentCssWidth = width;
+				currentCssHeight = height;
+				size.set({ width, height });
+			}
 
 			try {
 				registry.run({
@@ -322,20 +362,27 @@
 				});
 
 				if (registry.shouldRender()) {
+					for (const key of uniformKeys) {
+						const runtimeValue = runtimeUniforms[key];
+						renderUniforms[key] =
+							runtimeValue === undefined ? (activeUniforms[key] as UniformValue) : runtimeValue;
+					}
+
+					for (const key of textureKeys) {
+						const runtimeValue = runtimeTextures[key];
+						renderTextures[key] =
+							runtimeValue === undefined ? (activeTextures[key]?.source ?? null) : runtimeValue;
+					}
+
+					canvasSize.width = width;
+					canvasSize.height = height;
 					renderer.render({
 						time,
 						delta,
 						renderMode: registry.getRenderMode(),
-						uniforms: {
-							...activeUniforms,
-							...runtimeUniforms
-						},
-						textures: {
-							...Object.fromEntries(
-								textureKeys.map((key) => [key, activeTextures[key]?.source ?? null])
-							),
-							...runtimeTextures
-						}
+						uniforms: renderUniforms,
+						textures: renderTextures,
+						canvasSize
 					});
 				}
 
@@ -352,15 +399,7 @@
 		(async () => {
 			try {
 				const initialMaterial = resolveActiveMaterial();
-				activeUniforms = initialMaterial.uniforms;
-				activeTextures = initialMaterial.textures;
-				uniformKeys = initialMaterial.uniformLayout.entries.map((entry) => entry.name);
-				uniformTypes = new Map(
-					initialMaterial.uniformLayout.entries.map((entry) => [entry.name, entry.type])
-				);
-				textureKeys = initialMaterial.textureKeys;
-				uniformKeySet = new Set(uniformKeys);
-				textureKeySet = new Set(textureKeys);
+				syncMaterialRuntimeState(initialMaterial);
 				activeRendererSignature = '';
 				frameId = requestAnimationFrame(renderFrame);
 			} catch (error) {

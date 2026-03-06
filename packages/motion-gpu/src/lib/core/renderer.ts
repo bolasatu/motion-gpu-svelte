@@ -98,12 +98,13 @@ function getTextureBindings(index: number): {
  */
 function resizeCanvas(
 	canvas: HTMLCanvasElement,
-	dprInput: number
+	dprInput: number,
+	cssSize?: { width: number; height: number }
 ): { width: number; height: number } {
 	const dpr = Number.isFinite(dprInput) && dprInput > 0 ? dprInput : 1;
-	const rect = canvas.getBoundingClientRect();
-	const cssWidth = Math.max(0, rect.width);
-	const cssHeight = Math.max(0, rect.height);
+	const rect = cssSize ? null : canvas.getBoundingClientRect();
+	const cssWidth = Math.max(0, cssSize?.width ?? rect?.width ?? 0);
+	const cssHeight = Math.max(0, cssSize?.height ?? rect?.height ?? 0);
 	const width = Math.max(1, Math.floor((cssWidth || 1) * dpr));
 	const height = Math.max(1, Math.floor((cssHeight || 1) * dpr));
 
@@ -653,6 +654,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			size: options.uniformLayout.byteLength,
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
 		});
+		const frameScratch = new Float32Array(4);
 		const uniformScratch = new Float32Array(options.uniformLayout.byteLength / 4);
 		const uniformPrevious = new Float32Array(options.uniformLayout.byteLength / 4);
 		let hasUniformSnapshot = false;
@@ -968,7 +970,14 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		/**
 		 * Executes a full frame render.
 		 */
-		const render: Renderer['render'] = ({ time, delta, renderMode, uniforms, textures }) => {
+		const render: Renderer['render'] = ({
+			time,
+			delta,
+			renderMode,
+			uniforms,
+			textures,
+			canvasSize
+		}) => {
 			if (deviceLostMessage) {
 				throw new Error(deviceLostMessage);
 			}
@@ -979,7 +988,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				throw new Error(message);
 			}
 
-			const { width, height } = resizeCanvas(options.canvas, options.getDpr());
+			const { width, height } = resizeCanvas(options.canvas, options.getDpr(), canvasSize);
 
 			if (!contextConfigured || configuredWidth !== width || configuredHeight !== height) {
 				context.configure({
@@ -992,13 +1001,16 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				configuredHeight = height;
 			}
 
-			const frameData = new Float32Array([time, delta, width, height]);
+			frameScratch[0] = time;
+			frameScratch[1] = delta;
+			frameScratch[2] = width;
+			frameScratch[3] = height;
 			device.queue.writeBuffer(
 				frameBuffer,
 				0,
-				frameData.buffer as ArrayBuffer,
-				frameData.byteOffset,
-				frameData.byteLength
+				frameScratch.buffer as ArrayBuffer,
+				frameScratch.byteOffset,
+				frameScratch.byteLength
 			);
 
 			packUniformsInto(uniforms, options.uniformLayout, uniformScratch);

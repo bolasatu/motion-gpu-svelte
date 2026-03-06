@@ -24,6 +24,7 @@ Tests live in `packages/motion-gpu/src/tests/`:
 | **Passes** | Default option values, `ShaderPass` contract enforcement (`fn shade(...)` required), shader hot-swap support. |
 | **Error report** | Classification pattern matching, normalized output shape, source block extraction for WGSL errors, hint generation. |
 | **Recompile policy** | Pipeline signature changes from shader/layout/texture changes, non-changes from uniform value updates. |
+| **Performance baselines** | Core/runtime benchmark scripts, JSON baseline comparison, and regression threshold checks. |
 
 ## Key runtime guarantees verified by tests
 
@@ -83,6 +84,10 @@ bun run build     # Build the library
 bun run test      # Run all tests
 bun run check     # Svelte + TypeScript type checking
 bun run lint      # ESLint
+bun run perf:core          # Run CPU microbenchmarks
+bun run perf:core:check    # Compare CPU metrics vs baseline
+bun run perf:runtime       # Run runtime WebGPU benchmark
+bun run perf:runtime:check # Compare runtime metrics vs baseline
 ```
 
 ### Documentation app (`apps/web`)
@@ -110,4 +115,4 @@ bun run lint      # ESLint
 1. Integration tests for dynamic pass list churn under load.
 2. Stress tests for frequent render target topology changes.
 3. Browser-matrix smoke tests for WebGPU feature differences across vendors.
-4. Performance benchmarks for uniform buffer update patterns.
+4. Dedicated CI runner profile for stable benchmark checks across pull requests.

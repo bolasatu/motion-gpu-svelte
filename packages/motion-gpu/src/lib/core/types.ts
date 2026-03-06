@@ -543,6 +543,10 @@ export interface Renderer {
 		renderMode: RenderMode;
 		uniforms: UniformMap;
 		textures: TextureMap;
+		canvasSize?: {
+			width: number;
+			height: number;
+		};
 	}) => void;
 	/**
 	 * Releases GPU resources and subscriptions.

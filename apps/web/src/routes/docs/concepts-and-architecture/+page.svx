@@ -71,7 +71,7 @@ Each frame follows this exact sequence:
 3. **Run scheduler** — executes all registered `useFrame` tasks in topologically sorted stage/task order.
 4. **Check render gate** — `shouldRender()` evaluates render mode + invalidation + advance flags.
 5. **Render** — if gate passes:
-   - Merges runtime uniforms/textures with material defaults,
+   - Resolves effective uniform/texture values (material defaults + runtime overrides) into reusable render payloads,
    - Uploads changed textures,
    - Writes dirty uniform ranges to GPU buffer,
    - Executes the base fullscreen pass,
@@ -108,7 +108,7 @@ Data flows through three layers, from compile-time defaults to per-frame overrid
 | --- | --- | --- |
 | **Material definition** | Static defaults in `defineMaterial({ uniforms })` | Static `TextureDefinition` map in `defineMaterial({ textures })` |
 | **Frame runtime** | `state.setUniform(name, value)` in `useFrame` callbacks | `state.setTexture(name, value)` in `useFrame` callbacks |
-| **Render submit** | Merged as `{ ...materialUniforms, ...runtimeUniforms }` | Material definitions + runtime source overrides |
+| **Render submit** | Effective values are resolved from defaults + runtime overrides into a reusable frame payload map (runtime wins on conflicts). | Material definitions + runtime source overrides resolved into reusable texture payloads (runtime wins on conflicts). |
 
 Setting an unknown uniform or texture name throws immediately — there is no silent fallback.
 
