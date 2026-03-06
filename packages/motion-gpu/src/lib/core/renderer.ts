@@ -1,5 +1,5 @@
 import { buildRenderTargetSignature, resolveRenderTargetDefinitions } from './render-targets';
-import { planRenderGraph } from './render-graph';
+import { planRenderGraph, type RenderGraphPlan } from './render-graph';
 import { buildShaderSourceWithMap, formatShaderSourceLocation, type ShaderLineMap } from './shader';
 import { attachShaderCompilationDiagnostics } from './error-diagnostics';
 import {
@@ -77,6 +77,24 @@ interface RuntimeRenderTarget {
 	width: number;
 	height: number;
 	format: GPUTextureFormat;
+}
+
+/**
+ * Cached pass properties used to validate render-graph cache correctness.
+ */
+interface RenderGraphPassSnapshot {
+	pass: RenderPass;
+	enabled: RenderPass['enabled'];
+	needsSwap: RenderPass['needsSwap'];
+	input: RenderPass['input'];
+	output: RenderPass['output'];
+	clear: RenderPass['clear'];
+	preserve: RenderPass['preserve'];
+	hasClearColor: boolean;
+	clearColor0: number;
+	clearColor1: number;
+	clearColor2: number;
+	clearColor3: number;
 }
 
 /**
@@ -792,11 +810,21 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		let sourceSlotTarget: RuntimeRenderTarget | null = null;
 		let targetSlotTarget: RuntimeRenderTarget | null = null;
 		let renderTargetSignature = '';
+		let renderTargetSnapshot: Readonly<Record<string, RenderTarget>> = {};
+		let renderTargetKeys: string[] = [];
+		let cachedGraphPlan: RenderGraphPlan | null = null;
+		let cachedGraphRenderTargetSignature = '';
+		const cachedGraphClearColor: [number, number, number, number] = [NaN, NaN, NaN, NaN];
+		const cachedGraphPasses: RenderGraphPassSnapshot[] = [];
 		let contextConfigured = false;
 		let configuredWidth = 0;
 		let configuredHeight = 0;
 		const runtimeRenderTargets = new Map<string, RuntimeRenderTarget>();
-		let activePasses: RenderPass[] = [];
+		const activePasses: RenderPass[] = [];
+		const lifecyclePreviousSet = new Set<RenderPass>();
+		const lifecycleNextSet = new Set<RenderPass>();
+		const lifecycleUniquePasses: RenderPass[] = [];
+		let lifecyclePassesRef: RenderPass[] | null = null;
 		let passWidth = 0;
 		let passHeight = 0;
 
@@ -815,27 +843,179 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		};
 
 		/**
+		 * Checks whether cached render-graph plan can be reused for this frame.
+		 */
+		const isGraphPlanCacheValid = (
+			passes: RenderPass[],
+			clearColor: [number, number, number, number]
+		): boolean => {
+			if (!cachedGraphPlan) {
+				return false;
+			}
+
+			if (cachedGraphRenderTargetSignature !== renderTargetSignature) {
+				return false;
+			}
+
+			if (
+				cachedGraphClearColor[0] !== clearColor[0] ||
+				cachedGraphClearColor[1] !== clearColor[1] ||
+				cachedGraphClearColor[2] !== clearColor[2] ||
+				cachedGraphClearColor[3] !== clearColor[3]
+			) {
+				return false;
+			}
+
+			if (cachedGraphPasses.length !== passes.length) {
+				return false;
+			}
+
+			for (let index = 0; index < passes.length; index += 1) {
+				const pass = passes[index];
+				const snapshot = cachedGraphPasses[index];
+				if (!pass || !snapshot || snapshot.pass !== pass) {
+					return false;
+				}
+
+				if (
+					snapshot.enabled !== pass.enabled ||
+					snapshot.needsSwap !== pass.needsSwap ||
+					snapshot.input !== pass.input ||
+					snapshot.output !== pass.output ||
+					snapshot.clear !== pass.clear ||
+					snapshot.preserve !== pass.preserve
+				) {
+					return false;
+				}
+
+				const passClearColor = pass.clearColor;
+				const hasPassClearColor = passClearColor !== undefined;
+				if (snapshot.hasClearColor !== hasPassClearColor) {
+					return false;
+				}
+
+				if (passClearColor) {
+					if (
+						snapshot.clearColor0 !== passClearColor[0] ||
+						snapshot.clearColor1 !== passClearColor[1] ||
+						snapshot.clearColor2 !== passClearColor[2] ||
+						snapshot.clearColor3 !== passClearColor[3]
+					) {
+						return false;
+					}
+				}
+			}
+
+			return true;
+		};
+
+		/**
+		 * Updates render-graph cache with current pass set.
+		 */
+		const updateGraphPlanCache = (
+			passes: RenderPass[],
+			clearColor: [number, number, number, number],
+			graphPlan: RenderGraphPlan
+		): void => {
+			cachedGraphPlan = graphPlan;
+			cachedGraphRenderTargetSignature = renderTargetSignature;
+			cachedGraphClearColor[0] = clearColor[0];
+			cachedGraphClearColor[1] = clearColor[1];
+			cachedGraphClearColor[2] = clearColor[2];
+			cachedGraphClearColor[3] = clearColor[3];
+			cachedGraphPasses.length = passes.length;
+
+			let index = 0;
+			for (const pass of passes) {
+				const passClearColor = pass.clearColor;
+				const hasPassClearColor = passClearColor !== undefined;
+				const snapshot = cachedGraphPasses[index];
+				if (!snapshot) {
+					cachedGraphPasses[index] = {
+						pass,
+						enabled: pass.enabled,
+						needsSwap: pass.needsSwap,
+						input: pass.input,
+						output: pass.output,
+						clear: pass.clear,
+						preserve: pass.preserve,
+						hasClearColor: hasPassClearColor,
+						clearColor0: passClearColor?.[0] ?? 0,
+						clearColor1: passClearColor?.[1] ?? 0,
+						clearColor2: passClearColor?.[2] ?? 0,
+						clearColor3: passClearColor?.[3] ?? 0
+					};
+					index += 1;
+					continue;
+				}
+
+				snapshot.pass = pass;
+				snapshot.enabled = pass.enabled;
+				snapshot.needsSwap = pass.needsSwap;
+				snapshot.input = pass.input;
+				snapshot.output = pass.output;
+				snapshot.clear = pass.clear;
+				snapshot.preserve = pass.preserve;
+				snapshot.hasClearColor = hasPassClearColor;
+				snapshot.clearColor0 = passClearColor?.[0] ?? 0;
+				snapshot.clearColor1 = passClearColor?.[1] ?? 0;
+				snapshot.clearColor2 = passClearColor?.[2] ?? 0;
+				snapshot.clearColor3 = passClearColor?.[3] ?? 0;
+				index += 1;
+			}
+		};
+
+		/**
 		 * Synchronizes pass lifecycle callbacks and resize notifications.
 		 */
 		const syncPassLifecycle = (passes: RenderPass[], width: number, height: number): void => {
-			const uniquePasses = Array.from(new Set(passes));
-			const previousSet = new Set(activePasses);
-			const nextSet = new Set(uniquePasses);
 			const resized = passWidth !== width || passHeight !== height;
+			if (!resized && lifecyclePassesRef === passes && passes.length === activePasses.length) {
+				let isSameOrder = true;
+				for (let index = 0; index < passes.length; index += 1) {
+					if (activePasses[index] !== passes[index]) {
+						isSameOrder = false;
+						break;
+					}
+				}
+
+				if (isSameOrder) {
+					return;
+				}
+			}
+
+			lifecycleNextSet.clear();
+			lifecycleUniquePasses.length = 0;
+			for (const pass of passes) {
+				if (lifecycleNextSet.has(pass)) {
+					continue;
+				}
+
+				lifecycleNextSet.add(pass);
+				lifecycleUniquePasses.push(pass);
+			}
+			lifecyclePreviousSet.clear();
+			for (const pass of activePasses) {
+				lifecyclePreviousSet.add(pass);
+			}
 
 			for (const pass of activePasses) {
-				if (!nextSet.has(pass)) {
+				if (!lifecycleNextSet.has(pass)) {
 					pass.dispose?.();
 				}
 			}
 
-			for (const pass of uniquePasses) {
-				if (resized || !previousSet.has(pass)) {
+			for (const pass of lifecycleUniquePasses) {
+				if (resized || !lifecyclePreviousSet.has(pass)) {
 					pass.setSize?.(width, height);
 				}
 			}
 
-			activePasses = uniquePasses;
+			activePasses.length = 0;
+			for (const pass of lifecycleUniquePasses) {
+				activePasses.push(pass);
+			}
+			lifecyclePassesRef = passes;
 			passWidth = width;
 			passHeight = height;
 		};
@@ -913,20 +1093,29 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				}
 
 				renderTargetSignature = nextSignature;
+				const nextSnapshot: Record<string, RenderTarget> = {};
+				const nextKeys: string[] = [];
+				for (const definition of resolvedDefinitions) {
+					const target = runtimeRenderTargets.get(definition.key);
+					if (!target) {
+						continue;
+					}
+
+					nextKeys.push(definition.key);
+					nextSnapshot[definition.key] = {
+						texture: target.texture,
+						view: target.view,
+						width: target.width,
+						height: target.height,
+						format: target.format
+					};
+				}
+
+				renderTargetSnapshot = nextSnapshot;
+				renderTargetKeys = nextKeys;
 			}
 
-			const snapshot: Record<string, RenderTarget> = {};
-			for (const [key, target] of runtimeRenderTargets.entries()) {
-				snapshot[key] = {
-					texture: target.texture,
-					view: target.view,
-					width: target.width,
-					height: target.height,
-					format: target.format
-				};
-			}
-
-			return snapshot;
+			return renderTargetSnapshot;
 		};
 
 		/**
@@ -1066,7 +1255,13 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			const clearColor = options.getClearColor();
 			syncPassLifecycle(passes, width, height);
 			const runtimeTargets = syncRenderTargets(width, height);
-			const graphPlan = planRenderGraph(passes, clearColor, Object.keys(runtimeTargets));
+			const graphPlan = isGraphPlanCacheValid(passes, clearColor)
+				? cachedGraphPlan!
+				: (() => {
+						const nextPlan = planRenderGraph(passes, clearColor, renderTargetKeys);
+						updateGraphPlanCache(passes, clearColor, nextPlan);
+						return nextPlan;
+					})();
 			const canvasTexture = context.getCurrentTexture();
 			const canvasSurface: RenderTarget = {
 				texture: canvasTexture,
@@ -1205,12 +1400,17 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				for (const pass of activePasses) {
 					pass.dispose?.();
 				}
-				activePasses = [];
+				activePasses.length = 0;
+				lifecyclePassesRef = null;
 				for (const binding of textureBindings) {
 					binding.texture?.destroy();
 					binding.fallbackTexture.destroy();
 				}
 				blitBindGroupByView = new WeakMap();
+				cachedGraphPlan = null;
+				cachedGraphPasses.length = 0;
+				renderTargetSnapshot = {};
+				renderTargetKeys = [];
 			}
 		};
 	} catch (error) {
