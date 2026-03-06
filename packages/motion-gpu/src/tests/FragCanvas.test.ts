@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import FragCanvas from '../lib/FragCanvas.svelte';
 import { defineMaterial } from '../lib/core/material';
+import FragCanvasCustomErrorRendererHarness from './fixtures/FragCanvasCustomErrorRendererHarness.svelte';
 
 const material = defineMaterial({
 	fragment: `
@@ -67,6 +68,47 @@ describe('FragCanvas', () => {
 		await waitFor(() => {
 			expect(onError).toHaveBeenCalled();
 		});
+		expect(screen.queryByTestId('motiongpu-error')).toBeNull();
+	});
+
+	it('renders custom error renderer when provided and keeps onError callback', async () => {
+		const onError = vi.fn();
+		render(FragCanvasCustomErrorRendererHarness, {
+			props: {
+				material,
+				onError
+			}
+		});
+
+		const custom = await screen.findByTestId('custom-error-renderer');
+		expect(custom.textContent).toContain('WebGPU unavailable');
+		expect(custom.textContent).toContain('initialization');
+		expect(screen.queryByTestId('motiongpu-error')).toBeNull();
+
+		await waitFor(() => {
+			expect(onError).toHaveBeenCalledWith(
+				expect.objectContaining({
+					title: 'WebGPU unavailable',
+					phase: 'initialization'
+				})
+			);
+		});
+	});
+
+	it('does not render custom error renderer when showErrorOverlay is disabled', async () => {
+		const onError = vi.fn();
+		render(FragCanvasCustomErrorRendererHarness, {
+			props: {
+				material,
+				showErrorOverlay: false,
+				onError
+			}
+		});
+
+		await waitFor(() => {
+			expect(onError).toHaveBeenCalled();
+		});
+		expect(screen.queryByTestId('custom-error-renderer')).toBeNull();
 		expect(screen.queryByTestId('motiongpu-error')).toBeNull();
 	});
 });
