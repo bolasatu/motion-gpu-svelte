@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Code from 'carbon-icons-svelte/lib/Code.svelte';
 	import DataEnrichment from 'carbon-icons-svelte/lib/DataEnrichment.svelte';
+	import Flow from 'carbon-icons-svelte/lib/Flow.svelte';
 	import ModelAlt from 'carbon-icons-svelte/lib/ModelAlt.svelte';
 	import Touch_1Down from 'carbon-icons-svelte/lib/Touch_1Down.svelte';
 	import WarningAlt from 'carbon-icons-svelte/lib/WarningAlt.svelte';
@@ -63,7 +64,12 @@
 	id="how-it-works"
 	class="flex flex-col items-center justify-center gap-4"
 >
-	<Badge>How It Works</Badge>
+	<Badge>
+		<span class="inline-flex items-center gap-1.5">
+			<Flow size={16} />
+			<span>How It Works</span>
+		</span>
+	</Badge>
 	<h2 class="text-center text-2xl tracking-tight text-balance text-foreground sm:text-4xl">
 		A transparent pipeline. Step by step.
 	</h2>

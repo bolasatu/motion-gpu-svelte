@@ -3,6 +3,7 @@
 	import Card from './Card.svelte';
 	import InsetShadowContainer from './InsetShadowContainer.svelte';
 	import Layers from 'carbon-icons-svelte/lib/Layers.svelte';
+	import DataViewAlt from 'carbon-icons-svelte/lib/DataViewAlt.svelte';
 	import Blockchain from 'carbon-icons-svelte/lib/Blockchain.svelte';
 	import Chart_3D from 'carbon-icons-svelte/lib/Chart_3D.svelte';
 	import Badge from '../ui/Badge.svelte';
@@ -36,7 +37,12 @@
 </script>
 
 <Section variant="muted" id="features" class="flex flex-col items-center justify-center gap-4">
-	<Badge>Features</Badge>
+	<Badge>
+		<span class="inline-flex items-center gap-1.5">
+			<DataViewAlt size={16} />
+			<span>Features</span>
+		</span>
+	</Badge>
 	<h2 class="text-center text-2xl tracking-tight text-balance text-foreground sm:text-4xl">
 		Strict contracts. Deterministic rendering.
 	</h2>

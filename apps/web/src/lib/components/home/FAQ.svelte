@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Add from 'carbon-icons-svelte/lib/Add.svelte';
+	import Help from 'carbon-icons-svelte/lib/Help.svelte';
 	import { slide } from 'svelte/transition';
 	import Badge from '../ui/Badge.svelte';
 	import InsetShadowContainer from './InsetShadowContainer.svelte';
@@ -58,7 +59,12 @@
 </script>
 
 <Section variant="muted" id="faq" class="flex flex-col items-center justify-center gap-4">
-	<Badge>FAQ</Badge>
+	<Badge>
+		<span class="inline-flex items-center gap-1.5">
+			<Help size={16} />
+			<span>FAQ</span>
+		</span>
+	</Badge>
 	<h2 class="text-center text-2xl tracking-tight text-balance text-foreground sm:text-4xl">
 		Common questions before you build.
 	</h2>
