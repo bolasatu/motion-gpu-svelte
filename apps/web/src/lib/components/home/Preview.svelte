@@ -1,7 +1,7 @@
 <script lang="ts">
 	import GlassPane from '$lib/GlassPane.svelte';
 	import Section from './Section.svelte';
-	const image = '/sample.jpg';
+	const image = '/hero.png';
 </script>
 
 <Section
@@ -16,7 +16,7 @@
 			<div class="h-full w-full overflow-hidden rounded-lg">
 				<GlassPane
 					{image}
-					distortion={0.5}
+					distortion={0.25}
 					chromaticAberration={0.005}
 					waviness={0.0}
 					speed={0.5}
