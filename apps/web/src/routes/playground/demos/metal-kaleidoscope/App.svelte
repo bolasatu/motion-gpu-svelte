@@ -24,10 +24,10 @@ fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
 		defines: {
 			PI: 3.141592654,
 			TAU: 6.283185307179586,
-			H_VARIANT: 0.37,
+			H_VARIANT: 0.67,
 			TRUCHET_LINE_WIDTH: 0.05,
-			TRUCHET_RADIUS: 0.4,
-			TRUCHET_REP_MIN: 5.0,
+			TRUCHET_RADIUS: 6.9,
+			TRUCHET_REP_MIN: 8.0,
 			TRUCHET_REP_MAX: 25.0,
 			TRUCHET_SMOOTH_MIN: 0.05,
 			TRUCHET_SMOOTH_MAX: 0.125,
@@ -35,7 +35,7 @@ fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
 			TRUCHET_SCROLL_SPEED: 0.05,
 			FBM_OCTAVES: { type: 'i32', value: 4 },
 			FBM_ATTENUATION: -0.45,
-			FBM_SCALE: 2.03,
+			FBM_SCALE: 3.03,
 			FBM_ROTATION: 1.0
 		},
 		includes: {
