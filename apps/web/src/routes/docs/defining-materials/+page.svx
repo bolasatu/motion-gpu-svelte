@@ -47,10 +47,10 @@ fn frag(uv: vec2f) -> vec4f
 
 1. **Validates the fragment contract** — checks entrypoint name, parameter contract, and return type.
 2. **Normalizes uniforms** — validates identifier names, infers types from values, sorts alphabetically.
-3. **Normalizes textures** — validates identifier names, applies default config values.
+3. **Normalizes textures** — validates identifier names and clones definitions.
 4. **Normalizes defines** — validates identifier names, checks value constraints (finite numbers, integer checks for `i32`/`u32`, non-negative for `u32`).
 5. **Normalizes includes** — validates identifier names, checks for non-empty source strings.
-6. **Deep-freezes** the entire output object and all nested maps.
+6. **Freezes** the output object and its top-level maps (`uniforms`, `textures`, `defines`, `includes`).
 
 ## Immutability
 
@@ -101,7 +101,7 @@ fn frag(uv: vec2f) -> vec4f {
   let d = sdCircle(p, 0.2 + 0.05 * sin(motiongpuUniforms.uTime * 3.0));
   let edge = smoothstep(EDGE_WIDTH, 0.0, abs(d));
 
-  let texColor = textureSample(ubackground-inset, ubackground-insetSampler, uv);
+  let texColor = textureSample(uBackground, uBackgroundSampler, uv);
   let finalColor = mix(texColor.rgb, motiongpuUniforms.uColor, edge);
   return vec4f(finalColor, 1.0);
 }
@@ -111,7 +111,7 @@ fn frag(uv: vec2f) -> vec4f {
     uColor: [0.2, 0.8, 1.0]
   },
   textures: {
-    ubackground-inset: {
+    uBackground: {
       filter: 'linear',
       addressModeU: 'repeat',
       addressModeV: 'repeat'

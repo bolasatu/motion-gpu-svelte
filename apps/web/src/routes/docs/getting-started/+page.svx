@@ -93,7 +93,7 @@ fn frag(uv: vec2f) -> vec4f {
 
 1. `uniforms: { uTime: { type: 'f32', value: 0 } }` declares a single `f32` uniform with initial value `0`.
 2. In the fragment shader, `uTime` is available as `motiongpuUniforms.uTime` — the library generates the binding automatically.
-3. `useFrame` registers a task that runs **every frame** before rendering. `state.time` is the elapsed time in seconds.
+3. `useFrame` registers a task that runs **every frame** before rendering. `state.time` is the `requestAnimationFrame` timestamp in seconds.
 4. `state.setUniform('uTime', state.time)` updates the uniform value in the runtime override map. The renderer writes only dirty ranges to the GPU buffer.
 
 ## Step 3: Add mouse interaction

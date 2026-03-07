@@ -71,7 +71,7 @@ The `state` parameter passed to your callback provides everything you need for p
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `time` | `number` | Elapsed time in seconds since first render |
+| `time` | `number` | `requestAnimationFrame` timestamp in seconds (monotonic clock) |
 | `delta` | `number` | Time since last frame in seconds (clamped by `maxDelta`) |
 | `canvas` | `HTMLCanvasElement` | Active canvas element |
 | `renderMode` | `RenderMode` | Current render mode |

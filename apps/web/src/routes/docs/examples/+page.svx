@@ -46,7 +46,7 @@ fn frag(uv: vec2f) -> vec4f {
 
 **Notes:**
 - `uTime: { type: 'f32', value: 0 }` is equivalent to `uTime: 0` (shorthand).
-- `state.time` is elapsed seconds since first render.
+- `state.time` comes from the `requestAnimationFrame` clock (seconds, monotonic).
 - The `useFrame` callback runs every frame before rendering.
 
 ## 2. On-demand rendering with invalidation
@@ -123,7 +123,7 @@ textures: {
 
 **Notes:**
 - `loaded.textures.current` uses synchronous access (no subscription overhead in the frame loop).
-- Setting `null` is safe — the shader gets a fallback 1×1 transparent texture.
+- Setting `null` is safe — the shader gets a fallback 1×1 opaque white texture.
 - `generateMipmaps: true` produces a full mip chain for quality minification.
 
 ## 4. Video texture (per-frame updates)
@@ -269,7 +269,7 @@ fn frag(uv: vec2f) -> vec4f {
 `
   });
 
-  function handleError(report: import('@motion-core/motion-gpu').MotionGPUErrorReport) {
+  function handleError(report) {
     console.error(`[${report.phase}] ${report.title}`);
     console.error(report.message);
     if (report.hint) console.info(`Hint: ${report.hint}`);
@@ -290,7 +290,7 @@ fn frag(uv: vec2f) -> vec4f {
   }
 </script>
 
-{#snippet errorBanner(report: import('@motion-core/motion-gpu').MotionGPUErrorReport)}
+{#snippet errorBanner(report)}
   <aside class="error-banner">
     <strong>{report.title}</strong>
     <p>{report.message}</p>

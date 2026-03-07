@@ -40,7 +40,7 @@ These are injected by the renderer and updated every frame:
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `motiongpuFrame.time` | `f32` | Elapsed time in seconds since first render |
+| `motiongpuFrame.time` | `f32` | `requestAnimationFrame` timestamp in seconds (monotonic clock) |
 | `motiongpuFrame.delta` | `f32` | Time since last frame in seconds (clamped by `maxDelta`) |
 | `motiongpuFrame.resolution` | `vec2f` | Canvas size in physical pixels `(width, height)` |
 

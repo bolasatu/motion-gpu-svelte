@@ -110,7 +110,7 @@ The renderer decides how to handle each texture per frame:
 | `update = 'onInvalidate'` | Upload when invalidation is pending |
 | `update = 'once'` | No re-upload unless source/size/format change |
 
-The renderer maintains a **fallback 1×1 transparent texture** for each binding. If the user source is `null`, the fallback is used so the shader always has a valid binding.
+The renderer maintains a **fallback 1×1 opaque white texture** for each binding. If the user source is `null`, the fallback is used so the shader always has a valid binding.
 
 ## Mipmap generation
 

@@ -27,7 +27,7 @@ Must be called inside a `<FragCanvas>` component tree. Calling it outside throws
 
 | Store | Type | Description |
 | --- | --- | --- |
-| `gpu.size` | `CurrentReadable<{ width: number; height: number }>` | Canvas size in physical pixels |
+| `gpu.size` | `CurrentReadable<{ width: number; height: number }>` | Canvas size in CSS pixels (from `getBoundingClientRect`) |
 | `gpu.dpr` | `CurrentWritable<number>` | Device pixel ratio |
 | `gpu.maxDelta` | `CurrentWritable<number>` | Max frame delta (seconds) |
 | `gpu.renderMode` | `CurrentWritable<RenderMode>` | Current render mode |

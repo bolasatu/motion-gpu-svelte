@@ -41,6 +41,8 @@ interface MotionGPUErrorReport {
 }
 ```
 
+This interface describes the runtime callback payload shape used by `onError` / `errorRenderer`.
+
 | Field | Description |
 | --- | --- |
 | `title` | Short category heading (e.g., `"WGSL compilation failed"`) |
@@ -101,7 +103,7 @@ By default, `FragCanvas` displays runtime errors through `MotionGPUErrorOverlay.
 ### Custom error renderer
 
 ```svelte
-{#snippet myErrorRenderer(report: import('@motion-core/motion-gpu').MotionGPUErrorReport)}
+{#snippet myErrorRenderer(report)}
   <aside class="error-banner">
     <strong>{report.title}</strong>
     <p>{report.message}</p>

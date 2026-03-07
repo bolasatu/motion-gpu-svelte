@@ -64,15 +64,15 @@ import { FragCanvas } from '@motion-core/motion-gpu';
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
 | `showErrorOverlay` | `boolean` | `true` | Enables error UI rendering (`errorRenderer` or default overlay). |
-| `errorRenderer` | `Snippet<[MotionGPUErrorReport]>` | `undefined` | Custom error renderer snippet. When set, replaces the default `MotionGPUErrorOverlay`. |
-| `onError` | `(report: MotionGPUErrorReport) => void` | `undefined` | Error callback. Called regardless of overlay state. See [Error Handling](/docs/error-handling). |
+| `errorRenderer` | `Snippet<[report]>` | `undefined` | Custom error renderer snippet. When set, replaces the default `MotionGPUErrorOverlay`. |
+| `onError` | `(report) => void` | `undefined` | Error callback. Called regardless of overlay state. See [Error Handling](/docs/error-handling) for report shape. |
 
 ### Styling and children
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `class` | `string` | `''` | CSS class for the container `<div>` wrapping the canvas. |
-| `style` | `string` | `''` | Inline styles for the container `<div>`. |
+| `class` | `string` | `''` | CSS class applied directly to the `<canvas>`. |
+| `style` | `string` | `''` | Inline styles applied directly to the `<canvas>`. |
 | `children` | `Snippet` | `undefined` | Svelte snippet children. Rendered inside the `FragCanvas` context — this is where `useFrame`, `useMotionGPU`, etc. work. |
 
 ## Lifecycle
@@ -115,7 +115,7 @@ The physical size (GPU resolution) is `containerSize × dpr`.
 ```
 
 ```svelte
-{#snippet myErrorRenderer(report: import('@motion-core/motion-gpu').MotionGPUErrorReport)}
+{#snippet myErrorRenderer(report)}
   <aside class="my-error-banner">
     <strong>{report.title}</strong>
     <p>{report.message}</p>

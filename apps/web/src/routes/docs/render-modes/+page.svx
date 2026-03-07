@@ -102,12 +102,9 @@ Stages group tasks into execution phases. By default, all tasks run in a single 
 ```ts
 const gpu = useMotionGPU();
 
-const physicsStage = gpu.scheduler.createStage('physics', {
-  before: 'main' // Runs before the default main stage
-});
-
+const physicsStage = gpu.scheduler.createStage('physics');
 const postStage = gpu.scheduler.createStage('post-process', {
-  after: 'main' // Runs after the default main stage
+  after: 'physics'
 });
 ```
 
@@ -120,12 +117,14 @@ useFrame('simulate', (state) => {
 
 useFrame('render-update', (state) => {
   // Update uniforms from simulation results
-}); // Default: main stage
+}, { stage: physicsStage });
 
 useFrame('post-effects', (state) => {
   // Post-process adjustments
 }, { stage: postStage });
 ```
+
+The default stage uses an internal symbol key, so referencing it by string (for example `'main'`) is unsupported.
 
 ### Stage options
 

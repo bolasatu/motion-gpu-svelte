@@ -3,7 +3,7 @@ title: API Reference
 description: Complete reference of all public exports from the motion-gpu packages.
 ---
 
-Complete reference of all public exports from `@motion-core/motion-gpu` and `@motion-core/motion-gpu/advanced`.
+Reference of public exports from `@motion-core/motion-gpu` and `@motion-core/motion-gpu/advanced`.
 
 ## Package metadata
 
@@ -72,13 +72,14 @@ Re-exports everything from root, plus:
 
 ### Output: `FragMaterial`
 
-Immutable, validated, deep-frozen. Contains:
-- `fragment` — preprocessed WGSL source
+Immutable, validated, with frozen top-level maps. Contains:
+- `fragment` — original WGSL source (validated, not preprocessed)
 - `uniforms` — normalized uniform map
 - `textures` — normalized texture definition map
 - `defines` — normalized defines
 - `includes` — normalized includes
-- `signature` — deterministic string for cache comparison
+
+`signature` and preprocessed fragment source are internal `resolveMaterial(...)` outputs, not fields on public `FragMaterial`.
 
 ## `useFrame` signatures
 
@@ -101,7 +102,7 @@ useFrame(key: FrameKey, callback: (state: FrameState) => void, options?: UseFram
 
 Dependency validation is strict: cyclic graphs and missing `before` / `after` references throw.
 
-### Return: `UseFrameHandle`
+### Return: `UseFrameResult`
 
 | Field | Type |
 | --- | --- |
@@ -252,8 +253,9 @@ setMotionGPUUserContext<T>(
 | --- | --- |
 | `UniformType` | `'f32' \| 'vec2f' \| 'vec3f' \| 'vec4f' \| 'mat4x4f'` |
 | `UniformValue` | `number \| [number, number] \| [number, number, number] \| [number, number, number, number] \| TypedUniform<...>` |
-| `UniformMap` | `Record<string, UniformValue \| { type: UniformType; value: UniformValue }>` |
-| `UniformLayout` | `{ name, type, alignment, size, offset }` |
+| `UniformMat4Value` | `number[] \| Float32Array` |
+| `UniformMap` | `Record<string, UniformValue>` |
+| `UniformLayout` | `{ entries: UniformLayoutEntry[]; byName: Record<string, UniformLayoutEntry>; byteLength: number }` |
 
 ### Textures
 
@@ -269,9 +271,11 @@ setMotionGPUUserContext<T>(
 | Type | Description |
 | --- | --- |
 | `RenderPass` | Interface with `render(context)`, `setSize(w, h)`, `dispose()` |
+| `RenderPassFlags` | Optional `clear`, `clearColor`, `preserve` flags |
 | `RenderPassInputSlot` | `'source' \| 'target' \| <targetName>` |
 | `RenderPassOutputSlot` | `'source' \| 'target' \| 'canvas' \| <targetName>` |
 | `RenderPassContext` | Context object passed to `render()` |
+| `RenderTargetDefinition` | `{ width?, height?, scale?, format? }` |
 | `RenderTargetDefinitionMap` | `Record<string, { width?, height?, scale?, format? }>` |
 
 Pass-slot constraints:
@@ -287,16 +291,21 @@ Pass-slot constraints:
 | `FrameState` | Callback parameter with timing, canvas, and runtime API |
 | `FrameKey` | `string \| symbol` |
 | `FrameInvalidationToken` | `string \| number \| symbol` |
+| `UseFrameResult` | Return type of `useFrame` (`task`, `start`, `stop`, `started`) |
 | `FrameRunTimings` | Single-frame measurement |
 | `FrameProfilingSnapshot` | Rolling stats (`last`, `avg`, `min`, `max`, `count`) |
+| `FrameTimingStats` | Timing stat tuple (`last`, `avg`, `min`, `max`, `count`) |
 | `SchedulerPreset` | `'performance' \| 'balanced' \| 'debug'` |
 | `SchedulerPresetConfig` | Resolved diagnostics/profiling/window values |
 | `ApplySchedulerPresetOptions` | Optional diagnostics/profiling/window overrides |
 | `SchedulerDebugSnapshot` | Aggregate debug payload from `captureSchedulerDebugSnapshot` |
 
-### Diagnostics
+### Additional exported types
 
 | Type | Description |
 | --- | --- |
-| `MotionGPUErrorReport` | Normalized error report with title, message, hint, details, source |
-| `MotionGPUErrorPhase` | `'initialization' \| 'render'` |
+| `OutputColorSpace` | `'srgb' \| 'linear'` |
+| `TextureMap` | Runtime texture map (`Record<string, TextureValue>`) |
+| `TextureUrlInput` | `string[] \| (() => string[])` |
+| `MaterialDefineValue` | `boolean \| number \| TypedMaterialDefineValue` |
+| `TypedMaterialDefineValue` | Typed define literal (`bool`/`f32`/`i32`/`u32`) |
