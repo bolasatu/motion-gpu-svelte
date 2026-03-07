@@ -339,7 +339,7 @@
 		>
 			<div
 				bind:this={sidebarHeaderHost}
-				class="flex items-center gap-1 border-b border-border px-3 py-2 text-sm whitespace-nowrap"
+				class="flex h-8 items-center gap-1 border-b border-border px-3 text-sm whitespace-nowrap"
 			>
 				<span
 					class="flex items-center text-accent [&>svg]:size-4 [&>svg]:fill-current"
