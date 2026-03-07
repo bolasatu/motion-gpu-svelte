@@ -19,7 +19,7 @@
 			Open the playground to iterate fast, then move to docs for strict contracts, render passes,
 			and deterministic frame scheduling.
 		</p>
-		<div class="flex items-center gap-2">
+		<div data-reveal="actions" class="flex items-center gap-2">
 			<Button
 				variant="default"
 				href={resolve(playgroundRoute as '/playground')}

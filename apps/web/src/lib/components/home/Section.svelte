@@ -24,7 +24,12 @@
 	let { id, variant = 'default', class: className = '', children }: Props = $props();
 </script>
 
-<section {id} class={sectionVariants({ variant })}>
+<section
+	{id}
+	data-reveal-section
+	data-section-variant={variant}
+	class={sectionVariants({ variant })}
+>
 	<div
 		class={cn(
 			'w-full',

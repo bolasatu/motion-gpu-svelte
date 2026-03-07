@@ -14,6 +14,7 @@
 </script>
 
 <div
+	data-reveal="card"
 	class="inset-shadow relative overflow-hidden rounded-lg border border-border bg-background-inset p-1"
 >
 	<article

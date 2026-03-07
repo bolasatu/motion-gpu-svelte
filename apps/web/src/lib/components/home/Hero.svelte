@@ -31,7 +31,7 @@
 		<p class="max-w-xl text-center text-base text-pretty text-foreground-muted sm:text-lg">
 			If you need performance, clarity, and composability in WebGPU for Svelte, this is the stack.
 		</p>
-		<div class="flex items-center gap-2">
+		<div data-reveal="actions" class="flex items-center gap-2">
 			<Button
 				variant="default"
 				href={resolve(playgroundRoute as '/playground')}

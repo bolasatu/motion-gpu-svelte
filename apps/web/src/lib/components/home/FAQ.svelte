@@ -76,6 +76,7 @@
 		<div class="grid gap-2">
 			{#each faqItems as item, index (item.question)}
 				<div
+					data-reveal="card"
 					class="inset-shadow relative overflow-hidden rounded-lg border border-border bg-background-inset p-1"
 				>
 					<article class="rounded-md border border-border bg-background shadow-md">

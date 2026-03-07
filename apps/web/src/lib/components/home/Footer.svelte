@@ -18,7 +18,7 @@
 	] as const;
 </script>
 
-<footer class="card w-full">
+<footer data-reveal-section class="card w-full">
 	<div class="w-full border-b border-border p-4 sm:p-8">
 		<div class="flex w-full items-center justify-start gap-3">
 			<div class="inline-flex items-center gap-1 px-2 py-2">

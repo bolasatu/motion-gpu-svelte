@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import Features from '$lib/components/home/Features.svelte';
 	import CTA from '$lib/components/home/CTA.svelte';
 	import Footer from '$lib/components/home/Footer.svelte';
@@ -7,6 +8,23 @@
 	import FAQ from '$lib/components/home/FAQ.svelte';
 	import Preview from '$lib/components/home/Preview.svelte';
 	import Menubar from '$lib/components/home/Menubar.svelte';
+
+	let mainContent = $state<HTMLElement | null>(null);
+
+	onMount(() => {
+		let destroyAnimations = () => {};
+		let isActive = true;
+
+		void import('$lib/animations/landing').then(({ createLandingScrollAnimations }) => {
+			if (!isActive || !mainContent) return;
+			destroyAnimations = createLandingScrollAnimations(mainContent);
+		});
+
+		return () => {
+			isActive = false;
+			destroyAnimations();
+		};
+	});
 </script>
 
 <a
@@ -19,6 +37,7 @@
 <Menubar />
 <main
 	id="main-content"
+	bind:this={mainContent}
 	tabindex="-1"
 	class="mx-auto flex min-h-dvh w-full max-w-6xl flex-col items-center justify-center border-x border-border bg-background"
 >

@@ -43,14 +43,15 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@motion-core/motion-gpu": "workspace:*",
 		"@shikijs/monaco": "^4.0.1",
 		"@webcontainer/api": "^1.6.1",
 		"carbon-icons-svelte": "^13.9.0",
-		"tailwind-merge": "^3.5.0",
-		"shiki": "^4.0.0",
-		"clsx": "^2.1.1",
 		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"gsap": "^3.14.2",
 		"monaco-editor": "^0.55.1",
-		"@motion-core/motion-gpu": "workspace:*"
+		"shiki": "^4.0.0",
+		"tailwind-merge": "^3.5.0"
 	}
 }
