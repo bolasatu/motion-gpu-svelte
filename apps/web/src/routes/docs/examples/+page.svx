@@ -1,13 +1,47 @@
 ---
 title: Examples
-description: Practical, annotated code examples demonstrating common MotionGPU patterns.
+description: Concept-first MotionGPU examples for the core workflow: materials, uniforms, frame updates, textures, and passes.
 ---
 
-Practical, annotated code examples demonstrating common use cases. Each example includes the full material definition, runtime component, and explanatory notes.
+These examples focus on the core MotionGPU mental model from [Getting Started](/docs/getting-started):
 
-## 1. Animated time uniform
+1. Define an immutable material with `defineMaterial(...)`.
+2. Render it with `<FragCanvas />`.
+3. Drive runtime state from a child component using hooks (`useFrame`, `useMotionGPU`, `useTexture`).
 
-The most common starting point — pass elapsed time into the shader:
+Each example is intentionally small and centered on one concept.
+
+## 1. Minimal material + fragment contract
+
+Concept: `defineMaterial` requires exactly `fn frag(uv: vec2f) -> vec4f`.
+
+```svelte
+<!-- App.svelte -->
+<script lang="ts">
+  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
+
+  const material = defineMaterial({
+    fragment: `
+fn frag(uv: vec2f) -> vec4f {
+  return vec4f(uv.x, uv.y, 0.2, 1.0);
+}
+`
+  });
+</script>
+
+<div style="width: 100vw; height: 100vh;">
+  <FragCanvas {material} />
+</div>
+```
+
+Why this matters:
+- `defineMaterial` validates and freezes the material.
+- The `frag` signature is strict and is the main shader contract.
+- Canvas size comes from its parent element.
+
+## 2. Uniforms + `useFrame`
+
+Concept: shader values change over time through runtime uniform updates.
 
 ```svelte
 <!-- App.svelte -->
@@ -18,12 +52,12 @@ The most common starting point — pass elapsed time into the shader:
   const material = defineMaterial({
     fragment: `
 fn frag(uv: vec2f) -> vec4f {
-  let c = 0.5 + 0.5 * sin(motiongpuUniforms.uTime + uv.x * 10.0);
-  return vec4f(c, uv.y, 1.0 - c, 1.0);
+  let wave = 0.5 + 0.5 * sin(motiongpuUniforms.uTime + uv.x * 10.0);
+  return vec4f(vec3f(wave), 1.0);
 }
 `,
     uniforms: {
-      uTime: { type: 'f32', value: 0 }
+      uTime: 0
     }
   });
 </script>
@@ -44,14 +78,50 @@ fn frag(uv: vec2f) -> vec4f {
 </script>
 ```
 
-**Notes:**
-- `uTime: { type: 'f32', value: 0 }` is equivalent to `uTime: 0` (shorthand).
-- `state.time` comes from the `requestAnimationFrame` clock (seconds, monotonic).
-- The `useFrame` callback runs every frame before rendering.
+Why this matters:
+- Material defines uniform names/types; runtime updates values.
+- `useFrame` runs before each render and is the main animation hook.
 
-## 2. On-demand rendering with invalidation
+## 3. Interaction + UV vs DOM coordinates
 
-Only render when the user interacts — much better for battery life:
+Concept: DOM pointer coordinates are top-left origin, UV is bottom-left origin.
+
+```svelte
+<!-- Runtime.svelte -->
+<script lang="ts">
+  import { useFrame, useMotionGPU } from '@motion-core/motion-gpu';
+
+  const gpu = useMotionGPU();
+  let mouseX = 0.5;
+  let mouseY = 0.5;
+
+  $effect(() => {
+    const canvas = gpu.canvas;
+    if (!canvas) return;
+
+    const onMove = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = (event.clientX - rect.left) / rect.width;
+      mouseY = 1.0 - (event.clientY - rect.top) / rect.height;
+    };
+
+    canvas.addEventListener('pointermove', onMove);
+    return () => canvas.removeEventListener('pointermove', onMove);
+  });
+
+  useFrame((state) => {
+    state.setUniform('uMouse', [mouseX, mouseY]);
+  });
+</script>
+```
+
+Why this matters:
+- `useMotionGPU()` gives access to runtime canvas/context controls.
+- Y flip is required when mapping pointer input to UV space.
+
+## 4. Render modes (`always`, `on-demand`, `manual`)
+
+Concept: rendering cadence is separate from your shader logic.
 
 ```svelte
 <!-- Runtime.svelte -->
@@ -59,42 +129,56 @@ Only render when the user interacts — much better for battery life:
   import { useMotionGPU, useFrame } from '@motion-core/motion-gpu';
 
   const gpu = useMotionGPU();
-  let mouseX = 0.5;
-  let mouseY = 0.5;
 
   $effect(() => {
     gpu.renderMode.set('on-demand');
   });
 
-  $effect(() => {
-    const canvas = gpu.canvas;
-    if (!canvas) return;
-
-    const handler = (e: PointerEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      mouseX = (e.clientX - rect.left) / rect.width;
-      mouseY = 1.0 - (e.clientY - rect.top) / rect.height;
-      gpu.invalidate();
-    };
-
-    canvas.addEventListener('pointermove', handler);
-    return () => canvas.removeEventListener('pointermove', handler);
-  });
-
   useFrame((state) => {
-    state.setUniform('uMouse', [mouseX, mouseY]);
+    state.setUniform('uTime', state.time);
   }, { autoInvalidate: false });
+
+  function refreshOnce() {
+    gpu.invalidate();
+  }
+
+  function renderOneFrame() {
+    gpu.renderMode.set('manual');
+    gpu.advance();
+  }
 </script>
+
+<button onclick={refreshOnce}>Invalidate once</button>
+<button onclick={renderOneFrame}>Advance one frame</button>
 ```
 
-**Notes:**
-- `gpu.invalidate()` marks the frame dirty in `on-demand` mode.
-- `autoInvalidate: false` on `useFrame` prevents it from auto-invalidating every frame.
-- Without `gpu.invalidate()`, the canvas stays idle.
+Why this matters:
+- `always`: continuous animation.
+- `on-demand`: render only when invalidated.
+- `manual`: render exactly one frame per `advance()` call.
 
-## 3. Loading a texture with useTexture
+## 5. Texture sampling with `useTexture`
 
-Load an image from URL and use it in the shader:
+Concept: textures are declared in the material and populated at runtime.
+
+```svelte
+<!-- App.svelte (material excerpt) -->
+<script lang="ts">
+  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
+
+  const material = defineMaterial({
+    fragment: `
+fn frag(uv: vec2f) -> vec4f {
+  let tex = textureSample(uMain, uMainSampler, uv);
+  return tex;
+}
+`,
+    textures: {
+      uMain: { filter: 'linear', update: 'once' }
+    }
+  });
+</script>
+```
 
 ```svelte
 <!-- Runtime.svelte -->
@@ -113,93 +197,52 @@ Load an image from URL and use it in the shader:
 </script>
 ```
 
-Material texture declaration:
+Why this matters:
+- Material defines texture bindings; runtime sets actual sources.
+- Passing `null` is safe (fallback texture is used).
 
-```ts
-textures: {
-  uMain: { filter: 'linear', update: 'once' }
-}
-```
+## 6. Post-process with `ShaderPass`
 
-**Notes:**
-- `loaded.textures.current` uses synchronous access (no subscription overhead in the frame loop).
-- Setting `null` is safe — the shader gets a fallback 1×1 opaque white texture.
-- `generateMipmaps: true` produces a full mip chain for quality minification.
-
-## 4. Video texture (per-frame updates)
-
-Stream a video element into the shader:
+Concept: base shader (`frag`) and post-process shader (`shade`) have different contracts.
 
 ```svelte
-<!-- Runtime.svelte -->
 <script lang="ts">
-  import { useFrame } from '@motion-core/motion-gpu';
+  import { FragCanvas, ShaderPass, defineMaterial } from '@motion-core/motion-gpu';
 
-  let video: HTMLVideoElement;
-
-  useFrame((state) => {
-    if (video && video.readyState >= 2) {
-      state.setTexture('uVideo', video);
-    }
-  });
-</script>
-
-<video
-  bind:this={video}
-  src="/assets/loop.mp4"
-  autoplay loop muted playsinline
-  style="display: none;"
-/>
-```
-
-Material texture declaration:
-
-```ts
-textures: {
-  uVideo: { filter: 'linear', update: 'perFrame' }
+  const material = defineMaterial({
+    fragment: `
+fn frag(uv: vec2f) -> vec4f {
+  return vec4f(uv.x, uv.y, 1.0 - uv.x, 1.0);
 }
-```
+`
+  });
 
-**Notes:**
-- `HTMLVideoElement` sources automatically infer `perFrame` update mode, but declaring it explicitly is clearer.
-- `readyState >= 2` ensures the video has enough data for a frame.
-- The video element is hidden — only its decoded frames are used.
-
-## 5. Post-process vignette with ShaderPass
-
-Add a post-process effect to darken the edges:
-
-```ts
-import { ShaderPass } from '@motion-core/motion-gpu';
-
-const vignette = new ShaderPass({
-  fragment: `
+  const vignette = new ShaderPass({
+    fragment: `
 fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
   let dist = distance(uv, vec2f(0.5, 0.5));
   let v = smoothstep(0.9, 0.35, dist);
   return vec4f(inputColor.rgb * v, inputColor.a);
 }
 `
-});
-```
+  });
+</script>
 
-```svelte
 <FragCanvas {material} passes={[vignette]} />
 ```
 
-**Notes:**
-- Post-process fragments use `fn shade(inputColor, uv)` — not `fn frag(uv)`.
-- `inputColor` is the output of the base shader (or previous pass).
-- Without `needsSwap: false`, the result is automatically available for the next pass.
+Why this matters:
+- Material shader: `fn frag(uv: vec2f) -> vec4f`.
+- Pass shader: `fn shade(inputColor: vec4f, uv: vec2f) -> vec4f`.
+- `inputColor` is output from base shader or previous pass.
 
-## 6. Multi-pass chain
+## 7. Two-pass chain (source -> target -> canvas)
 
-Chain multiple post-process passes for complex effects:
+Concept: pass graph flow and final output.
 
 ```ts
 import { ShaderPass } from '@motion-core/motion-gpu';
 
-// Pass 1: Extract bright pixels
 const bloomPrefilter = new ShaderPass({
   needsSwap: true,
   fragment: `
@@ -211,8 +254,7 @@ fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
 `
 });
 
-// Pass 2: Gamma correction output to canvas
-const gamma = new ShaderPass({
+const gammaToCanvas = new ShaderPass({
   needsSwap: false,
   input: 'source',
   output: 'canvas',
@@ -225,134 +267,16 @@ fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
 ```
 
 ```svelte
-<FragCanvas {material} passes={[bloomPrefilter, gamma]} />
+<FragCanvas {material} passes={[bloomPrefilter, gammaToCanvas]} />
 ```
 
-**Notes:**
-- `needsSwap: true` (default) swaps source/target after the pass, making the output available as `source` for the next pass.
-- The final pass sets `output: 'canvas'` and `needsSwap: false` to write directly to the visible surface.
+Why this matters:
+- `needsSwap: true` means ping-pong (`source`/`target`) flow.
+- Final pass typically writes to `canvas` with `needsSwap: false`.
 
-## 7. Advanced plugin state with user context
+## Suggested learning order
 
-Share configuration across components via namespaced user context:
-
-```ts
-import { setMotionGPUUserContext, useMotionGPUUserContext } from '@motion-core/motion-gpu/advanced';
-
-// Initialize (skip if another component already set it)
-setMotionGPUUserContext('orbit-controls', () => ({
-  enabled: true,
-  speed: 1.0
-}), { existing: 'skip' });
-
-// Read in another component
-const orbit = useMotionGPUUserContext<{ enabled: boolean; speed: number }>('orbit-controls');
-```
-
-**Notes:**
-- `existing: 'skip'` means "don't overwrite if already set" — safe for multiple initializers.
-- Use `'replace'` to force-set, or `'merge'` for partial updates via `setMotionGPUUserContext(...)`.
-
-## 8. Error reporting with custom handler/UI
-
-Capture and log errors with your own UI renderer:
-
-```svelte
-<script lang="ts">
-  import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
-
-  const material = defineMaterial({
-    fragment: `
-fn frag(uv: vec2f) -> vec4f {
-  return vec4f(uv.x, uv.y, 0.5, 1.0);
-}
-`
-  });
-
-  function handleError(report) {
-    console.error(`[${report.phase}] ${report.title}`);
-    console.error(report.message);
-    if (report.hint) console.info(`Hint: ${report.hint}`);
-    if (report.source) {
-      console.group('Source');
-      console.log(`${report.source.component} @ line ${report.source.line}`);
-      report.source.snippet.forEach(line => {
-        const marker = line.highlight ? '>> ' : '   ';
-        console.log(`${marker}${line.number}: ${line.code}`);
-      });
-      console.groupEnd();
-    }
-    // Send to telemetry
-    fetch('/api/errors', {
-      method: 'POST',
-      body: JSON.stringify(report)
-    });
-  }
-</script>
-
-{#snippet errorBanner(report)}
-  <aside class="error-banner">
-    <strong>{report.title}</strong>
-    <p>{report.message}</p>
-  </aside>
-{/snippet}
-
-<FragCanvas
-  {material}
-  errorRenderer={errorBanner}
-  onError={handleError}
-/>
-```
-
-**Notes:**
-- `onError` fires even when `showErrorOverlay` is `true`.
-- `errorRenderer` replaces the default overlay when enabled.
-- `showErrorOverlay={false}` hides both default and custom error UI.
-- `report.source` is only present for shader compile errors.
-- `report.phase` is `'initialization'` or `'render'`.
-
-## 9. Pausing and resuming rendering
-
-```svelte
-<script lang="ts">
-  import { useMotionGPU } from '@motion-core/motion-gpu';
-
-  const gpu = useMotionGPU();
-
-  function togglePause() {
-    gpu.autoRender.set(!gpu.autoRender.current);
-  }
-</script>
-
-<button onclick={togglePause}>
-  {$gpu.autoRender ? '⏸ Pause' : '▶ Resume'}
-</button>
-```
-
-**Notes:**
-- `autoRender = false` stops all rendering regardless of render mode.
-- The RAF loop still runs (for scheduler tasks), but no GPU work happens.
-
-## 10. Advanced scheduler preset + debug snapshot
-
-```ts
-import { useMotionGPU } from '@motion-core/motion-gpu';
-import { applySchedulerPreset, captureSchedulerDebugSnapshot } from '@motion-core/motion-gpu/advanced';
-
-const gpu = useMotionGPU();
-
-// Quick default for profiling/debug sessions
-applySchedulerPreset(gpu.scheduler, 'debug');
-
-// Optional override
-applySchedulerPreset(gpu.scheduler, 'balanced', { profilingWindow: 180 });
-
-const snapshot = captureSchedulerDebugSnapshot(gpu.scheduler);
-console.table(snapshot.schedule.stages);
-console.log(snapshot.lastRunTimings);
-console.log(snapshot.profilingSnapshot);
-```
-
-**Notes:**
-- Presets: `'performance'`, `'balanced'`, `'debug'`.
-- In current runtime internals, diagnostics and profiling toggles share one state path.
+1. Example 1 + 2: material contract and runtime uniforms.
+2. Example 3 + 4: interactive state and render cadence.
+3. Example 5: texture pipeline.
+4. Example 6 + 7: post-processing and pass graph flow.
