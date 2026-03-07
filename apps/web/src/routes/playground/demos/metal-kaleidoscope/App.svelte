@@ -1,11 +1,16 @@
 <script>
+	//
+	// Original Shader by mrange
+	// Licensed under CC0
+	// https://www.shadertoy.com/view/3lVczV
+	//
 	import { FragCanvas, ShaderPass, defineMaterial } from '@motion-core/motion-gpu';
 
 	const postProcessPass = new ShaderPass({
 		fragment: `
 fn applyPostProcess(colInput: vec3f, q: vec2f) -> vec3f {
 	var col = colInput;
-	col = pow(clamp(col, vec3f(0.0), vec3f(1.0)), vec3f(1.0 / 1.2));
+	col = pow(clamp(col, vec3f(0.0), vec3f(1.0)), vec3f(1.0 / 2.2));
 	col = col * 0.6 + 0.4 * col * col * (vec3f(3.0) - 2.0 * col);
 	col = mix(col, vec3f(dot(col, vec3f(0.33))), vec3f(-0.4));
 	col *= 0.5 + 0.5 * pow(19.0 * q.x * q.y * (1.0 - q.x) * (1.0 - q.y), 0.7);
@@ -285,4 +290,4 @@ fn frag(uv: vec2f) -> vec4f {
 	});
 </script>
 
-<FragCanvas {material} {passes} />
+<FragCanvas {material} {passes} outputColorSpace="linear" />

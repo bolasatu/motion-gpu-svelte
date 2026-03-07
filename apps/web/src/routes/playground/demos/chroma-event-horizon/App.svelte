@@ -1,4 +1,9 @@
 <script>
+	//
+	// Original Shader by Frostbyte
+	// Licensed under CC BY-NC-SA 4.0
+	// https://www.shadertoy.com/view/tXVcWR
+	//
 	import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
 
 	const material = defineMaterial({
@@ -43,4 +48,4 @@ fn frag(uv: vec2f) -> vec4f {
 	});
 </script>
 
-<FragCanvas {material} />
+<FragCanvas {material} outputColorSpace="linear" />

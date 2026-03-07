@@ -1,4 +1,9 @@
 <script>
+	//
+	// Original Shader by @XorDev
+	// Unknown License
+	// https://www.shadertoy.com/view/ctGyWK
+	//
 	import { FragCanvas, defineMaterial } from '@motion-core/motion-gpu';
 
 	const material = defineMaterial({
@@ -36,4 +41,4 @@ fn frag(uv: vec2f) -> vec4f {
 	});
 </script>
 
-<FragCanvas {material} />
+<FragCanvas {material} outputColorSpace="srgb" />
