@@ -1,6 +1,30 @@
 {
 	"name": "@motion-core/motion-gpu",
 	"version": "0.1.0",
+	"description": "Svelte 5 package for fullscreen WGSL shaders with a WebGPU runtime, scheduler, and render graph.",
+	"keywords": [
+		"svelte",
+		"svelte5",
+		"webgpu",
+		"wgsl",
+		"shader",
+		"graphics",
+		"gpu",
+		"postprocessing"
+	],
+	"homepage": "https://github.com/Motion-Core/motion-gpu/tree/master/packages/motion-gpu#readme",
+	"bugs": {
+		"url": "https://github.com/Motion-Core/motion-gpu/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Motion-Core/motion-gpu.git",
+		"directory": "packages/motion-gpu"
+	},
+	"license": "MIT",
+	"publishConfig": {
+		"access": "public"
+	},
 	"type": "module",
 	"svelte": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -21,6 +45,7 @@
 	],
 	"scripts": {
 		"build": "svelte-package -i src/lib -o dist",
+		"prepack": "bun run build",
 		"check": "svelte-check --tsconfig ./tsconfig.json && publint",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
