@@ -15,7 +15,13 @@
 	import 'monaco-editor/min/vs/editor/editor.main.css';
 	import type { PlaygroundController } from './playground-controller.svelte';
 
-	let { controller }: { controller: PlaygroundController } = $props();
+	let {
+		controller,
+		onSelectDemo
+	}: {
+		controller: PlaygroundController;
+		onSelectDemo: (demoId: string) => void;
+	} = $props();
 	let isTreeVisible = $state(true);
 	let workspaceHost: HTMLDivElement | null = null;
 	let sidebarHeaderHost: HTMLDivElement | null = null;
@@ -271,7 +277,7 @@
 
 <main class="flex h-dvh min-h-0 flex-col overflow-hidden">
 	<div
-		class="flex h-9 items-center justify-between border-b border-border bg-background px-2 sm:px-3"
+		class="relative flex h-9 items-center justify-between border-b border-border bg-background px-2 sm:px-3"
 	>
 		<div
 			class="inline-flex items-center gap-1 py-2 text-sm tracking-tight text-foreground transition-colors hover:text-foreground"
@@ -286,21 +292,33 @@
 				Return to the homepage
 			</a>
 		</div>
-		<div class="flex items-center gap-1">
-			<button
-				type="button"
-				class={`layout-toggle ${isTreeVisible ? 'layout-toggle--active' : ''}`}
-				onclick={toggleTree}
-				aria-label="Toggle file tree"
-				title="Toggle file tree"
+		<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+			<label class="sr-only" for="playground-demo-select">Choose demo</label>
+			<select
+				id="playground-demo-select"
+				class="h-7 max-w-48 rounded border border-border bg-background px-2 text-xs text-foreground transition-colors duration-150 ease-out outline-none hover:bg-background-inset sm:max-w-64"
+				value={controller.activeDemoId}
+				onchange={(event) => onSelectDemo((event.currentTarget as HTMLSelectElement).value)}
+				aria-label="Choose demo"
 			>
-				{#if isTreeVisible}
-					<OpenPanelFilledLeft size={16} />
-				{:else}
-					<OpenPanelLeft size={16} />
-				{/if}
-			</button>
+				{#each controller.demos as demo (demo.id)}
+					<option value={demo.id}>{demo.name}</option>
+				{/each}
+			</select>
 		</div>
+		<button
+			type="button"
+			class={`layout-toggle ${isTreeVisible ? 'layout-toggle--active' : ''}`}
+			onclick={toggleTree}
+			aria-label="Toggle file tree"
+			title="Toggle file tree"
+		>
+			{#if isTreeVisible}
+				<OpenPanelFilledLeft size={16} />
+			{:else}
+				<OpenPanelLeft size={16} />
+			{/if}
+		</button>
 	</div>
 
 	<div

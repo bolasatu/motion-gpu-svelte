@@ -9,6 +9,11 @@ import monacoCssWorkerUrl from 'monaco-editor/esm/vs/language/css/css.worker?wor
 import monacoHtmlWorkerUrl from 'monaco-editor/esm/vs/language/html/html.worker?worker&url';
 import monacoJsonWorkerUrl from 'monaco-editor/esm/vs/language/json/json.worker?worker&url';
 import monacoTsWorkerUrl from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker&url';
+import {
+	getPlaygroundDemoById,
+	playgroundDemos,
+	resolvePlaygroundDemoId
+} from './playground-demos';
 
 type MonacoModule = typeof import('monaco-editor');
 type MonacoEditor = import('monaco-editor').editor.IStandaloneCodeEditor;
@@ -30,7 +35,7 @@ type FileTreeRow = {
 let sharedShikiHighlighter: ShikiHighlighter | null = null;
 let isShikiMonacoConfigured = false;
 
-export const createPlaygroundController = () => {
+export const createPlaygroundController = (initialDemoId?: string | null) => {
 	let webcontainer: WebContainerInstance | null = null;
 	let devProcess: WebContainerProcess | null = null;
 	let editorHost: HTMLDivElement | null = null;
@@ -45,6 +50,8 @@ export const createPlaygroundController = () => {
 	let isSyncing = $state(false);
 	let syncingPath = $state('');
 	let syncTimer: ReturnType<typeof setTimeout> | null = null;
+	const initialResolvedDemoId = resolvePlaygroundDemoId(initialDemoId);
+	let activeDemoId = $state(initialResolvedDemoId);
 	let activeFilePath = $state('src/App.svelte');
 	let openFilePaths = $state<string[]>(['src/App.svelte']);
 	let collapsedDirs = $state<Record<string, boolean>>({ 'packages/motion-gpu/dist': true });
@@ -191,7 +198,7 @@ export const createPlaygroundController = () => {
 		return root;
 	};
 
-	const initialWorkerFiles: Record<string, string> = {
+	const baseWorkerFiles: Record<string, string> = {
 		...runtimeTemplateFiles,
 		'packages/motion-gpu/package.json': motionGpuPackageJson,
 		...Object.fromEntries(
@@ -201,7 +208,27 @@ export const createPlaygroundController = () => {
 			])
 		)
 	};
-	let fileContents = $state<Record<string, string>>({ ...initialWorkerFiles });
+	const demoAppPath = 'src/App.svelte';
+	const demoRuntimePath = 'src/runtime.svelte';
+	const toWorkerFilesForDemo = (demoId: string) => {
+		const resolvedDemoId = resolvePlaygroundDemoId(demoId);
+		const demo = getPlaygroundDemoById(resolvedDemoId);
+		if (!demo) {
+			return { ...baseWorkerFiles };
+		}
+		const workerFiles: Record<string, string> = {
+			...baseWorkerFiles,
+			[demoAppPath]: demo.appSource
+		};
+		if (typeof demo.runtimeSource === 'string') {
+			workerFiles[demoRuntimePath] = demo.runtimeSource;
+		}
+		return workerFiles;
+	};
+
+	const initialDemoFiles = toWorkerFilesForDemo(initialResolvedDemoId);
+	let fileContents = $state<Record<string, string>>(initialDemoFiles);
+	let filePaths = $state<string[]>(Object.keys(initialDemoFiles));
 
 	const collectTreeRows = (
 		nodes: FileTreeNode[],
@@ -291,7 +318,7 @@ export const createPlaygroundController = () => {
 		return toReadonlyNodes(rootChildren);
 	};
 
-	const fileTree = buildFileTree(Object.keys(initialWorkerFiles));
+	const fileTree = $derived(buildFileTree(filePaths));
 	const visibleFileTreeRows = $derived(collectTreeRows(fileTree, collapsedDirs));
 	const getLanguageFromPath = (filePath: string) => {
 		if (filePath.endsWith('.svelte')) return 'svelte';
@@ -389,6 +416,23 @@ export const createPlaygroundController = () => {
 		monacoModelsByPath[filePath] = model;
 		return model;
 	};
+	const disposeMonacoModel = (filePath: string) => {
+		const model = monacoModelsByPath[filePath];
+		if (!model) return;
+
+		if (editorInstance?.getModel() === model) {
+			editorInstance.setModel(null);
+		}
+		model.dispose();
+		delete monacoModelsByPath[filePath];
+	};
+	const syncModelWithSource = (filePath: string, source: string) => {
+		const model = ensureMonacoModel(filePath);
+		if (!model) return;
+		if (model.getValue() !== source) {
+			model.setValue(source);
+		}
+	};
 
 	const switchToFile = (filePath: string) => {
 		if (!(filePath in fileContents)) return;
@@ -484,6 +528,54 @@ export const createPlaygroundController = () => {
 			dirtyPaths.push(filePath);
 		}
 		scheduleSyncFlush();
+	};
+	const removeDirtyPath = (filePath: string) => {
+		const nextDirtyPaths = dirtyPaths.filter((path) => path !== filePath);
+		dirtyPaths.length = 0;
+		dirtyPaths.push(...nextDirtyPaths);
+	};
+	const switchDemo = (nextDemoId: string | null | undefined) => {
+		const resolvedDemoId = resolvePlaygroundDemoId(nextDemoId);
+		if (resolvedDemoId === activeDemoId) return;
+
+		const demo = getPlaygroundDemoById(resolvedDemoId);
+		if (!demo) return;
+
+		activeDemoId = resolvedDemoId;
+		errorMessage = '';
+		syncError = '';
+
+		const nextFileContents: Record<string, string> = {
+			...fileContents,
+			[demoAppPath]: demo.appSource
+		};
+
+		if (typeof demo.runtimeSource === 'string') {
+			nextFileContents[demoRuntimePath] = demo.runtimeSource;
+		} else {
+			delete nextFileContents[demoRuntimePath];
+		}
+
+		fileContents = nextFileContents;
+		filePaths = Object.keys(nextFileContents);
+		openFilePaths = [demoAppPath];
+		activeFilePath = demoAppPath;
+
+		syncModelWithSource(demoAppPath, demo.appSource);
+		if (typeof demo.runtimeSource === 'string') {
+			syncModelWithSource(demoRuntimePath, demo.runtimeSource);
+			queueSync(demoRuntimePath);
+		} else {
+			removeDirtyPath(demoRuntimePath);
+			disposeMonacoModel(demoRuntimePath);
+			if (webcontainer) {
+				void webcontainer.fs.rm(demoRuntimePath).catch(() => {});
+			}
+		}
+
+		queueSync(demoAppPath);
+		switchToFile(demoAppPath);
+		status = `Switched demo: ${demo.name}`;
 	};
 
 	const queueOpenFileSyncs = () => {
@@ -969,6 +1061,9 @@ export const createPlaygroundController = () => {
 	};
 
 	return {
+		get activeDemoId() {
+			return activeDemoId;
+		},
 		get activeFilePath() {
 			return activeFilePath;
 		},
@@ -986,6 +1081,9 @@ export const createPlaygroundController = () => {
 		},
 		get isSyncing() {
 			return isSyncing;
+		},
+		get demos() {
+			return playgroundDemos;
 		},
 		get openFilePaths() {
 			return openFilePaths;
@@ -1015,6 +1113,7 @@ export const createPlaygroundController = () => {
 		mount,
 		openFile,
 		retryRuntime,
+		switchDemo,
 		switchToFile,
 		toggleDirectory
 	};
