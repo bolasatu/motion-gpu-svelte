@@ -71,7 +71,7 @@
 		</span>
 	</Badge>
 	<h2 class="text-center text-2xl tracking-tight text-balance text-foreground sm:text-4xl">
-		A transparent pipeline. Step by step.
+		A transparent pipeline from start to finish
 	</h2>
 	<p class="text-center text-base text-pretty text-foreground-muted sm:w-1/2">
 		From first shader line to production diagnostics, each step keeps rendering behavior explicit
