@@ -623,6 +623,10 @@ describe('createRenderer', () => {
 				}
 			})
 		).rejects.toThrow(/Unable to create 2D context for mipmap generation/);
+		expect(runtime.textures.length).toBeGreaterThan(0);
+		expect(runtime.textures.every((texture) => texture.destroy.mock.calls.length > 0)).toBe(true);
+		expect(runtime.buffers.length).toBeGreaterThan(0);
+		expect(runtime.buffers.every((buffer) => buffer.destroy.mock.calls.length > 0)).toBe(true);
 		expect(runtime.device.removeEventListener).toHaveBeenCalledWith(
 			'uncapturederror',
 			expect.any(Function)

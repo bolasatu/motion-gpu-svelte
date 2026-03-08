@@ -492,6 +492,22 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	let isDestroyed = false;
 	let deviceLostMessage: string | null = null;
 	let uncapturedErrorMessage: string | null = null;
+	const initializationCleanups: Array<() => void> = [];
+
+	const registerInitializationCleanup = (cleanup: () => void): void => {
+		initializationCleanups.push(cleanup);
+	};
+
+	const runInitializationCleanups = (): void => {
+		for (let index = initializationCleanups.length - 1; index >= 0; index -= 1) {
+			try {
+				initializationCleanups[index]?.();
+			} catch {
+				// Best-effort cleanup on failed renderer initialization.
+			}
+		}
+		initializationCleanups.length = 0;
+	};
 
 	void device.lost.then((info) => {
 		if (isDestroyed) {
@@ -560,6 +576,9 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				maxAnisotropy: config.filter === 'linear' ? config.anisotropy : 1
 			});
 			const fallbackTexture = createFallbackTexture(device, config.format);
+			registerInitializationCleanup(() => {
+				fallbackTexture.destroy();
+			});
 			const fallbackView = fallbackTexture.createView();
 
 			const runtimeBinding: RuntimeTextureBinding = {
@@ -668,10 +687,16 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			size: 16,
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
 		});
+		registerInitializationCleanup(() => {
+			frameBuffer.destroy();
+		});
 
 		const uniformBuffer = device.createBuffer({
 			size: options.uniformLayout.byteLength,
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+		});
+		registerInitializationCleanup(() => {
+			uniformBuffer.destroy();
 		});
 		const frameScratch = new Float32Array(4);
 		const uniformScratch = new Float32Array(options.uniformLayout.byteLength / 4);
@@ -780,6 +805,9 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 					GPUTextureUsage.TEXTURE_BINDING |
 					GPUTextureUsage.COPY_DST |
 					GPUTextureUsage.RENDER_ATTACHMENT
+			});
+			registerInitializationCleanup(() => {
+				texture.destroy();
 			});
 
 			binding.flipY = flipY;
@@ -1384,6 +1412,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			device.queue.submit([commandEncoder.finish()]);
 		};
 
+		initializationCleanups.length = 0;
 		return {
 			render,
 			destroy: () => {
@@ -1416,6 +1445,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	} catch (error) {
 		isDestroyed = true;
 		device.removeEventListener('uncapturederror', handleUncapturedError);
+		runInitializationCleanups();
 		throw error;
 	}
 }
