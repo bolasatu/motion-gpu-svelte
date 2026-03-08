@@ -38,7 +38,11 @@
 	const currentDoc = $derived(docsManifest.find((d) => d.slug === docSlug));
 	const siteOrigin = new URL(siteConfig.url).origin;
 	const canonicalUrl = $derived(metadata ? new URL(metadata.href, siteOrigin).href : null);
-	const docOgImage = $derived(new URL(siteConfig.ogImage, siteOrigin).href);
+	const docOgImage = $derived(
+		metadata
+			? new URL(`/docs/og/${metadata.slug}`, siteOrigin).href
+			: new URL(siteConfig.ogImage, siteOrigin).href
+	);
 	const docTitle = $derived(
 		metadata?.name || metadata?.title || currentDoc?.name || siteConfig.name
 	);
@@ -163,6 +167,9 @@
 		<meta property="og:url" content={canonicalUrl} />
 		<meta property="og:image" content={docOgImage} />
 		<meta property="og:image:alt" content={`${siteConfig.name} documentation`} />
+		<meta property="og:image:type" content="image/png" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:title" content={docTitle} />
 		<meta name="twitter:description" content={docDescription} />
