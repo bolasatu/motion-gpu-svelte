@@ -773,7 +773,6 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			const tokenChanged = binding.lastToken !== value;
 			const requiresReallocation =
 				binding.texture === null ||
-				sourceChanged ||
 				binding.width !== width ||
 				binding.height !== height ||
 				binding.mipLevelCount !== mipLevelCount ||
@@ -781,6 +780,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 
 			if (!requiresReallocation) {
 				const shouldUpload =
+					sourceChanged ||
 					update === 'perFrame' ||
 					(update === 'onInvalidate' && (renderMode !== 'always' || tokenChanged));
 
@@ -792,6 +792,10 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 					uploadTexture(device, binding.texture, binding, source, width, height, mipLevelCount);
 				}
 
+				binding.source = source;
+				binding.width = width;
+				binding.height = height;
+				binding.mipLevelCount = mipLevelCount;
 				binding.update = update;
 				binding.lastToken = value;
 				return false;

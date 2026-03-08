@@ -550,6 +550,61 @@ describe('createRenderer', () => {
 		expect(uploads()).toBe(3);
 	});
 
+	it('uploads a new same-sized source without reallocating the GPU texture', async () => {
+		const runtime = createWebGpuRuntime();
+		const sourceA = document.createElement('canvas');
+		sourceA.width = 4;
+		sourceA.height = 4;
+		const sourceB = document.createElement('canvas');
+		sourceB.width = 4;
+		sourceB.height = 4;
+
+		const renderer = await createRenderer({
+			...baseOptions(runtime),
+			textureKeys: ['uTex'],
+			textureDefinitions: {
+				uTex: {
+					update: 'once'
+				}
+			}
+		});
+
+		renderer.render({
+			time: 0,
+			delta: 0.016,
+			renderMode: 'always',
+			uniforms: {},
+			textures: { uTex: sourceA }
+		});
+
+		const uploadsAfterFirstRender =
+			runtime.device.queue.copyExternalImageToTexture.mock.calls.length;
+		const allocatedTexture = runtime.textures.find((texture) => {
+			const size = texture.descriptor.size as { width?: number; height?: number };
+			return size.width === 4 && size.height === 4;
+		});
+		expect(allocatedTexture).toBeDefined();
+
+		renderer.render({
+			time: 0.016,
+			delta: 0.016,
+			renderMode: 'always',
+			uniforms: {},
+			textures: { uTex: sourceB }
+		});
+
+		const uploadsAfterSecondRender =
+			runtime.device.queue.copyExternalImageToTexture.mock.calls.length;
+		expect(uploadsAfterSecondRender).toBe(uploadsAfterFirstRender + 1);
+
+		const allocatedTextures = runtime.textures.filter((texture) => {
+			const size = texture.descriptor.size as { width?: number; height?: number };
+			return size.width === 4 && size.height === 4;
+		});
+		expect(allocatedTextures).toHaveLength(1);
+		expect(allocatedTexture?.destroy).toHaveBeenCalledTimes(0);
+	});
+
 	it('destroys runtime textures and restores fallback when texture is cleared', async () => {
 		const runtime = createWebGpuRuntime();
 		const source = document.createElement('canvas');
