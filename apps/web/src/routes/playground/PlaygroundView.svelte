@@ -11,6 +11,7 @@
 	import OpenPanelFilledLeft from 'carbon-icons-svelte/lib/OpenPanelFilledLeft.svelte';
 	import OpenPanelLeft from 'carbon-icons-svelte/lib/OpenPanelLeft.svelte';
 	import { brandingConfig } from '$lib/config/branding';
+	import Select from '$lib/components/ui/Select.svelte';
 
 	import 'monaco-editor/min/vs/editor/editor.main.css';
 	import type { PlaygroundController } from './playground-controller.svelte';
@@ -93,6 +94,12 @@
 		const treeRow = isMobile ? (isTreeVisible ? `${mobileTreeHeight}px` : '0px') : 'minmax(0,1fr)';
 		return `${treeRow} minmax(0,1fr) minmax(0,1fr)`;
 	});
+	const demoSelectOptions = $derived.by(() =>
+		controller.demos.map((demo) => ({
+			value: demo.id,
+			label: demo.name
+		}))
+	);
 	const toggleTree = () => {
 		isTreeVisible = !isTreeVisible;
 		if (typeof window !== 'undefined') {
@@ -292,20 +299,18 @@
 				Return to the homepage
 			</a>
 		</div>
-		<div class="flex items-center gap-2">
+		<div class="flex items-center gap-4">
 			<div>
 				<label class="sr-only" for="playground-demo-select">Choose demo</label>
-				<select
+				<Select
 					id="playground-demo-select"
-					class="h-7 max-w-48 rounded border border-border bg-background px-2 text-xs text-foreground transition-colors duration-150 ease-out outline-none hover:bg-background-inset sm:max-w-64"
+					class="w-48"
+					triggerClass="w-48"
 					value={controller.activeDemoId}
-					onchange={(event) => onSelectDemo((event.currentTarget as HTMLSelectElement).value)}
-					aria-label="Choose demo"
-				>
-					{#each controller.demos as demo (demo.id)}
-						<option value={demo.id}>{demo.name}</option>
-					{/each}
-				</select>
+					options={demoSelectOptions}
+					onValueChange={onSelectDemo}
+					ariaLabel="Choose demo"
+				/>
 			</div>
 			<button
 				type="button"
