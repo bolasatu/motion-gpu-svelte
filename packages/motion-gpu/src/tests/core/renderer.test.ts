@@ -453,8 +453,8 @@ describe('createRenderer', () => {
 			textures: {}
 		});
 
-		const firstPassAttachment = beginDescriptors[1]?.colorAttachments?.[0];
-		const secondPassAttachment = beginDescriptors[3]?.colorAttachments?.[0];
+		const firstPassAttachment = Array.from(beginDescriptors[1]?.colorAttachments ?? [])[0];
+		const secondPassAttachment = Array.from(beginDescriptors[3]?.colorAttachments ?? [])[0];
 		expect(firstPassAttachment?.loadOp).toBe('load');
 		expect(secondPassAttachment?.loadOp).toBe('clear');
 	});
@@ -636,25 +636,25 @@ describe('createRenderer', () => {
 		source.height = 8;
 		const drawImage = vi.fn();
 		const originalCreateElement = document.createElement.bind(document);
-		const createElementSpy = vi
-			.spyOn(document, 'createElement')
-			.mockImplementation(((tagName: string) => {
-				if (tagName === 'canvas') {
-					return {
-						width: 0,
-						height: 0,
-						getContext: vi.fn((kind: string) =>
-							kind === '2d'
-								? ({
-										drawImage
-									} as unknown as CanvasRenderingContext2D)
-								: null
-						)
-					} as unknown as HTMLCanvasElement;
-				}
+		const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation(((
+			tagName: string
+		) => {
+			if (tagName === 'canvas') {
+				return {
+					width: 0,
+					height: 0,
+					getContext: vi.fn((kind: string) =>
+						kind === '2d'
+							? ({
+									drawImage
+								} as unknown as CanvasRenderingContext2D)
+							: null
+					)
+				} as unknown as HTMLCanvasElement;
+			}
 
-				return originalCreateElement(tagName);
-			}) as typeof document.createElement);
+			return originalCreateElement(tagName);
+		}) as typeof document.createElement);
 		vi.stubGlobal('OffscreenCanvas', undefined);
 
 		const renderer = await createRenderer({

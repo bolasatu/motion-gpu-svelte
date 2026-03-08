@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('motion-gpu runtime fallback e2e', () => {
-	test('reports unavailable status and init error when navigator.gpu is missing', async ({ page }) => {
+	test('reports unavailable status and init error when navigator.gpu is missing', async ({
+		page
+	}) => {
 		await page.addInitScript(() => {
 			Object.defineProperty(navigator, 'gpu', {
 				configurable: true,
@@ -12,7 +14,9 @@ test.describe('motion-gpu runtime fallback e2e', () => {
 		await page.goto('/?scenario=runtime');
 		await expect(page.getByTestId('scenario')).toHaveText('runtime');
 		await expect(page.getByTestId('gpu-status')).toHaveText('unavailable');
-		await expect(page.getByTestId('last-error')).toContainText('WebGPU is not available in this browser');
+		await expect(page.getByTestId('last-error')).toContainText(
+			'WebGPU is not available in this browser'
+		);
 	});
 
 	test('reports no-adapter status and adapter acquisition error when requestAdapter returns null', async ({

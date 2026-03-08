@@ -218,7 +218,10 @@ fn shade(inputColor: vec4f, uv: vec2f) -> vec4f {
 
 	it('forwards CopyPass setSize to fallback blit implementation', () => {
 		const pass = new CopyPass();
-		const setSizeSpy = vi.spyOn((pass as unknown as { fallbackBlit: BlitPass }).fallbackBlit, 'setSize');
+		const setSizeSpy = vi.spyOn(
+			(pass as unknown as { fallbackBlit: BlitPass }).fallbackBlit,
+			'setSize'
+		);
 
 		pass.setSize(320, 240);
 
