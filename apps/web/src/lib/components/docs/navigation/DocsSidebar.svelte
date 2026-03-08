@@ -66,7 +66,7 @@
 					<button
 						onclick={() => toggleGroup(doc.slug)}
 						class={cn(
-							'flex w-full items-center justify-between rounded-md px-3 py-1.5 text-sm transition-all duration-150 ease-out hover:bg-background-inset hover:text-foreground',
+							'flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-sm transition-all duration-150 ease-out hover:bg-background-inset hover:text-foreground',
 							isGroupActive ? 'text-foreground' : 'text-foreground-muted'
 						)}
 					>
