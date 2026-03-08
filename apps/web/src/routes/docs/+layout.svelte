@@ -36,6 +36,59 @@
 	const renderChildren = $derived(props.children);
 	const docSlug = $derived(metadata?.slug);
 	const currentDoc = $derived(docsManifest.find((d) => d.slug === docSlug));
+	const siteOrigin = new URL(siteConfig.url).origin;
+	const canonicalUrl = $derived(metadata ? new URL(metadata.href, siteOrigin).href : null);
+	const docOgImage = $derived(new URL(siteConfig.ogImage, siteOrigin).href);
+	const docTitle = $derived(
+		metadata?.name || metadata?.title || currentDoc?.name || siteConfig.name
+	);
+	const docDescription = $derived(metadata?.description || siteConfig.description);
+	const docStructuredData = $derived.by(() => {
+		if (!canonicalUrl) return null;
+		return JSON.stringify({
+			'@context': 'https://schema.org',
+			'@type': 'TechArticle',
+			headline: docTitle,
+			description: docDescription,
+			url: canonicalUrl,
+			author: {
+				'@type': 'Person',
+				name: siteConfig.author
+			},
+			publisher: {
+				'@type': 'Organization',
+				name: siteConfig.name
+			},
+			mainEntityOfPage: canonicalUrl
+		});
+	});
+	const breadcrumbStructuredData = $derived.by(() => {
+		if (!canonicalUrl) return null;
+		return JSON.stringify({
+			'@context': 'https://schema.org',
+			'@type': 'BreadcrumbList',
+			itemListElement: [
+				{
+					'@type': 'ListItem',
+					position: 1,
+					name: 'Home',
+					item: siteOrigin
+				},
+				{
+					'@type': 'ListItem',
+					position: 2,
+					name: 'Documentation',
+					item: new URL('/docs', siteOrigin).href
+				},
+				{
+					'@type': 'ListItem',
+					position: 3,
+					name: docTitle,
+					item: canonicalUrl
+				}
+			]
+		});
+	});
 	const rawPath = $derived(docSlug ? `/docs/raw/${docSlug}` : null);
 	const docOrigin = $derived(props.data.docOrigin);
 	const rawUrl = $derived(rawPath && docOrigin ? new URL(rawPath, docOrigin).href : null);
@@ -100,13 +153,30 @@
 
 <svelte:head>
 	{#if metadata}
-		<title>{metadata.title} - {siteConfig.name}</title>
-		<meta name="description" content={metadata.description} />
+		<title>{docTitle} - {siteConfig.name}</title>
+		<meta name="description" content={docDescription} />
+		<link rel="canonical" href={canonicalUrl} />
 
-		<meta property="og:title" content={metadata.title} />
-		<meta property="og:description" content={metadata.description} />
-		<meta property="twitter:title" content={metadata.title} />
-		<meta property="twitter:description" content={metadata.description} />
+		<meta property="og:type" content="article" />
+		<meta property="og:title" content={docTitle} />
+		<meta property="og:description" content={docDescription} />
+		<meta property="og:url" content={canonicalUrl} />
+		<meta property="og:image" content={docOgImage} />
+		<meta property="og:image:alt" content={`${siteConfig.name} documentation`} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={docTitle} />
+		<meta name="twitter:description" content={docDescription} />
+		<meta name="twitter:image" content={docOgImage} />
+		{#if docStructuredData}
+			<svelte:element this={'script'} type="application/ld+json">
+				{docStructuredData}
+			</svelte:element>
+		{/if}
+		{#if breadcrumbStructuredData}
+			<svelte:element this={'script'} type="application/ld+json">
+				{breadcrumbStructuredData}
+			</svelte:element>
+		{/if}
 	{/if}
 </svelte:head>
 

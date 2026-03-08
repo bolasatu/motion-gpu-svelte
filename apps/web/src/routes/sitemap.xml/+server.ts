@@ -1,5 +1,6 @@
 import type { RequestHandler } from './$types';
 import { docsManifest } from '$lib/docs/manifest';
+import { siteConfig } from '$lib/config/site';
 
 type SitemapEntry = {
 	path: string;
@@ -10,7 +11,8 @@ type SitemapEntry = {
 const staticPages: SitemapEntry[] = [
 	{ path: '/', changefreq: 'weekly', priority: '1.0' },
 	{ path: '/docs', changefreq: 'weekly', priority: '0.9' },
-	{ path: '/playground', changefreq: 'weekly', priority: '0.9' }
+	{ path: '/playground', changefreq: 'weekly', priority: '0.9' },
+	{ path: '/llms.txt', changefreq: 'weekly', priority: '0.4' }
 ];
 
 const buildTimestamp = new Date().toISOString();
@@ -35,7 +37,8 @@ const dedupeEntries = (entries: SitemapEntry[]) => {
 	return Array.from(map.values());
 };
 
-export const GET: RequestHandler = ({ url }) => {
+export const GET: RequestHandler = () => {
+	const canonicalOrigin = new URL(siteConfig.url).origin;
 	const docEntries: SitemapEntry[] = docsManifest.map((doc) => ({
 		path: `/docs/${doc.slug}`,
 		changefreq: 'weekly',
@@ -46,7 +49,7 @@ export const GET: RequestHandler = ({ url }) => {
 	const body =
 		`<?xml version="1.0" encoding="UTF-8"?>` +
 		`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` +
-		uniqueEntries.map((entry) => createUrlEntry(url.origin, entry)).join('') +
+		uniqueEntries.map((entry) => createUrlEntry(canonicalOrigin, entry)).join('') +
 		`</urlset>`;
 
 	return new Response(body, {

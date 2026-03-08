@@ -52,9 +52,10 @@ const buildSection = (title: string, items: string[]) => {
 	return [`## ${title}`, '', ...items];
 };
 
-export const GET: RequestHandler = ({ url }) => {
+export const GET: RequestHandler = () => {
+	const canonicalOrigin = new URL(siteConfig.url).origin;
 	const optionalLinks = [
-		`- [Playground](${new URL('/playground', url.origin).href}): Interactive demo sandbox for materials, uniforms, and passes.`,
+		`- [Playground](${new URL('/playground', canonicalOrigin).href}): Interactive demo sandbox for materials, uniforms, and passes.`,
 		`- [GitHub](${siteConfig.links.github}): Source code, issues, and discussions.`,
 		`- [Package](https://www.npmjs.com/package/${siteConfig.package.name}): Installation and release metadata.`
 	];
@@ -71,7 +72,7 @@ export const GET: RequestHandler = ({ url }) => {
 	const categorySections = Array.from(groupedDocs.entries()).flatMap(([category, entries]) =>
 		buildSection(
 			category,
-			entries.map((entry) => buildDocEntry(url.origin, entry))
+			entries.map((entry) => buildDocEntry(canonicalOrigin, entry))
 		)
 	);
 

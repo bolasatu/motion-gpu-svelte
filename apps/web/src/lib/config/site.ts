@@ -1,7 +1,7 @@
 export const siteConfig = {
 	name: 'Motion GPU',
 	shortName: 'Motion GPU Docs',
-	url: 'https://your-docs-site.com',
+	url: 'https://motion-gpu.dev',
 	description:
 		'A WebGPU-first library for Svelte 5. Build high-performance, GPU-accelerated visualizations with a declarative API, strict runtime contracts, and type-safe WGSL shaders.',
 	author: 'Marek Jóźwiak',

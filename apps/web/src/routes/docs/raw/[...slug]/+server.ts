@@ -29,7 +29,9 @@ export const GET: RequestHandler = async ({ params }) => {
 
 	return new Response(content, {
 		headers: {
-			'Content-Type': 'text/markdown; charset=utf-8'
+			'Content-Type': 'text/markdown; charset=utf-8',
+			'Cache-Control': 'public, max-age=60',
+			'X-Robots-Tag': 'noindex, nofollow'
 		}
 	});
 };

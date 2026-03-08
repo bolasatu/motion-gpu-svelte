@@ -15,14 +15,15 @@
 	const currentPath = $derived(currentUrl.pathname);
 	const isHomeRoute = $derived(isHomePath(currentPath));
 	const isDocsRoute = $derived(isDocsPath(currentPath));
-	const canonicalUrl = $derived(currentUrl.href);
+	const siteOrigin = new URL(siteConfig.url).origin;
+	const canonicalUrl = $derived(new URL(currentPath || '/', siteOrigin).href);
 
 	const siteName = siteConfig.name;
 	const authorName = siteConfig.author;
 	const homeTitle = `${siteConfig.name} — ${siteConfig.description.split('.')[0]}`;
 	const homeDescription = siteConfig.description;
 	const homeKeywords = siteConfig.keywords.join(', ');
-	const sharedOgImage = $derived(new URL(siteConfig.ogImage, currentUrl).href);
+	const sharedOgImage = $derived(new URL(siteConfig.ogImage, siteOrigin).href);
 	const homeStructuredData = $derived.by(() =>
 		JSON.stringify({
 			'@context': 'https://schema.org',
@@ -82,6 +83,8 @@
 		</svelte:element>
 	{:else if !isDocsRoute}
 		<title>{siteName}</title>
+		<meta name="description" content={homeDescription} />
+		<link rel="canonical" href={canonicalUrl} />
 	{/if}
 </svelte:head>
 
