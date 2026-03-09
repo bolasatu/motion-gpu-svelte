@@ -9,7 +9,7 @@
 <button
 	type="button"
 	class={cn(
-		'group inset-shadow relative flex h-9 w-full items-center gap-2 rounded-sm border border-border bg-background-inset px-3 py-1.5 text-sm text-foreground/45 transition-[color] duration-150 ease-out hover:text-foreground-muted',
+		'group inset-shadow relative flex h-9 w-full items-center gap-2 rounded-sm border border-border bg-background-inset px-3 py-1.5 text-sm font-medium text-foreground/45 transition-[color] duration-150 ease-out hover:text-foreground-muted',
 		className
 	)}
 	onclick={() => searchState.open()}

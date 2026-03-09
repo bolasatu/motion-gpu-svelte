@@ -52,7 +52,7 @@
 <style>
 	:global(.shiki) {
 		background-color: transparent !important;
-		font-size: 13px;
+		font-size: 14px;
 		font-weight: 400;
 	}
 </style>
