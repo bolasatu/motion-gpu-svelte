@@ -214,7 +214,7 @@
 							{metadata.name || metadata.title}
 						</h1>
 						{#if metadata.description}
-							<p class="max-w-4xl text-base text-foreground-muted">
+							<p class="max-w-4xl text-base font-normal text-foreground-muted">
 								{metadata.description}
 							</p>
 						{/if}

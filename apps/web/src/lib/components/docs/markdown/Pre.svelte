@@ -33,8 +33,8 @@
 		{...restProps}
 		class={cn(
 			unstyled
-				? 'group/pre relative font-mono text-sm'
-				: 'group/pre relative rounded-md border border-border bg-background p-4 font-mono text-sm text-foreground shadow-md',
+				? 'group/pre relative font-mono text-base font-normal'
+				: 'group/pre relative rounded-md border border-border bg-background p-4 font-mono text-base font-normal text-foreground shadow-md',
 			className
 		)}
 	>
@@ -52,7 +52,7 @@
 <style>
 	:global(.shiki) {
 		background-color: transparent !important;
-		font-size: 12px;
+		font-size: 13px;
 		font-weight: 400;
 	}
 </style>

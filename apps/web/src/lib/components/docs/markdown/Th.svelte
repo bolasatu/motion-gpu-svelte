@@ -13,7 +13,7 @@
 
 <th
 	{...restProps}
-	class={cn('px-4 py-2 text-left align-middle text-sm font-medium text-foreground', className)}
+	class={cn('px-4 py-2 text-left align-middle text-base font-medium text-foreground', className)}
 >
 	{@render children?.()}
 </th>

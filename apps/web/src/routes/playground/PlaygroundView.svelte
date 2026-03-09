@@ -295,7 +295,7 @@
 		>
 			<a
 				href={resolve('/' as const)}
-				class="inline-flex items-center gap-1 py-1.5 text-xs tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
+				class="inline-flex items-center gap-1 py-1.5 text-xs font-medium tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				aria-label="Back to Home"
 				title="Back to Home"
 			>
@@ -367,7 +367,7 @@
 						<button
 							type="button"
 							onclick={() => controller.toggleDirectory(row.path)}
-							class="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-inset hover:text-foreground"
+							class="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs font-normal text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-inset hover:text-foreground"
 							style={`padding-left: ${8 + row.depth * 12}px`}
 						>
 							<span class="inline-flex w-3 items-center justify-center text-foreground/60">
@@ -386,7 +386,7 @@
 						<button
 							type="button"
 							onclick={() => controller.openFile(row.path)}
-							class={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs transition-colors duration-150 ease-out ${
+							class={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs font-normal transition-colors duration-150 ease-out ${
 								controller.activeFilePath === row.path
 									? 'bg-background-inset text-foreground'
 									: 'text-foreground-muted hover:bg-background-inset hover:text-foreground'
@@ -430,7 +430,7 @@
 							<button
 								type="button"
 								onclick={() => controller.switchToFile(filePath)}
-								class={`px-2.5 py-2 text-left font-mono text-[11px] transition-colors duration-150 ease-out sm:px-3 sm:text-xs ${
+								class={`px-2.5 py-2 text-left font-mono text-[11px] font-normal transition-colors duration-150 ease-out sm:px-3 sm:text-xs ${
 									controller.activeFilePath === filePath
 										? 'text-foreground'
 										: 'text-foreground-muted hover:text-foreground'
@@ -464,7 +464,7 @@
 
 			{#if controller.syncError}
 				<p
-					class="border-t border-border bg-background px-3 py-2 font-mono text-xs text-red-500"
+					class="border-t border-border bg-background px-3 py-2 font-mono text-xs font-normal text-red-500"
 					role="alert"
 				>
 					{controller.syncError}
@@ -474,14 +474,18 @@
 			<section class="border-t border-border bg-background">
 				{#if controller.runtimeLog}
 					<details>
-						<summary class="cursor-pointer px-3 py-2 font-mono text-xs text-foreground-muted">
+						<summary
+							class="cursor-pointer px-3 py-2 font-mono text-xs font-medium text-foreground-muted"
+						>
 							Runtime log ({controller.status})
 						</summary>
 						<pre
-							class="h-32 overflow-auto border-t border-border bg-background-inset px-3 py-2 font-mono text-[11px] leading-5 whitespace-pre-wrap text-foreground-muted">{controller.runtimeLogTail}</pre>
+							class="h-32 overflow-auto border-t border-border bg-background-inset px-3 py-2 font-mono text-[11px] leading-5 font-normal whitespace-pre-wrap text-foreground-muted">{controller.runtimeLogTail}</pre>
 					</details>
 				{:else}
-					<p class="border-t border-border px-3 py-2 font-mono text-xs text-foreground-muted">
+					<p
+						class="border-t border-border px-3 py-2 font-mono text-xs font-normal text-foreground-muted"
+					>
 						{controller.status}
 					</p>
 				{/if}
@@ -511,7 +515,7 @@
 					{/key}
 				{:else}
 					<div
-						class="flex h-full w-full items-center justify-center p-6 text-center text-sm text-foreground-muted"
+						class="flex h-full w-full items-center justify-center p-6 text-center text-sm font-medium text-foreground-muted"
 					>
 						Booting runtime and waiting for preview...
 					</div>
@@ -520,12 +524,12 @@
 
 			{#if controller.errorMessage}
 				<div class="border-t border-border bg-background px-3 py-2">
-					<p class="font-mono text-xs whitespace-pre-wrap text-red-500" role="alert">
+					<p class="font-mono text-xs font-normal whitespace-pre-wrap text-red-500" role="alert">
 						{controller.errorMessage}
 					</p>
 					<button
 						type="button"
-						class="mt-2 inline-flex items-center rounded border border-border px-2 py-1 text-xs text-foreground transition-colors duration-150 ease-out hover:bg-background-inset"
+						class="mt-2 inline-flex items-center rounded border border-border px-2 py-1 text-xs font-medium text-foreground transition-colors duration-150 ease-out hover:bg-background-inset"
 						onclick={controller.retryRuntime}
 					>
 						Retry runtime

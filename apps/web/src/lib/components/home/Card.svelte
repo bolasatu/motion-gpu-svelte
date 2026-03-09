@@ -30,15 +30,15 @@
 				{@render icon?.()}
 			</div>
 			{#if number}
-				<div class="font-mono text-base text-foreground-muted">
+				<div class="font-mono text-base font-medium text-foreground-muted">
 					{number}
 				</div>
 			{/if}
 		</div>
 
 		<div class="mt-auto grid gap-4">
-			<h3 class="text-xl tracking-tight text-foreground">{title}</h3>
-			<p class="text-base text-foreground-muted">{description}</p>
+			<h3 class="text-xl font-medium tracking-tight text-foreground">{title}</h3>
+			<p class="text-base font-normal text-foreground-muted">{description}</p>
 		</div>
 	</article>
 </div>

@@ -13,7 +13,7 @@
 
 <strong
 	{...restProps}
-	class={cn('font-display text-sm font-medium text-pretty text-foreground', className)}
+	class={cn('font-display text-base font-medium text-pretty text-foreground', className)}
 >
 	{@render children?.()}
 </strong>

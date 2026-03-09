@@ -12,10 +12,12 @@
 	<div
 		class="inset-shadow flex h-full w-full flex-col items-center justify-center gap-4 rounded-xl border border-border bg-background-inset px-4 py-8 sm:px-8 sm:py-16"
 	>
-		<h2 class="text-center text-2xl tracking-tight text-balance text-foreground sm:text-4xl">
+		<h2
+			class="text-center text-2xl font-medium tracking-tight text-balance text-foreground sm:text-4xl"
+		>
 			Bring your shader pipeline to production.
 		</h2>
-		<p class="text-center text-base text-pretty text-foreground-muted sm:w-2/3">
+		<p class="text-center text-base font-normal text-pretty text-foreground-muted sm:w-2/3">
 			Open the playground to iterate fast, then move to docs for strict contracts, render passes,
 			and deterministic frame scheduling.
 		</p>

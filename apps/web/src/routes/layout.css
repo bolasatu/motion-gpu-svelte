@@ -76,13 +76,13 @@ html {
 	--color-accent-secoundary: var(--accent-secondary);
 	--color-border: var(--border);
 
-	--font-weight-light: 200;
-	--font-weight-normal: 300;
+	--font-weight-light: 300;
+	--font-weight-normal: 350;
 	--font-weight-medium: 400;
-	--font-weight-semibold: 500;
-	--font-weight-bold: 600;
-	--font-weight-extrabold: 700;
-	--font-weight-black: 800;
+	--font-weight-semibold: 450;
+	--font-weight-bold: 500;
+	--font-weight-extrabold: 550;
+	--font-weight-black: 600;
 
 	--radius-xs: calc(var(--radius-base) * 1);
 	--radius-sm: calc(var(--radius-base) * 2);

@@ -232,7 +232,7 @@
 						aria-disabled={option.disabled || undefined}
 						data-option-index={index}
 						class={cn(
-							'flex w-full cursor-default items-center px-2 py-1.5 text-left text-xs transition-colors duration-150 ease-out',
+							'flex w-full cursor-default items-center px-2 py-1.5 text-left text-xs font-normal transition-colors duration-150 ease-out',
 							option.disabled
 								? 'cursor-not-allowed text-foreground/40'
 								: 'text-foreground-muted hover:bg-background-inset hover:text-foreground',

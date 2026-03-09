@@ -139,25 +139,25 @@
 			>
 				<a
 					href="#home"
-					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
+					class="inline-flex items-center gap-2 px-2 py-2 text-sm font-normal tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>
 					Home
 				</a>
 				<a
 					href="#features"
-					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
+					class="inline-flex items-center gap-2 px-2 py-2 text-sm font-normal tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>
 					Features
 				</a>
 				<a
 					href="#how-it-works"
-					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
+					class="inline-flex items-center gap-2 px-2 py-2 text-sm font-normal tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>
 					Pipeline
 				</a>
 				<a
 					href="#faq"
-					class="inline-flex items-center gap-2 px-2 py-2 text-sm tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
+					class="inline-flex items-center gap-2 px-2 py-2 text-sm font-normal tracking-tight text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>
 					FAQ
 				</a>
@@ -232,7 +232,7 @@
 			onclick={handleMenuLinkSelect}
 			variant="ghost"
 			size="none"
-			class="justify-start px-3 py-2"
+			class="justify-start px-3 py-2 font-normal"
 		>
 			<span>Home</span>
 		</Button>
@@ -241,7 +241,7 @@
 			onclick={handleMenuLinkSelect}
 			variant="ghost"
 			size="none"
-			class="justify-start px-3 py-2"
+			class="justify-start px-3 py-2 font-normal"
 		>
 			<span>Features</span>
 		</Button>
@@ -250,7 +250,7 @@
 			onclick={handleMenuLinkSelect}
 			variant="ghost"
 			size="none"
-			class="justify-start px-3 py-2"
+			class="justify-start px-3 py-2 font-normal"
 		>
 			<span>Pipeline</span>
 		</Button>
@@ -259,7 +259,7 @@
 			onclick={handleMenuLinkSelect}
 			variant="ghost"
 			size="none"
-			class="justify-start px-3 py-2"
+			class="justify-start px-3 py-2 font-normal"
 		>
 			<span>FAQ</span>
 		</Button>

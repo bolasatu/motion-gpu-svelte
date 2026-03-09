@@ -163,7 +163,7 @@
 								{@const isChild = result.matchType === 'heading' || result.matchType === 'content'}
 								<button
 									class={cn(
-										'group relative flex w-full flex-col items-start gap-1 rounded-sm px-3 py-2 text-sm',
+										'group relative flex w-full flex-col items-start gap-1 rounded-sm px-3 py-2 text-sm font-medium',
 										isChild && 'pl-8',
 										i === selectedIndex
 											? 'bg-background-inset text-foreground'
@@ -196,7 +196,7 @@
 										{#if result.snippet}
 											<div
 												class={cn(
-													'line-clamp-1 text-left text-xs',
+													'line-clamp-1 text-left text-xs font-medium',
 													i === selectedIndex ? 'text-foreground' : 'text-foreground/60'
 												)}
 											>
@@ -219,14 +219,14 @@
 				</div>
 			</div>
 			<div
-				class="flex w-full flex-row items-center justify-start gap-2 rounded-b-xl border-t border-border/60 bg-background p-2"
+				class="flex w-full flex-row items-center justify-start gap-2 rounded-b-lg border-t border-border/60 bg-background p-2"
 			>
 				<kbd
 					class="pointer-events-none inset-shadow relative hidden h-5 items-center gap-1 rounded-xs border border-border bg-background-inset px-1.5 font-mono text-[10px] font-medium text-foreground/45 select-none sm:flex"
 				>
 					<Return class="size-3" />
 				</kbd>
-				<span class="text-xs text-foreground/45"> Go to page </span>
+				<span class="text-xs font-medium text-foreground/45"> Go to page </span>
 			</div>
 		</div>
 	</div>

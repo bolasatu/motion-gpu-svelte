@@ -29,14 +29,14 @@
 					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					{@html Logo}
 				</span>
-				<p class="text-xl tracking-tight text-foreground">MotionGPU</p>
+				<p class="text-xl font-medium tracking-tight text-foreground">Motion GPU</p>
 			</div>
 		</div>
 	</div>
 
 	<div class="w-full border-b border-border px-4 py-8 sm:grid sm:grid-cols-4 sm:gap-6 sm:px-8">
 		<div class="flex flex-col gap-2">
-			<h3 class="text-xs tracking-wide text-foreground uppercase">Menu</h3>
+			<h3 class="text-xs font-medium tracking-wide text-foreground uppercase">Menu</h3>
 			<ul class="grid gap-1 tracking-tight">
 				{#each menu as item (item.label)}
 					<li>
@@ -45,7 +45,7 @@
 							data-sveltekit-reload={isPlaygroundRoute(item.route) ? '' : undefined}
 							data-sveltekit-preload-data={isPlaygroundRoute(item.route) ? 'off' : undefined}
 							data-sveltekit-preload-code={isPlaygroundRoute(item.route) ? 'off' : undefined}
-							class="w-fit text-sm text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
+							class="w-fit text-sm font-normal text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 							>&#8627; {item.label}</a
 						>
 					</li>
@@ -54,7 +54,7 @@
 		</div>
 
 		<div class="mt-6 flex flex-col gap-2 sm:mt-0">
-			<h3 class="text-xs tracking-wide text-foreground uppercase">Follow</h3>
+			<h3 class="text-xs font-medium tracking-wide text-foreground uppercase">Follow</h3>
 			<ul class="grid gap-1 tracking-tight">
 				{#each follow as item (item.label)}
 					<li>
@@ -62,7 +62,7 @@
 							href={item.href}
 							target="_blank"
 							rel="external noreferrer"
-							class="w-fit text-sm text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
+							class="w-fit text-sm font-normal text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 							>&#8627; {item.label}</a
 						>
 					</li>
@@ -71,30 +71,30 @@
 		</div>
 
 		<div class="mt-6 flex flex-col gap-2 sm:mt-0">
-			<h3 class="text-xs tracking-wide text-foreground uppercase">Contact</h3>
+			<h3 class="text-xs font-medium tracking-wide text-foreground uppercase">Contact</h3>
 			<a
 				href="https://github.com/motion-core/motion-gpu/issues"
 				target="_blank"
 				rel="noreferrer"
-				class="w-fit text-sm text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
+				class="w-fit text-sm font-normal text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>Issues</a
 			>
 			<a
 				href="https://github.com/motion-core/motion-gpu/discussions"
 				target="_blank"
 				rel="noreferrer"
-				class="w-fit text-sm text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
+				class="w-fit text-sm font-normal text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>Discussions</a
 			>
 		</div>
 
 		<div class="mt-6 flex flex-col gap-2 sm:mt-0">
-			<h3 class="text-xs tracking-wide text-foreground uppercase">Project</h3>
+			<h3 class="text-xs font-medium tracking-wide text-foreground uppercase">Project</h3>
 			<a
 				href="https://github.com/motion-core/motion-gpu/blob/master/LICENSE"
 				target="_blank"
 				rel="noreferrer"
-				class="w-fit text-sm text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
+				class="w-fit text-sm font-normal text-foreground-muted transition-colors duration-150 ease-out hover:text-foreground"
 				>&#8627; License</a
 			>
 		</div>

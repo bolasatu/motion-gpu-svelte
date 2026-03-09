@@ -13,9 +13,9 @@
 
 	const faqItems: FaqItem[] = [
 		{
-			question: 'What is MotionGPU?',
+			question: 'What is Motion GPU?',
 			answer:
-				'MotionGPU is a Svelte-first WebGPU library for building fast fullscreen shader visuals. It gives you a clean path from a single effect to a complete GPU-driven visual layer in your app.'
+				'Motion GPU is a Svelte-first WebGPU library for building fast fullscreen shader visuals. It gives you a clean path from a single effect to a complete GPU-driven visual layer in your app.'
 		},
 		{
 			question: 'Who is it for?',
@@ -35,12 +35,12 @@
 		{
 			question: 'Is it production-friendly?',
 			answer:
-				'Yes. MotionGPU is designed for predictable behavior, explicit runtime control, and clear diagnostics so teams can move from prototype to production with confidence.'
+				'Yes. Motion GPU is designed for predictable behavior, explicit runtime control, and clear diagnostics so teams can move from prototype to production with confidence.'
 		},
 		{
 			question: 'Is this a general 3D engine?',
 			answer:
-				'No. MotionGPU focuses on fullscreen fragment workflows and post-processing pipelines. If you need full scene graphs and 3D tooling, pair it with a dedicated 3D engine.'
+				'No. Motion GPU focuses on fullscreen fragment workflows and post-processing pipelines. If you need full scene graphs and 3D tooling, pair it with a dedicated 3D engine.'
 		},
 		{
 			question: 'Where should I start first?',
@@ -65,10 +65,12 @@
 			<span>FAQ</span>
 		</span>
 	</Badge>
-	<h2 class="text-center text-2xl tracking-tight text-balance text-foreground sm:text-4xl">
+	<h2
+		class="text-center text-2xl font-medium tracking-tight text-balance text-foreground sm:text-4xl"
+	>
 		Common questions before you build.
 	</h2>
-	<p class="text-center text-base text-pretty text-foreground-muted sm:w-1/2">
+	<p class="text-center text-base font-normal text-pretty text-foreground-muted sm:w-1/2">
 		A quick introduction to what MotionGPU is, who it is for, and how to begin.
 	</p>
 
@@ -88,7 +90,7 @@
 							aria-controls={`faq-panel-${index}`}
 							onclick={() => toggle(item.question)}
 						>
-							<span>{item.question}</span>
+							<span class="font-medium">{item.question}</span>
 							<span
 								aria-hidden="true"
 								class="inset-shadow inline-flex rounded-sm border border-border bg-background-inset p-1 text-foreground-muted"
@@ -109,7 +111,7 @@
 								class="px-4 pb-4 sm:px-6"
 								transition:slide={{ duration: 220 }}
 							>
-								<p class="text-sm text-pretty text-foreground-muted sm:text-base">
+								<p class="text-sm font-normal text-pretty text-foreground-muted sm:text-base">
 									{item.answer}
 								</p>
 							</div>

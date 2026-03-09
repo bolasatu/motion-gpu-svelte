@@ -31,7 +31,7 @@
 			'group relative flex flex-col rounded-md border border-border bg-background px-4 py-3 shadow-md transition-[background-color] duration-150 ease-out hover:bg-background-inset'
 		)}
 	>
-		<span class="text-xs tracking-wide text-foreground/45 uppercase">
+		<span class="text-xs font-normal tracking-wide text-foreground/45 uppercase">
 			{label}
 		</span>
 		<span class="text-lg font-medium text-foreground">

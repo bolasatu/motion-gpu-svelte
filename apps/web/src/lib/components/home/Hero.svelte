@@ -23,12 +23,14 @@
 			{@html Logo}
 		</span>
 		<h1
-			class="max-w-3xl text-center text-3xl tracking-tight text-balance text-foreground sm:text-5xl"
+			class="max-w-3xl text-center text-3xl font-medium tracking-tight text-balance text-foreground sm:text-5xl"
 		>
 			A <span class="text-accent">Svelte-first</span> pipeline for modern
 			<span class="text-accent">GPU visuals.</span>
 		</h1>
-		<p class="max-w-xl text-center text-base text-pretty text-foreground-muted sm:text-lg">
+		<p
+			class="max-w-xl text-center text-base font-normal text-pretty text-foreground-muted sm:text-lg"
+		>
 			If you need performance, clarity, and composability in WebGPU for Svelte, this is the stack.
 		</p>
 		<div data-reveal="actions" class="flex items-center gap-2">
