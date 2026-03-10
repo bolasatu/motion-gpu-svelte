@@ -493,8 +493,12 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 	let deviceLostMessage: string | null = null;
 	let uncapturedErrorMessage: string | null = null;
 	const initializationCleanups: Array<() => void> = [];
+	let acceptInitializationCleanups = true;
 
 	const registerInitializationCleanup = (cleanup: () => void): void => {
+		if (!acceptInitializationCleanups) {
+			return;
+		}
 		initializationCleanups.push(cleanup);
 	};
 
@@ -1416,6 +1420,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			device.queue.submit([commandEncoder.finish()]);
 		};
 
+		acceptInitializationCleanups = false;
 		initializationCleanups.length = 0;
 		return {
 			render,
@@ -1448,6 +1453,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		};
 	} catch (error) {
 		isDestroyed = true;
+		acceptInitializationCleanups = false;
 		device.removeEventListener('uncapturederror', handleUncapturedError);
 		runInitializationCleanups();
 		throw error;
