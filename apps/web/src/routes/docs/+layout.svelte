@@ -96,7 +96,9 @@
 	const rawPath = $derived(docSlug ? `/docs/raw/${docSlug}` : null);
 	const docOrigin = $derived(props.data.docOrigin);
 	const rawUrl = $derived(rawPath && docOrigin ? new URL(rawPath, docOrigin).href : null);
-	const repoRelativePath = $derived(metadata ? `/src/routes${metadata.href}/+page.svx` : null);
+	const repoRelativePath = $derived(
+		metadata ? `/apps/web/src/routes${metadata.href}/+page.svx` : null
+	);
 	const githubUrl = $derived(
 		repoRelativePath ? `${siteConfig.links.github}/blob/master${repoRelativePath}` : null
 	);
