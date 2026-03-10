@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import type { Snippet } from 'svelte';
 
 	interface Props {
@@ -8,28 +7,40 @@
 	}
 
 	let { target = 'body', children }: Props = $props();
-	let element = $state<HTMLDivElement | null>(null);
 
-	onMount(() => {
-		if (!element) {
-			return;
-		}
+	function resolveTargetElement(input: string | HTMLElement | null | undefined): HTMLElement {
+		return typeof input === 'string'
+			? (document.querySelector<HTMLElement>(input) ?? document.body)
+			: (input ?? document.body);
+	}
 
-		const targetElement =
-			typeof target === 'string'
-				? (document.querySelector<HTMLElement>(target) ?? document.body)
-				: (target ?? document.body);
+	const portal = (node: HTMLDivElement, initialTarget: string | HTMLElement | null) => {
+		let targetElement = resolveTargetElement(initialTarget);
+		targetElement.appendChild(node);
 
-		targetElement.appendChild(element);
+		return {
+			update(nextTarget: string | HTMLElement | null) {
+				const nextTargetElement = resolveTargetElement(nextTarget);
+				if (nextTargetElement === targetElement) {
+					return;
+				}
 
-		return () => {
-			if (element?.parentNode === targetElement) {
-				targetElement.removeChild(element);
+				if (node.parentNode === targetElement) {
+					targetElement.removeChild(node);
+				}
+
+				nextTargetElement.appendChild(node);
+				targetElement = nextTargetElement;
+			},
+			destroy() {
+				if (node.parentNode === targetElement) {
+					targetElement.removeChild(node);
+				}
 			}
 		};
-	});
+	};
 </script>
 
-<div bind:this={element}>
+<div use:portal={target}>
 	{@render children?.()}
 </div>

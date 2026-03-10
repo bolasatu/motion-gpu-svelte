@@ -71,6 +71,17 @@
 	let canvas: HTMLCanvasElement | undefined;
 	let errorReport = $state<MotionGPUErrorReport | null>(null);
 
+	const bindCanvas = (node: HTMLCanvasElement) => {
+		canvas = node;
+		return {
+			destroy: () => {
+				if (canvas === node) {
+					canvas = undefined;
+				}
+			}
+		};
+	};
+
 	const getRendererRetryDelayMs = (attempt: number): number => {
 		return Math.min(8000, 250 * 2 ** Math.max(0, attempt - 1));
 	};
@@ -418,7 +429,7 @@
 </script>
 
 <div class="motiongpu-canvas-wrap">
-	<canvas bind:this={canvas} class={className} {style}></canvas>
+	<canvas use:bindCanvas class={className} {style}></canvas>
 	{#if showErrorOverlay && errorReport}
 		{#if errorRenderer}
 			{@render errorRenderer(errorReport)}
