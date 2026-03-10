@@ -67,7 +67,7 @@
 					<button
 						onclick={() => toggleGroup(doc.slug)}
 						class={cn(
-							'flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-sm font-medium transition-all duration-150 ease-out hover:bg-background-inset hover:text-foreground',
+							'flex w-full items-center justify-between rounded-sm px-3 py-1.5 text-sm font-medium transition-all duration-150 ease-out hover:bg-background-muted hover:text-foreground',
 							isGroupActive ? 'text-foreground' : 'text-foreground-muted'
 						)}
 					>
@@ -90,7 +90,7 @@
 										'block rounded-sm px-3 py-1.5 text-sm font-medium transition-all duration-150 ease-out',
 										isActive
 											? 'bg-accent/10 text-accent'
-											: 'text-foreground-muted hover:bg-background-inset hover:text-foreground'
+											: 'text-foreground-muted hover:bg-background-muted hover:text-foreground'
 									)}
 								>
 									{item.name}
@@ -107,7 +107,7 @@
 							'block rounded-sm px-3 py-1.5 text-sm transition-all duration-150 ease-out',
 							isActive
 								? 'bg-accent/10 text-accent'
-								: 'text-foreground-muted hover:bg-background-inset hover:text-foreground'
+								: 'text-foreground-muted hover:bg-background-muted hover:text-foreground'
 						)}
 					>
 						{doc.name}

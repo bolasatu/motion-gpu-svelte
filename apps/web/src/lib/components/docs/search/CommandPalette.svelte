@@ -166,14 +166,14 @@
 										'group relative flex w-full flex-col items-start gap-1 rounded-sm px-3 py-2 text-sm font-medium',
 										isChild && 'pl-8',
 										i === selectedIndex
-											? 'bg-background-inset text-foreground'
-											: 'text-foreground hover:bg-background-inset'
+											? 'bg-background-muted text-foreground'
+											: 'text-foreground hover:bg-background-muted'
 									)}
 									onclick={() => selectResult(result)}
 									onmouseenter={() => (selectedIndex = i)}
 								>
 									{#if isChild}
-										<div class={cn('absolute top-0 bottom-0 left-3 w-px bg-border/30')}></div>
+										<div class={cn('absolute top-0 bottom-0 left-3 w-px bg-border')}></div>
 									{/if}
 
 									<div class="flex w-full flex-col items-start gap-0.5">
