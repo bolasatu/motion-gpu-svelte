@@ -102,10 +102,19 @@
 		requestFrame();
 	};
 	const size = currentWritable({ width: 0, height: 0 });
-	const dprState = currentWritable(initialDpr);
-	const maxDeltaState = currentWritable<number>(0.1, registry.setMaxDelta);
-	const renderModeState = currentWritable<RenderMode>('always', registry.setRenderMode);
-	const autoRenderState = currentWritable<boolean>(true, registry.setAutoRender);
+	const dprState = currentWritable(initialDpr, requestFrame);
+	const maxDeltaState = currentWritable<number>(0.1, (value) => {
+		registry.setMaxDelta(value);
+		requestFrame();
+	});
+	const renderModeState = currentWritable<RenderMode>('always', (value) => {
+		registry.setRenderMode(value);
+		requestFrame();
+	});
+	const autoRenderState = currentWritable<boolean>(true, (value) => {
+		registry.setAutoRender(value);
+		requestFrame();
+	});
 	const userState = currentWritable<Record<string | symbol, unknown>>({});
 
 	provideMotionGPUContext({
