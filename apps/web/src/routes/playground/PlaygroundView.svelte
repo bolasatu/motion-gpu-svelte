@@ -367,7 +367,7 @@
 						<button
 							type="button"
 							onclick={() => controller.toggleDirectory(row.path)}
-							class="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs font-normal text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-inset hover:text-foreground"
+							class="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs font-normal text-foreground-muted transition-colors duration-150 ease-out hover:bg-background-muted hover:text-foreground"
 							style={`padding-left: ${8 + row.depth * 12}px`}
 						>
 							<span class="inline-flex w-3 items-center justify-center text-foreground/60">
@@ -388,8 +388,8 @@
 							onclick={() => controller.openFile(row.path)}
 							class={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs font-normal transition-colors duration-150 ease-out ${
 								controller.activeFilePath === row.path
-									? 'bg-background-inset text-foreground'
-									: 'text-foreground-muted hover:bg-background-inset hover:text-foreground'
+									? 'bg-background-muted text-foreground'
+									: 'text-foreground-muted hover:bg-background-muted hover:text-foreground'
 							}`}
 							style={`padding-left: ${8 + row.depth * 12}px`}
 						>
@@ -424,7 +424,7 @@
 					{#each controller.openFilePaths as filePath (filePath)}
 						<div
 							class={`group inline-flex shrink-0 items-center border-r border-border ${
-								controller.activeFilePath === filePath ? 'bg-background' : 'bg-background-inset'
+								controller.activeFilePath === filePath ? 'bg-background-inset' : 'bg-background'
 							}`}
 						>
 							<button
@@ -458,7 +458,7 @@
 
 			<div
 				bind:this={controller.editorHost}
-				class="min-h-0 flex-1 bg-background"
+				class="min-h-0 flex-1 bg-background-inset"
 				aria-label="Svelte component editor"
 			></div>
 
@@ -501,7 +501,7 @@
 		></button>
 
 		<section class="flex min-h-0 flex-col overflow-hidden bg-background">
-			<div class="relative min-h-0 flex-1 bg-background">
+			<div class="relative min-h-0 flex-1 bg-background-inset">
 				{#if controller.previewUrl}
 					{#key controller.previewFrameKey}
 						<iframe
