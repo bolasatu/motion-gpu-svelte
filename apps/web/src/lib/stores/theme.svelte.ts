@@ -32,8 +32,9 @@ function createThemeStore() {
 
 	if (browser) {
 		const storedTheme = localStorage.getItem(storageKey);
-		current = isTheme(storedTheme) ? storedTheme : getPreferredTheme();
-		applyTheme(current);
+		const initialTheme = isTheme(storedTheme) ? storedTheme : getPreferredTheme();
+		current = initialTheme;
+		applyTheme(initialTheme);
 
 		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 		const handlePreferredThemeChange = () => {
@@ -45,7 +46,7 @@ function createThemeStore() {
 			const preferredTheme = mediaQuery.matches ? 'dark' : 'light';
 			if (current !== preferredTheme) {
 				current = preferredTheme;
-				applyTheme(current);
+				applyTheme(preferredTheme);
 			}
 		};
 
