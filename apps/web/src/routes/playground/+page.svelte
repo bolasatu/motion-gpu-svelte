@@ -1,14 +1,18 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import PlaygroundView from './PlaygroundView.svelte';
-	import { createPlaygroundController } from './playground-controller.svelte';
+	import { onMount, tick } from 'svelte';
 
 	const getDemoIdFromLocation = () => {
 		if (typeof window === 'undefined') return null;
 		return new URLSearchParams(window.location.search).get('demo');
 	};
-	const controller = createPlaygroundController(getDemoIdFromLocation());
+
+	let PlaygroundView = $state<(typeof import('./PlaygroundView.svelte'))['default'] | null>(null);
+	let controller = $state<
+		ReturnType<(typeof import('./playground-controller.svelte'))['createPlaygroundController']> | null
+	>(null);
+
 	const selectDemo = (demoId: string) => {
+		if (!controller) return;
 		controller.switchDemo(demoId);
 		if (typeof window === 'undefined') return;
 		const nextUrl = new URL(window.location.href);
@@ -17,16 +21,38 @@
 	};
 
 	onMount(() => {
-		const dispose = controller.mount();
-		const onPopState = () => {
-			controller.switchDemo(getDemoIdFromLocation());
-		};
-		window.addEventListener('popstate', onPopState);
+		let mounted = true;
+		let removePopState: (() => void) | null = null;
+		let disposeController: (() => void) | undefined;
+
+		void (async () => {
+			const [{ default: LoadedPlaygroundView }, { createPlaygroundController }] = await Promise.all([
+				import('./PlaygroundView.svelte'),
+				import('./playground-controller.svelte')
+			]);
+			if (!mounted) return;
+
+			PlaygroundView = LoadedPlaygroundView;
+			controller = createPlaygroundController(getDemoIdFromLocation());
+			await tick();
+			if (!mounted || !controller) return;
+			disposeController = controller.mount();
+
+			const onPopState = () => {
+				controller?.switchDemo(getDemoIdFromLocation());
+			};
+			window.addEventListener('popstate', onPopState);
+			removePopState = () => window.removeEventListener('popstate', onPopState);
+		})();
+
 		return () => {
-			window.removeEventListener('popstate', onPopState);
-			dispose?.();
+			mounted = false;
+			removePopState?.();
+			disposeController?.();
 		};
 	});
 </script>
 
-<PlaygroundView {controller} onSelectDemo={selectDemo} />
+{#if PlaygroundView && controller}
+	<PlaygroundView {controller} onSelectDemo={selectDemo} />
+{/if}

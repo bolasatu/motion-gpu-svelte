@@ -10,6 +10,12 @@
 		"binding": "ASSETS",
 		"directory": ".svelte-kit/cloudflare"
 	},
-	"no_bundle": true,
+	"rules": [
+		{
+			"type": "Text",
+			"globs": ["**/*.ttf"],
+			"fallthrough": true
+		}
+	],
 	"compatibility_flags": ["nodejs_compat"]
 }
