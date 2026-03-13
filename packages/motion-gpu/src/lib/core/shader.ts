@@ -152,6 +152,13 @@ export function buildShaderSource(
 	const colorTransformHelpers = buildColorTransformHelpers(enableSrgbTransform);
 	const fragmentOutput = buildFragmentOutput(keepAliveExpression, enableSrgbTransform);
 
+	// WGSL syntax overview for beginners:
+	// - `var<uniform>` defines read-only uniform variables.
+	// - `@group(N) @binding(M)` maps the variable to the layout defined in the CPU renderer.
+	//   All buffers, samplers, and textures must have unique binding locations.
+	// - `textureSample()` takes a texture and a sampler to read pixel data at a UV coordinate.
+	// - `@builtin(position)` represents the SV_Position/gl_Position coordinate.
+	// - `@location(N)` denotes a user-defined inter-stage variable (like UVs) or fragment output.
 	return `
 struct MotionGPUFrame {
 	time: f32,
@@ -163,8 +170,11 @@ struct MotionGPUUniforms {
 	${uniformFields}
 };
 
+// Bind Group 0, Binding 0: Frame uniforms
 @group(0) @binding(0) var<uniform> motiongpuFrame: MotionGPUFrame;
+// Bind Group 0, Binding 1: User uniforms
 @group(0) @binding(1) var<uniform> motiongpuUniforms: MotionGPUUniforms;
+// Samplers and Textures are bound sequentially starting from Binding 2
 ${textureBindings}
 ${colorTransformHelpers}
 
@@ -173,6 +183,8 @@ struct MotionGPUVertexOut {
 	@location(0) uv: vec2f,
 };
 
+// Fullscreen Triangle trick: WebGPU allows us to draw a triangle without vertex buffers.
+// We provide 3 vertices (-1 to 3 ranges) that completely cover the normalized device coordinates (-1 to 1).
 @vertex
 fn motiongpuVertex(@builtin(vertex_index) index: u32) -> MotionGPUVertexOut {
 	var positions = array<vec2f, 3>(
@@ -184,12 +196,15 @@ fn motiongpuVertex(@builtin(vertex_index) index: u32) -> MotionGPUVertexOut {
 	let position = positions[index];
 	var out: MotionGPUVertexOut;
 	out.position = vec4f(position, 0.0, 1.0);
+	// Convert clip-space positions to standard 0-to-1 UV coordinates for fragments.
 	out.uv = (position + vec2f(1.0, 1.0)) * 0.5;
 	return out;
 }
 
+// User-provided fragment shader code containing \`fn frag(uv: vec2f) -> vec4f\`
 ${fragmentWgsl}
 
+// The main fragment entry point called by the pipeline.
 @fragment
 fn motiongpuFragment(in: MotionGPUVertexOut) -> @location(0) vec4f {
 	${fragmentOutput}

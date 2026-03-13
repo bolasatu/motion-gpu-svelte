@@ -31,9 +31,11 @@ struct MotionGPUVertexOut {
 	@location(0) uv: vec2f,
 };
 
+// @group binds sampler and texture inputs passed from the pass render setup.
 @group(0) @binding(0) var motiongpuShaderPassSampler: sampler;
 @group(0) @binding(1) var motiongpuShaderPassTexture: texture_2d<f32>;
 
+// A standard fullscreen triangle vertex shader.
 @vertex
 fn motiongpuShaderPassVertex(@builtin(vertex_index) index: u32) -> MotionGPUVertexOut {
 	var positions = array<vec2f, 3>(
@@ -49,10 +51,12 @@ fn motiongpuShaderPassVertex(@builtin(vertex_index) index: u32) -> MotionGPUVert
 	return out;
 }
 
+// User-provided post-processing fragment pass
 ${fragment}
 
 @fragment
 fn motiongpuShaderPassFragment(in: MotionGPUVertexOut) -> @location(0) vec4f {
+	// Sample the previous pass target and pass it to the user's shade function.
 	let inputColor = textureSample(motiongpuShaderPassTexture, motiongpuShaderPassSampler, in.uv);
 	return shade(inputColor, in.uv);
 }
@@ -161,18 +165,22 @@ export class ShaderPass implements RenderPass {
 
 		let pipeline = this.pipelineByFormat.get(format);
 		if (!pipeline) {
+			// Pipeline layout defines what variables the shaders expect.
 			const pipelineLayout = device.createPipelineLayout({
 				bindGroupLayouts: [this.bindGroupLayout]
 			});
+
+			// We dynamically compile a new pipeline per output texture format.
+			// Render pipelines are strictly typed to a specific format!
 			pipeline = device.createRenderPipeline({
 				layout: pipelineLayout,
 				vertex: {
 					module: this.shaderModule,
-					entryPoint: 'motiongpuShaderPassVertex'
+					entryPoint: 'motiongpuShaderPassVertex' // The defined function name above
 				},
 				fragment: {
 					module: this.shaderModule,
-					entryPoint: 'motiongpuShaderPassFragment',
+					entryPoint: 'motiongpuShaderPassFragment', // The defined function name above
 					targets: [{ format }]
 				},
 				primitive: { topology: 'triangle-list' }
@@ -197,9 +205,13 @@ export class ShaderPass implements RenderPass {
 			context.device,
 			context.output.format
 		);
+
+		// The input texture view that we will sample from.
 		const inputView = context.input.view;
 		let bindGroup = this.bindGroupByView.get(inputView);
 		if (!bindGroup) {
+			// Bind Groups connect actual GPU resources to the pipeline bindings.
+			// Group 0 matches the layout created above.
 			bindGroup = context.device.createBindGroup({
 				layout: bindGroupLayout,
 				entries: [
@@ -209,11 +221,13 @@ export class ShaderPass implements RenderPass {
 			});
 			this.bindGroupByView.set(inputView, bindGroup);
 		}
+
+		// RenderPass records all specific drawing commands and output targets.
 		const pass = context.beginRenderPass();
 		pass.setPipeline(pipeline);
-		pass.setBindGroup(0, bindGroup);
-		pass.draw(3);
-		pass.end();
+		pass.setBindGroup(0, bindGroup); // Send inputs to fragment shader.
+		pass.draw(3); // Trigger vertex shader for our full screen triangle
+		pass.end(); // Finish recording.
 	}
 
 	dispose(): void {
