@@ -473,21 +473,28 @@ function destroyRenderTexture(target: RuntimeRenderTarget | null): void {
  * @throws {Error} On WebGPU unavailability, shader compilation issues, or runtime setup failures.
  */
 export async function createRenderer(options: RendererOptions): Promise<Renderer> {
+	// WebGPU entry point. `navigator.gpu` must exist in supported browsers.
 	if (!navigator.gpu) {
 		throw new Error('WebGPU is not available in this browser');
 	}
 
+	// Just like WebGL, we get a specific context for WebGPU rendering on the canvas.
 	const context = options.canvas.getContext('webgpu') as GPUCanvasContext | null;
 	if (!context) {
 		throw new Error('Canvas does not support webgpu context');
 	}
 
+	// The optimal texture format for the current display (usually 'bgra8unorm' or 'rgba8unorm').
 	const format = navigator.gpu.getPreferredCanvasFormat();
+
+	// Adapter represents the physical GPU hardware. We request it with optional preferences (e.g., high performance).
 	const adapter = await navigator.gpu.requestAdapter(options.adapterOptions);
 	if (!adapter) {
 		throw new Error('Unable to acquire WebGPU adapter');
 	}
 
+	// Device represents a logical connection to the Adapter.
+	// All WebGPU resources (buffers, textures, pipelines) are created from the Device.
 	const device = await adapter.requestDevice(options.deviceDescriptor);
 	let isDestroyed = false;
 	let deviceLostMessage: string | null = null;
@@ -550,6 +557,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				fragmentLineMap: options.fragmentLineMap
 			}
 		);
+		// Create a ShaderModule, which compiles the WGSL string into an internal GPU format.
 		const shaderModule = device.createShaderModule({ code: builtShader.code });
 		await assertCompilation(shaderModule, {
 			lineMap: builtShader.lineMap,
@@ -572,6 +580,8 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			}
 
 			const { samplerBinding, textureBinding } = getTextureBindings(index);
+			// Samplers dictate how the GPU reads texture pixels (filtering, wrapping).
+			// We create one sampler per texture configuration.
 			const sampler = device.createSampler({
 				magFilter: config.filter,
 				minFilter: config.filter,
@@ -619,13 +629,18 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			return runtimeBinding;
 		});
 
+		// BindGroupLayout defines the structure of resources (buffers, textures, samplers)
+		// that the shader will access.
 		const bindGroupLayout = device.createBindGroupLayout({
 			entries: createBindGroupLayoutEntries(textureBindings)
 		});
+		// PipelineLayout defines all BindGroupLayouts used by the pipeline.
 		const pipelineLayout = device.createPipelineLayout({
 			bindGroupLayouts: [bindGroupLayout]
 		});
 
+		// RenderPipeline bundles the shader module, vertex state, and fragment state.
+		// It is an immutable object representing the complete rendering state.
 		const pipeline = device.createRenderPipeline({
 			layout: pipelineLayout,
 			vertex: {
@@ -688,6 +703,9 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 		});
 		let blitBindGroupByView = new WeakMap<GPUTextureView, GPUBindGroup>();
 
+		// Buffers hold raw binary data on the GPU. We use UNIFORM usage for fast read access in shaders,
+		// and COPY_DST so we can write CPU updates into it using `queue.writeBuffer`.
+		// `frameBuffer` holds `time`, `delta`, and `resolution` (16 bytes total).
 		const frameBuffer = device.createBuffer({
 			size: 16,
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -696,6 +714,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			frameBuffer.destroy();
 		});
 
+		// `uniformBuffer` holds all user-defined uniforms packed sequentially based on WGSL alignment rules.
 		const uniformBuffer = device.createBuffer({
 			size: options.uniformLayout.byteLength,
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
@@ -724,10 +743,13 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				});
 				entries.push({
 					binding: binding.textureBinding,
+					// We pass the view (GPUTextureView), not the GPUTexture itself.
+					// Views describe how the texture is interpreted (e.g., 2D array vs cube map).
 					resource: binding.view
 				});
 			}
 
+			// BindGroup ties concrete resources (buffers, views, samplers) to the layout indices.
 			return device.createBindGroup({
 				layout: bindGroupLayout,
 				entries
@@ -806,6 +828,9 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				return false;
 			}
 
+			// Create the backing GPUTexture. `TEXTURE_BINDING` allows shaders to read it,
+			// `COPY_DST` allows `copyExternalImageToTexture` to write to it, and
+			// `RENDER_ATTACHMENT` allows it to be used as a render target if needed.
 			const texture = device.createTexture({
 				size: { width, height, depthOrArrayLayers: 1 },
 				format,
@@ -1221,6 +1246,8 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 
 			const { width, height } = resizeCanvas(options.canvas, options.getDpr(), canvasSize);
 
+			// Reconfigure canvas context when size changes or upon initialization.
+			// This sets up the internal swapchain size and connects it to the device.
 			if (!contextConfigured || configuredWidth !== width || configuredHeight !== height) {
 				context.configure({
 					device,
@@ -1236,6 +1263,8 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 			frameScratch[1] = delta;
 			frameScratch[2] = width;
 			frameScratch[3] = height;
+			// Write updated frame values to the GPU buffer via the queue.
+			// The queue synchronizes transfers across CPU and GPU securely.
 			device.queue.writeBuffer(
 				frameBuffer,
 				0,
@@ -1244,6 +1273,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				frameScratch.byteLength
 			);
 
+			// Pack struct values sequentially according to WGSL padding/alignment rules.
 			packUniformsInto(uniforms, options.uniformLayout, uniformScratch);
 			if (!hasUniformSnapshot) {
 				device.queue.writeBuffer(
@@ -1287,6 +1317,7 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				bindGroup = createBindGroup();
 			}
 
+			// WebGPU records commands into a CommandEncoder. None of these execute immediately.
 			const commandEncoder = device.createCommandEncoder();
 			const passes = resolvePasses();
 			const clearColor = options.getClearColor();
@@ -1317,25 +1348,26 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 					: null;
 			const sceneOutput = slots ? slots.source : canvasSurface;
 
+			// Record a RenderPass, which bundles all drawing commands to specific output targets.
 			const scenePass = commandEncoder.beginRenderPass({
 				colorAttachments: [
 					{
-						view: sceneOutput.view,
+						view: sceneOutput.view, // Target where fragments are written.
 						clearValue: {
 							r: clearColor[0],
 							g: clearColor[1],
 							b: clearColor[2],
 							a: clearColor[3]
 						},
-						loadOp: 'clear',
-						storeOp: 'store'
+						loadOp: 'clear', // 'clear' wipes the attachment before drawing. 'load' keeps existing contents.
+						storeOp: 'store' // 'store' saves the results after drawing so we can read or present them later.
 					}
 				]
 			});
 
-			scenePass.setPipeline(pipeline);
-			scenePass.setBindGroup(0, bindGroup);
-			scenePass.draw(3);
+			scenePass.setPipeline(pipeline); // Set active shaders and state.
+			scenePass.setBindGroup(0, bindGroup); // Attach uniforms and textures at @group(0).
+			scenePass.draw(3); // Draw 3 vertices for the fullscreen triangle trick.
 			scenePass.end();
 
 			if (slots) {
@@ -1418,6 +1450,8 @@ export async function createRenderer(options: RendererOptions): Promise<Renderer
 				}
 			}
 
+			// End recording and submit all commands to the GPU queue for execution.
+			// Any rendered results drawn to `slots.canvas` will be automatically presented to the display.
 			device.queue.submit([commandEncoder.finish()]);
 		};
 
